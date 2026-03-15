@@ -26,7 +26,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { formatDateTime, parseSemicolonList } from '@/lib/utils'
+import { formatDateTime, parseSemicolonList, calculateHoursDifference } from '@/lib/utils'
 import { ActivityRecord } from '@/lib/types'
 
 export default function Historico() {
@@ -150,7 +150,10 @@ export default function Historico() {
                       {act.eventType}
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {act.modality} {act.hasAction ? '• Com Ação' : ''}
+                      {act.modality}{' '}
+                      {(act.actions && act.actions.length > 0) || act.hasAction
+                        ? `• ${act.actions?.length || 1} Ação(ões)`
+                        : ''}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -231,13 +234,34 @@ export default function Historico() {
                   <span className="font-semibold text-muted-foreground">Local</span>
                   <p>{viewActivity.location}</p>
                 </div>
-                {viewActivity.hasAction && (
+
+                {viewActivity.hasAction &&
+                  viewActivity.actionStart &&
+                  (!viewActivity.actions || viewActivity.actions.length === 0) && (
+                    <div className="col-span-2">
+                      <span className="font-semibold text-muted-foreground">
+                        Ação Gerada (Legado)
+                      </span>
+                      <p>
+                        {formatDateTime(viewActivity.actionStart || '')} a{' '}
+                        {formatDateTime(viewActivity.actionEnd || '')}
+                      </p>
+                    </div>
+                  )}
+
+                {viewActivity.actions && viewActivity.actions.length > 0 && (
                   <div className="col-span-2">
-                    <span className="font-semibold text-muted-foreground">Ação Gerada</span>
-                    <p>
-                      {formatDateTime(viewActivity.actionStart || '')} a{' '}
-                      {formatDateTime(viewActivity.actionEnd || '')}
-                    </p>
+                    <span className="font-semibold text-muted-foreground">Ações Vinculadas</span>
+                    <ul className="mt-1 space-y-1">
+                      {viewActivity.actions.map((a, i) => (
+                        <li key={i} className="text-sm bg-slate-50 p-2 rounded border">
+                          {formatDateTime(a.start)} a {formatDateTime(a.end)}
+                          <span className="ml-2 text-xs text-muted-foreground font-medium">
+                            ({calculateHoursDifference(a.start, a.end).toFixed(1)}h)
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>

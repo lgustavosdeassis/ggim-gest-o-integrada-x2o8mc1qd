@@ -4,6 +4,12 @@ export interface Document {
   categories: string[]
 }
 
+export interface ActivityAction {
+  id: string
+  start: string
+  end: string
+}
+
 export interface ActivityRecord {
   id: string
   instance: string
@@ -15,6 +21,7 @@ export interface ActivityRecord {
   hasAction: boolean
   actionStart?: string
   actionEnd?: string
+  actions?: ActivityAction[]
   participantsPF: string
   participantsPJ: string
   documents: Document[]

@@ -82,35 +82,36 @@ const DOC_CATEGORIES = [
   'Outros',
 ]
 
-const formSchema = z
-  .object({
-    instance: z.string().min(1, 'Selecione uma instância'),
-    eventType: z.string().min(1, 'Selecione o tipo'),
-    modality: z.string().min(1, 'Selecione a modalidade'),
-    location: z.string().min(1, 'Local é obrigatório'),
-    meetingStart: z.string().min(1, 'Obrigatório'),
-    meetingEnd: z.string().min(1, 'Obrigatório'),
-    hasAction: z.boolean().default(false),
-    actionStart: z.string().optional(),
-    actionEnd: z.string().optional(),
-    participantsPF: z.string().optional(),
-    participantsPJ: z.string().optional(),
-    deliberations: z.string().optional(),
-    description: z.string().optional(),
-    documents: z
-      .array(
-        z.object({
-          id: z.string().optional(),
-          name: z.string().min(1, 'Obrigatório'),
-          categories: z.array(z.string()).default([]),
-        }),
-      )
-      .optional(),
-  })
-  .refine((d) => !d.hasAction || (d.actionStart && d.actionEnd), {
-    message: 'Preencha datas da ação',
-    path: ['actionEnd'],
-  })
+const formSchema = z.object({
+  instance: z.string().min(1, 'Selecione uma instância'),
+  eventType: z.string().min(1, 'Selecione o tipo'),
+  modality: z.string().min(1, 'Selecione a modalidade'),
+  location: z.string().min(1, 'Local é obrigatório'),
+  meetingStart: z.string().min(1, 'Obrigatório'),
+  meetingEnd: z.string().min(1, 'Obrigatório'),
+  actions: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        start: z.string().min(1, 'Início é obrigatório'),
+        end: z.string().min(1, 'Término é obrigatório'),
+      }),
+    )
+    .default([]),
+  participantsPF: z.string().optional(),
+  participantsPJ: z.string().optional(),
+  deliberations: z.string().optional(),
+  description: z.string().optional(),
+  documents: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string().min(1, 'Obrigatório'),
+        categories: z.array(z.string()).default([]),
+      }),
+    )
+    .optional(),
+})
 
 type FormValues = z.infer<typeof formSchema>
 
@@ -131,7 +132,7 @@ export default function Registrar() {
       location: '',
       meetingStart: '',
       meetingEnd: '',
-      hasAction: false,
+      actions: [],
       participantsPF: '',
       participantsPJ: '',
       deliberations: '',
@@ -145,21 +146,46 @@ export default function Registrar() {
     remove: removeDoc,
   } = useFieldArray({ control: form.control, name: 'documents' })
 
+  const {
+    fields: actionsFields,
+    append: appendAction,
+    remove: removeAction,
+  } = useFieldArray({ control: form.control, name: 'actions' })
+
   useEffect(() => {
     if (editId) {
       const activity = activities.find((a) => a.id === editId)
-      if (activity) form.reset(activity)
+      if (activity) {
+        let initialActions = activity.actions || []
+        if (
+          initialActions.length === 0 &&
+          activity.hasAction &&
+          activity.actionStart &&
+          activity.actionEnd
+        ) {
+          initialActions = [
+            { id: Math.random().toString(), start: activity.actionStart, end: activity.actionEnd },
+          ]
+        }
+        form.reset({ ...activity, actions: initialActions })
+      }
     }
   }, [editId, activities, form])
 
   const onSubmit = (data: FormValues) => {
     const payload = {
       ...data,
+      hasAction: data.actions && data.actions.length > 0,
+      actions: (data.actions || []).map((act) => ({
+        ...act,
+        id: act.id || Math.random().toString(36).substr(2, 9),
+      })),
       documents: (data.documents || []).map((doc) => ({
         ...doc,
         id: doc.id || Math.random().toString(36).substr(2, 9),
       })),
     } as any
+
     if (editId) {
       updateActivity(editId, payload)
       toast({ title: 'Atividade atualizada.' })
@@ -172,14 +198,9 @@ export default function Registrar() {
 
   const wMeetingStart = form.watch('meetingStart')
   const wMeetingEnd = form.watch('meetingEnd')
-  const wHasAction = form.watch('hasAction')
-  const wActionStart = form.watch('actionStart')
-  const wActionEnd = form.watch('actionEnd')
+  const wActions = form.watch('actions') || []
   const tMeeting = calculateHoursDifference(wMeetingStart, wMeetingEnd)
-  const tAction =
-    wHasAction && wActionStart && wActionEnd
-      ? calculateHoursDifference(wActionStart, wActionEnd)
-      : 0
+  const tAction = wActions.reduce((acc, a) => acc + calculateHoursDifference(a.start, a.end), 0)
 
   return (
     <div className="flex flex-col gap-6 max-w-4xl mx-auto">
@@ -281,83 +302,115 @@ export default function Registrar() {
           </Card>
 
           <Card>
-            <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="col-span-1 md:col-span-2 flex items-center justify-between">
+            <CardContent className="pt-6 grid grid-cols-1 gap-4">
+              <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold">Tempos e Duração</h3>
-                <div className="text-sm font-semibold bg-slate-100 px-3 py-1 rounded-md">
+                <div className="text-sm font-semibold bg-primary/10 text-primary px-3 py-1 rounded-md uppercase tracking-wider">
                   Total Dedicado: {(tMeeting + tAction).toFixed(1)}h
                 </div>
               </div>
-              <FormField
-                control={form.control}
-                name="meetingStart"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Início da Reunião</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="meetingEnd"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Término da Reunião</FormLabel>
-                    <FormControl>
-                      <Input type="datetime-local" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="hasAction"
-                render={({ field }) => (
-                  <FormItem className="col-span-1 md:col-span-2 flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Ação Gerada a Partir da Reunião?</FormLabel>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="meetingStart"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Início da Reunião</FormLabel>
+                      <FormControl>
+                        <Input type="datetime-local" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="meetingEnd"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Término da Reunião</FormLabel>
+                      <FormControl>
+                        <Input type="datetime-local" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="mt-4 border-t pt-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="text-md font-medium text-slate-700">Ações Vinculadas</h4>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => appendAction({ start: '', end: '' })}
+                  >
+                    + Adicionar Ação
+                  </Button>
+                </div>
+
+                {actionsFields.map((field, index) => {
+                  const start = form.watch(`actions.${index}.start`)
+                  const end = form.watch(`actions.${index}.end`)
+                  const duration = calculateHoursDifference(start, end)
+                  return (
+                    <div
+                      key={field.id}
+                      className="p-4 border rounded-lg bg-slate-50 space-y-4 mb-4 relative"
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-2 text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                        onClick={() => removeAction(index)}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mr-8">
+                        <FormField
+                          control={form.control}
+                          name={`actions.${index}.start`}
+                          render={({ field: startField }) => (
+                            <FormItem>
+                              <FormLabel>Início da Ação Vinculada</FormLabel>
+                              <FormControl>
+                                <Input type="datetime-local" {...startField} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name={`actions.${index}.end`}
+                          render={({ field: endField }) => (
+                            <FormItem>
+                              <FormLabel>Término da Ação Vinculada</FormLabel>
+                              <FormControl>
+                                <Input type="datetime-local" {...endField} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      {duration > 0 && (
+                        <p className="text-xs text-muted-foreground text-right mr-8 font-medium">
+                          Duração da Ação: {duration.toFixed(1)}h
+                        </p>
+                      )}
                     </div>
-                  </FormItem>
+                  )
+                })}
+                {actionsFields.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4 bg-slate-50 rounded-lg border border-dashed">
+                    Nenhuma ação vinculada registrada.
+                  </p>
                 )}
-              />
-              {wHasAction && (
-                <>
-                  <FormField
-                    control={form.control}
-                    name="actionStart"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Início da Ação</FormLabel>
-                        <FormControl>
-                          <Input type="datetime-local" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="actionEnd"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Término da Ação</FormLabel>
-                        <FormControl>
-                          <Input type="datetime-local" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </>
-              )}
+              </div>
             </CardContent>
           </Card>
 

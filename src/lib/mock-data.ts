@@ -10,6 +10,7 @@ export const mockActivities: ActivityRecord[] = [
     meetingStart: '2025-12-28T13:00:00Z',
     meetingEnd: '2025-12-28T15:00:00Z',
     hasAction: false,
+    actions: [],
     participantsPF: 'João Silva; Maria Souza; Pedro Costa; Ana Lima',
     participantsPJ: 'Prefeitura; Guarda Municipal',
     documents: [{ id: 'd1', name: 'Ata da Reunião.pdf', categories: ['Ata', 'E-mail'] }],
@@ -27,6 +28,7 @@ export const mockActivities: ActivityRecord[] = [
     hasAction: true,
     actionStart: '2026-01-10T13:00:00Z',
     actionEnd: '2026-01-10T17:00:00Z',
+    actions: [{ id: 'a1', start: '2026-01-10T13:00:00Z', end: '2026-01-10T17:00:00Z' }],
     participantsPF: 'Carlos Almeida; Maria Souza; Roberto Dias',
     participantsPJ: 'Prefeitura; Polícia Civil; Corpo de Bombeiros',
     documents: [
@@ -45,6 +47,7 @@ export const mockActivities: ActivityRecord[] = [
     meetingStart: '2026-02-15T14:00:00Z',
     meetingEnd: '2026-02-15T15:30:00Z',
     hasAction: false,
+    actions: [],
     participantsPF: 'Ana Lima; Roberto Dias; João Silva',
     participantsPJ: 'Guarda Municipal; Corpo de Bombeiros',
     documents: [{ id: 'd4', name: 'Relatorio.docx', categories: ['Relatório'] }],

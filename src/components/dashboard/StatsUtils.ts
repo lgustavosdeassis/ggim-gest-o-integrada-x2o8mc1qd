@@ -39,10 +39,17 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
 
   records.forEach((r) => {
     totalHours += calculateHoursDifference(r.meetingStart, r.meetingEnd)
-    if (r.hasAction && r.actionStart && r.actionEnd) {
+
+    if (r.actions && r.actions.length > 0) {
+      r.actions.forEach((a) => {
+        totalHours += calculateHoursDifference(a.start, a.end)
+        totalAcoesGeradas++
+      })
+    } else if (r.hasAction && r.actionStart && r.actionEnd) {
       totalHours += calculateHoursDifference(r.actionStart, r.actionEnd)
       totalAcoesGeradas++
     }
+
     if (r.eventType.includes('Reunião Ordinária') || r.eventType.includes('Reunião Extraordinária'))
       totalReunioes++
     if (r.instance === 'Eventos Institucionais') totalInstitucionais++

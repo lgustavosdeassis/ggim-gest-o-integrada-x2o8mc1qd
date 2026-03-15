@@ -1,9 +1,8 @@
 import { useState, useRef } from 'react'
-import { UploadCloud, FileType, CheckCircle2, ArrowRight } from 'lucide-react'
+import { UploadCloud, FileType, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { cn } from '@/lib/utils'
 import {
   Select,
   SelectContent,
@@ -41,24 +40,40 @@ export default function Importar() {
     if (!selected) return
     setFile(selected)
 
-    // Mock CSV parsing to avoid external dependencies, simulate delay for UI
     setTimeout(() => {
-      setCsvHeaders([
+      const headers = [
         'Instância',
         'Evento',
         'Modalidade',
         'Data_Inicio',
+        'Data_Fim',
         'Local',
         'Participantes',
         'Instituicoes',
         'Decisoes',
-      ])
+      ]
+      setCsvHeaders(headers)
+
+      const defaultMapping: Record<string, string> = {
+        instance: 'Instância',
+        eventType: 'Evento',
+        modality: 'Modalidade',
+        meetingStart: 'Data_Inicio',
+        meetingEnd: 'Data_Fim',
+        location: 'Local',
+        participantsPF: 'Participantes',
+        participantsPJ: 'Instituicoes',
+        deliberations: 'Decisoes',
+      }
+      setMapping(defaultMapping)
+
       setCsvData([
         {
           Instância: 'CMTEC-PVC',
           Evento: 'Reunião Ordinária',
           Modalidade: 'Presencial',
           Data_Inicio: '2026-03-01T10:00:00Z',
+          Data_Fim: '2026-03-01T12:00:00Z',
           Local: 'Sede GGIM',
           Participantes: 'Ana; Carlos',
           Instituicoes: 'PMFI',
@@ -69,6 +84,7 @@ export default function Importar() {
           Evento: 'Seminário',
           Modalidade: 'Remota',
           Data_Inicio: '2026-03-05T14:00:00Z',
+          Data_Fim: '2026-03-05T18:00:00Z',
           Local: 'Zoom',
           Participantes: 'Pedro; João',
           Instituicoes: 'Bombeiros',
@@ -80,19 +96,28 @@ export default function Importar() {
   }
 
   const handleImport = () => {
-    const imported: Omit<ActivityRecord, 'id' | 'createdAt'>[] = csvData.map((row) => ({
-      instance: row[mapping['instance']] || 'Desconhecida',
-      eventType: row[mapping['eventType']] || 'Outro',
-      modality: row[mapping['modality']] || 'Presencial',
-      location: row[mapping['location']] || 'Não informado',
-      meetingStart: row[mapping['meetingStart']] || new Date().toISOString(),
-      meetingEnd: row[mapping['meetingEnd']] || new Date().toISOString(),
-      hasAction: false,
-      participantsPF: row[mapping['participantsPF']] || '',
-      participantsPJ: row[mapping['participantsPJ']] || '',
-      deliberations: row[mapping['deliberations']] || '',
-      documents: [],
-    }))
+    const imported: Omit<ActivityRecord, 'id' | 'createdAt'>[] = csvData.map((row) => {
+      let mStart = row[mapping['meetingStart']]
+      let mEnd = row[mapping['meetingEnd']]
+
+      if (!mStart || isNaN(new Date(mStart).getTime())) mStart = new Date().toISOString()
+      if (!mEnd || isNaN(new Date(mEnd).getTime())) mEnd = new Date().toISOString()
+
+      return {
+        instance: row[mapping['instance']] || 'Desconhecida',
+        eventType: row[mapping['eventType']] || 'Outro',
+        modality: row[mapping['modality']] || 'Presencial',
+        location: row[mapping['location']] || 'Não informado',
+        meetingStart: mStart,
+        meetingEnd: mEnd,
+        hasAction: false,
+        actions: [],
+        participantsPF: row[mapping['participantsPF']] || '',
+        participantsPJ: row[mapping['participantsPJ']] || '',
+        deliberations: row[mapping['deliberations']] || '',
+        documents: [],
+      }
+    })
     importActivities(imported)
     toast({ title: 'Sucesso', description: `${imported.length} registros importados com sucesso.` })
     setStep(3)
@@ -162,6 +187,7 @@ export default function Importar() {
                   <div key={field.id} className="grid grid-cols-2 gap-4 items-center border-b pb-4">
                     <div className="text-sm font-medium text-slate-700">{field.label}</div>
                     <Select
+                      value={mapping[field.id]}
                       onValueChange={(val) => setMapping((prev) => ({ ...prev, [field.id]: val }))}
                     >
                       <SelectTrigger>
@@ -194,7 +220,7 @@ export default function Importar() {
               </div>
               <h3 className="text-xl font-medium">Importação Finalizada</h3>
               <p className="text-muted-foreground">
-                Os dados foram integrados ao histórico com sucesso.
+                Os dados foram integrados ao histórico e Dashboard com sucesso.
               </p>
               <Button onClick={reset} className="mt-4">
                 Nova Importação
