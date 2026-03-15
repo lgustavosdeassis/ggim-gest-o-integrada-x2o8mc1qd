@@ -1,6 +1,5 @@
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import logoGgim from '@/assets/logo-ggim-texto-preto-sem-fundo-4ad89.jpeg'
-import logoCmtecs from '@/assets/logo-cmtecs-a4c2e.jpeg'
 import { Bell, User, LogOut, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Link, useNavigate } from 'react-router-dom'
@@ -25,46 +24,43 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b bg-background px-4 sm:px-6 no-print">
-      {/* Left section: Sidebar trigger + CMTecs Logo */}
-      <div className="flex items-center gap-4 w-1/3">
-        <SidebarTrigger className="-ml-2" />
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border overflow-hidden">
-            <img src={logoCmtecs} alt="CMTecs Logo" className="h-full w-full object-cover" />
-          </div>
-          <span className="font-bold text-base hidden sm:block text-foreground">CMTecs</span>
-        </div>
+    <header className="sticky top-0 z-30 flex h-20 w-full items-center justify-between border-b border-border/20 bg-background/95 backdrop-blur-xl px-4 sm:px-8 no-print shadow-sm">
+      {/* Left section: Sidebar trigger (CMTecs logo is now exclusively in the sidebar top-left) */}
+      <div className="flex items-center w-1/4">
+        <SidebarTrigger className="-ml-2 h-10 w-10 text-muted-foreground hover:text-white transition-colors" />
       </div>
 
       {/* Center section: GGIM Logo and Title */}
-      <div className="hidden lg:flex flex-1 items-center justify-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white p-0.5 shadow-sm border">
+      <div className="hidden lg:flex flex-1 items-center justify-center gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white p-1 shadow-md border border-border/20">
           <img src={logoGgim} alt="GGIM Logo" className="h-full w-full object-contain" />
         </div>
-        <h1 className="text-sm font-bold tracking-tight text-foreground xl:text-base text-center">
+        <h1 className="text-base font-bold tracking-tight text-white text-center">
           Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
         </h1>
       </div>
 
       {/* Right section: Notifications + User */}
-      <div className="flex items-center justify-end gap-2 sm:gap-4 w-1/3">
+      <div className="flex items-center justify-end gap-3 w-1/4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="relative text-muted-foreground hover:text-primary transition-colors"
+              className="relative h-10 w-10 rounded-full text-muted-foreground hover:text-white hover:bg-muted/30 transition-all"
             >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+              <span className="absolute top-2 right-2 h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-background" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
-            <DropdownMenuLabel>Notificações</DropdownMenuLabel>
-            <DropdownMenuSeparator />
+          <DropdownMenuContent
+            align="end"
+            className="w-80 border-border/40 bg-card/95 backdrop-blur shadow-2xl"
+          >
+            <DropdownMenuLabel className="font-bold text-white">Notificações</DropdownMenuLabel>
+            <DropdownMenuSeparator className="bg-border/40" />
             <div className="max-h-[300px] overflow-auto">
-              <div className="p-4 text-sm text-center text-muted-foreground">
+              <div className="p-6 text-sm text-center text-muted-foreground">
                 Nenhuma nova notificação.
               </div>
             </div>
@@ -73,36 +69,48 @@ export function Header() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-              <Avatar className="h-9 w-9 border border-border">
+            <Button
+              variant="ghost"
+              className="relative h-10 w-10 rounded-full p-0 border border-border/30 hover:border-primary/50 transition-colors"
+            >
+              <Avatar className="h-10 w-10">
                 <AvatarImage src={user?.avatarUrl || ''} alt={user?.name || ''} />
-                <AvatarFallback className="bg-primary/20 text-primary">
-                  <User className="h-4 w-4" />
+                <AvatarFallback className="bg-primary/20 text-primary font-bold">
+                  {user?.name?.charAt(0) || <User className="h-4 w-4" />}
                 </AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuLabel className="font-normal">
-              <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name}</p>
-                <p className="text-xs leading-none text-muted-foreground">{user?.email}</p>
+          <DropdownMenuContent
+            className="w-60 border-border/40 bg-card/95 backdrop-blur shadow-2xl"
+            align="end"
+            forceMount
+          >
+            <DropdownMenuLabel className="font-normal p-3">
+              <div className="flex flex-col space-y-1.5">
+                <p className="text-sm font-bold leading-none text-white">{user?.name}</p>
+                <p className="text-xs leading-none text-muted-foreground font-medium">
+                  {user?.email}
+                </p>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/profile" className="cursor-pointer flex items-center w-full">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Minha Conta</span>
+            <DropdownMenuSeparator className="bg-border/40" />
+            <DropdownMenuItem
+              asChild
+              className="cursor-pointer hover:bg-muted/50 p-2.5 focus:bg-muted/50 focus:text-white"
+            >
+              <Link to="/profile" className="flex items-center w-full">
+                <Settings className="mr-3 h-4 w-4 text-muted-foreground" />
+                <span className="font-medium">Minha Conta</span>
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            <DropdownMenuSeparator className="bg-border/40" />
             <DropdownMenuItem
               onClick={handleLogout}
-              className="cursor-pointer text-destructive focus:text-destructive"
+              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10 p-2.5"
             >
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Sair</span>
+              <LogOut className="mr-3 h-4 w-4" />
+              <span className="font-bold">Sair</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -52,7 +52,7 @@ export default function Index() {
   const handlePrint = () => window.print()
 
   return (
-    <div className="flex-1 space-y-8 p-6 sm:p-8 pt-6 bg-background min-h-screen">
+    <div className="flex-1 space-y-8 max-w-[1600px] mx-auto min-h-[calc(100vh-80px)]">
       {/* Print Header */}
       <div className="hidden print:flex items-center gap-4 mb-8 border-b border-gray-300 pb-4">
         <img src={logoGgim} alt="Logo GGIM" className="h-16 object-contain" />
@@ -76,48 +76,53 @@ export default function Index() {
 
       <div className="flex flex-col space-y-4 md:flex-row md:items-end md:justify-between md:space-y-0 no-print">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">
+          <h2 className="text-4xl font-black tracking-tight text-white mb-2">
             Painel Gerencial GGIM
           </h2>
-          <p className="text-muted-foreground mt-1">
-            Acompanhamento consolidado de atividades e engajamento.
+          <p className="text-muted-foreground text-base">
+            Acompanhamento consolidado de atividades, produtividade e engajamento em tempo real.
           </p>
         </div>
         <Button
           onClick={handlePrint}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg transition-all rounded-xl h-11 px-6"
         >
-          <FileDown className="mr-2 h-4 w-4" />
+          <FileDown className="mr-2 h-5 w-5" />
           GERAR RELATÓRIO
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="bg-card border rounded-lg p-4 flex flex-col md:flex-row gap-4 items-end no-print shadow-sm">
-        <div className="w-full md:w-1/3 space-y-1.5">
-          <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-            <Filter className="w-3 h-3" /> Instâncias
+      <div className="bg-card border border-border/20 rounded-2xl p-5 flex flex-col md:flex-row gap-5 items-end no-print shadow-xl">
+        <div className="w-full md:w-1/3 space-y-2">
+          <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
+            <Filter className="w-3.5 h-3.5" /> Instâncias
           </Label>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-between text-left font-normal bg-background"
+                className="w-full justify-between text-left font-medium bg-background border-border/30 hover:bg-muted/50 hover:text-white h-11 rounded-xl"
               >
                 <span className="truncate">
                   {selectedInstances.length === 0
                     ? 'Todas as Instâncias'
-                    : `${selectedInstances.length} selecionada(s)`}
+                    : `${selectedInstances.length} instância(s) selecionada(s)`}
                 </span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-64 max-h-64 overflow-y-auto" align="start">
+            <DropdownMenuContent
+              className="w-72 max-h-80 overflow-y-auto border-border/40 bg-card/95 backdrop-blur shadow-2xl rounded-xl"
+              align="start"
+            >
               <DropdownMenuCheckboxItem
                 checked={selectedInstances.length === 0}
                 onCheckedChange={() => setSelectedInstances([])}
+                className="font-bold cursor-pointer"
               >
                 Todas as Instâncias
               </DropdownMenuCheckboxItem>
+              <div className="h-px bg-border/40 my-1" />
               {INSTANCIAS.map((i) => (
                 <DropdownMenuCheckboxItem
                   key={i}
@@ -126,6 +131,7 @@ export default function Index() {
                     if (checked) setSelectedInstances([...selectedInstances, i])
                     else setSelectedInstances(selectedInstances.filter((x) => x !== i))
                   }}
+                  className="cursor-pointer"
                 >
                   {i}
                 </DropdownMenuCheckboxItem>
@@ -133,36 +139,50 @@ export default function Index() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="w-full md:w-1/4 space-y-1.5">
-          <Label className="text-xs font-semibold text-muted-foreground">Data Inicial</Label>
-          <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+        <div className="w-full md:w-1/4 space-y-2">
+          <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            Data Inicial
+          </Label>
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => setStartDate(e.target.value)}
+            className="bg-background border-border/30 h-11 rounded-xl"
+          />
         </div>
-        <div className="w-full md:w-1/4 space-y-1.5">
-          <Label className="text-xs font-semibold text-muted-foreground">Data Final</Label>
-          <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        <div className="w-full md:w-1/4 space-y-2">
+          <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            Data Final
+          </Label>
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => setEndDate(e.target.value)}
+            className="bg-background border-border/30 h-11 rounded-xl"
+          />
         </div>
-        <div className="w-full md:w-auto">
+        <div className="w-full md:w-auto pb-0.5">
           <Button
             variant="ghost"
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-white hover:bg-destructive/20 h-10 px-4 rounded-xl font-medium"
             onClick={() => {
               setStartDate('')
               setEndDate('')
               setSelectedInstances([])
             }}
           >
-            <X className="w-4 h-4 mr-1" /> Limpar
+            <X className="w-4 h-4 mr-2" /> Limpar Filtros
           </Button>
         </div>
       </div>
 
-      <div className="space-y-10">
+      <div className="space-y-8 pb-10">
         <DashboardOverview data={stats.overview} />
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+        <DashboardProductivity data={stats.productivity} />
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <DashboardLogistics data={stats.logistics} />
-          <DashboardProductivity data={stats.productivity} />
+          <DashboardEngagement data={stats.engagement} />
         </div>
-        <DashboardEngagement data={stats.engagement} />
       </div>
     </div>
   )

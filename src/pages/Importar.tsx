@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { UploadCloud, CheckCircle2, Loader2 } from 'lucide-react'
+import { UploadCloud, CheckCircle2, Loader2, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
@@ -15,7 +15,6 @@ export default function Importar() {
   const { importActivities } = useAppStore()
 
   const handleFile = (file: File) => {
-    // Jump straight to processing (automated data extraction)
     setStep(2)
 
     setTimeout(() => {
@@ -56,12 +55,12 @@ export default function Importar() {
       importActivities(imported)
 
       toast({
-        title: 'Sucesso',
-        description: `${imported.length} registros migrados com sucesso de forma automática.`,
+        title: 'Importação Concluída',
+        description: `${imported.length} novos registros foram automatizados com sucesso.`,
       })
 
       setStep(3)
-    }, 1500)
+    }, 2000)
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,43 +68,51 @@ export default function Importar() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto">
+    <div className="flex flex-col gap-8 max-w-4xl mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Migração de Dados (Upload)</h1>
-        <p className="text-muted-foreground">
-          Importe planilhas .CSV ou .XLSX para alimentar o sistema. A extração e o mapeamento são
-          feitos automaticamente.
+        <h1 className="text-4xl font-black tracking-tight text-white mb-2">Migração Automática</h1>
+        <p className="text-muted-foreground text-base">
+          Importe arquivos <span className="text-primary font-medium">.CSV</span> ou{' '}
+          <span className="text-primary font-medium">.XLSX</span>. A leitura, mapeamento de colunas
+          e cálculos de banco de dados são feitos instantaneamente pela IA.
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="grid grid-cols-3 gap-3 mb-2">
         {[1, 2, 3].map((s) => (
-          <div key={s} className={cn('h-2 rounded-full', step >= s ? 'bg-primary' : 'bg-muted')} />
+          <div
+            key={s}
+            className={cn(
+              'h-1.5 rounded-full transition-all duration-500',
+              step >= s ? 'bg-primary' : 'bg-muted/50',
+            )}
+          />
         ))}
       </div>
 
-      <Card className="shadow-md border-muted/60">
-        <CardHeader>
-          <CardTitle>
+      <Card className="shadow-2xl border-border/20 bg-card rounded-2xl overflow-hidden">
+        <CardHeader className="bg-muted/10 border-b border-border/10 pb-6 pt-8">
+          <CardTitle className="text-xl font-bold flex items-center gap-3 text-white">
+            <FileSpreadsheet className="h-6 w-6 text-primary" />
             {step === 1
-              ? '1. Selecionar Arquivo'
+              ? 'Passo 1: Selecione o Arquivo Base'
               : step === 2
-                ? '2. Extraindo Dados...'
-                : '3. Concluído'}
+                ? 'Passo 2: Processamento Inteligente em Andamento'
+                : 'Passo 3: Integração Finalizada'}
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-sm font-medium mt-2">
             {step === 1 &&
-              'Arraste ou clique para selecionar a planilha. Não é necessário mapear colunas manualmente.'}
+              'Basta fornecer a planilha. O sistema categorizará Instâncias, Tipos de Documento, e gerará os painéis.'}
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-8 md:p-12">
           {step === 1 && (
             <div
               className={cn(
-                'border-2 border-dashed rounded-xl p-16 text-center cursor-pointer transition-all duration-300',
+                'border-2 border-dashed rounded-3xl p-16 text-center cursor-pointer transition-all duration-300 relative group',
                 isDragging
-                  ? 'border-primary bg-primary/10 scale-[0.99]'
-                  : 'border-border hover:bg-muted/50',
+                  ? 'border-primary bg-primary/5 scale-[0.99]'
+                  : 'border-border/50 hover:bg-muted/20 hover:border-primary/50',
               )}
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => {
@@ -129,17 +136,15 @@ export default function Importar() {
                 accept=".csv,.xlsx"
                 onChange={handleFileChange}
               />
-              <div className="flex flex-col items-center gap-4 pointer-events-none">
-                <div className="p-4 bg-primary/10 rounded-full text-primary">
-                  <UploadCloud className="w-10 h-10" />
+              <div className="flex flex-col items-center gap-6 pointer-events-none">
+                <div className="p-6 bg-card rounded-full text-primary border border-border/30 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                  <UploadCloud className="w-12 h-12" />
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-foreground">
-                    Upload de Planilha / Importar Dados
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
-                    Suporta formatos .csv e .xlsx. O sistema irá identificar as colunas e
-                    integrá-las ao banco de dados automaticamente, incluindo "Tipo de Documento".
+                  <p className="text-2xl font-black text-white">Arraste o arquivo ou clique aqui</p>
+                  <p className="text-sm text-muted-foreground mt-3 max-w-md mx-auto leading-relaxed">
+                    A plataforma lerá os cabeçalhos e preencherá tudo automaticamente: engajamento,
+                    cálculos de horas e as tabelas de histórico.
                   </p>
                 </div>
               </div>
@@ -147,35 +152,49 @@ export default function Importar() {
           )}
 
           {step === 2 && (
-            <div className="text-center py-20 space-y-6">
-              <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
-              <div>
-                <p className="text-lg font-bold">Lendo e Processando os Dados...</p>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto mt-2">
-                  O sistema está mapeando as informações baseadas nos cabeçalhos e aplicando as
-                  regras de deduplicação sem a necessidade de intervenção manual.
+            <div className="text-center py-24 space-y-8">
+              <div className="relative w-24 h-24 mx-auto">
+                <div className="absolute inset-0 border-4 border-muted rounded-full" />
+                <div className="absolute inset-0 border-4 border-primary rounded-full border-t-transparent animate-spin" />
+                <Loader2 className="absolute inset-0 m-auto w-10 h-10 text-primary opacity-50" />
+              </div>
+              <div className="space-y-3">
+                <p className="text-2xl font-black text-white">Mapeando Colunas e Extraindo Dados</p>
+                <p className="text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                  Buscando ocorrências, calculando tempo de dedicação, aplicando deduplicação e
+                  populando o Dashboard BI.
                 </p>
               </div>
             </div>
           )}
 
           {step === 3 && (
-            <div className="text-center py-16 space-y-6 animate-in fade-in zoom-in duration-500">
-              <div className="mx-auto w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
+            <div className="text-center py-20 space-y-8 animate-in zoom-in-95 duration-700">
+              <div className="mx-auto w-28 h-28 bg-chart-3/10 border-2 border-chart-3/30 rounded-full flex items-center justify-center shadow-lg relative">
+                <div className="absolute inset-0 bg-chart-3/20 rounded-full animate-ping opacity-20" />
+                <CheckCircle2 className="w-14 h-14 text-chart-3" />
               </div>
-              <div>
-                <h3 className="text-2xl font-bold">Importação Finalizada com Sucesso!</h3>
-                <p className="text-muted-foreground max-w-md mx-auto mt-2">
-                  Os dados foram integrados, os cálculos de horas foram gerados e o Dashboard e os
-                  módulos de Histórico já estão atualizados.
+              <div className="space-y-3">
+                <h3 className="text-3xl font-black text-white">Banco de Dados Atualizado!</h3>
+                <p className="text-muted-foreground text-base max-w-lg mx-auto">
+                  Todos os registros foram importados sem necessidade de intervenção. Os painéis e o
+                  módulo de histórico já refletem os novos números.
                 </p>
               </div>
-              <div className="flex justify-center gap-4 mt-8">
-                <Button variant="outline" onClick={() => setStep(1)}>
-                  Nova Importação
+              <div className="flex justify-center gap-5 mt-10">
+                <Button
+                  variant="outline"
+                  className="h-12 px-8 font-bold border-border/40 hover:bg-muted/50 rounded-xl"
+                  onClick={() => setStep(1)}
+                >
+                  Nova Migração
                 </Button>
-                <Button onClick={() => (window.location.href = '/')}>Ir para Dashboard</Button>
+                <Button
+                  className="h-12 px-8 font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg rounded-xl"
+                  onClick={() => (window.location.href = '/')}
+                >
+                  Acessar Dashboard
+                </Button>
               </div>
             </div>
           )}

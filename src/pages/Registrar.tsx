@@ -26,7 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent } from '@/components/ui/card'
-import { Trash, FileUp } from 'lucide-react'
+import { Trash, FileUp, ListPlus, Users, FileText, CheckCircle2 } from 'lucide-react'
 import { calculateHoursDifference, parseSemicolonList } from '@/lib/utils'
 
 const INSTANCIAS = [
@@ -99,7 +99,7 @@ const formSchema = z.object({
       z.object({
         id: z.string().optional(),
         name: z.string().min(1, 'Obrigatório'),
-        type: z.string().min(1, 'Selecione um tipo'),
+        type: z.string().min(1, 'Tipo de documento obrigatório para garantir o Dashboard.'),
       }),
     )
     .optional(),
@@ -211,35 +211,46 @@ export default function Registrar() {
     : 0
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
+    <div className="flex flex-col gap-8 max-w-5xl mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-primary">
+        <h1 className="text-4xl font-black tracking-tight text-white mb-2">
           {editId ? 'Editar Atividade' : 'Registrar Atividade'}
         </h1>
-        <p className="text-muted-foreground">
-          Preencha as informações detalhadas da atividade com cálculos automáticos.
+        <p className="text-muted-foreground text-base">
+          Preencha os campos abaixo de forma detalhada para alimentar o Dashboard Gerencial.
         </p>
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <Card className="border-primary/20 shadow-md">
-            <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          {/* Identificação Card */}
+          <Card className="border-border/20 shadow-xl bg-card rounded-2xl overflow-hidden">
+            <div className="bg-muted/20 px-6 py-4 border-b border-border/10 flex items-center gap-3">
+              <ListPlus className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-bold text-white">Identificação do Evento</h3>
+            </div>
+            <CardContent className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="instance"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Instância</FormLabel>
+                    <FormLabel className="text-muted-foreground font-bold uppercase tracking-widest text-xs">
+                      Instância / Comitê
+                    </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="bg-background border-border/30 h-12 rounded-xl text-white">
                           <SelectValue placeholder="Selecione a instância" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="bg-card/95 backdrop-blur border-border/40 text-white rounded-xl shadow-2xl">
                         {INSTANCIAS.map((i) => (
-                          <SelectItem key={i} value={i}>
+                          <SelectItem
+                            key={i}
+                            value={i}
+                            className="focus:bg-muted focus:text-white cursor-pointer py-2.5"
+                          >
                             {i}
                           </SelectItem>
                         ))}
@@ -254,16 +265,22 @@ export default function Registrar() {
                 name="eventType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tipo de Evento</FormLabel>
+                    <FormLabel className="text-muted-foreground font-bold uppercase tracking-widest text-xs">
+                      Tipo do Evento
+                    </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o tipo" />
+                        <SelectTrigger className="bg-background border-border/30 h-12 rounded-xl text-white">
+                          <SelectValue placeholder="Selecione a tipologia" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
+                      <SelectContent className="bg-card/95 backdrop-blur border-border/40 text-white rounded-xl shadow-2xl">
                         {EVENTOS_TIPO.map((i) => (
-                          <SelectItem key={i} value={i}>
+                          <SelectItem
+                            key={i}
+                            value={i}
+                            className="focus:bg-muted focus:text-white cursor-pointer py-2.5"
+                          >
                             {i}
                           </SelectItem>
                         ))}
@@ -278,17 +295,25 @@ export default function Registrar() {
                 name="modality"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Modalidade</FormLabel>
+                    <FormLabel className="text-muted-foreground font-bold uppercase tracking-widest text-xs">
+                      Modalidade
+                    </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a modalidade" />
+                        <SelectTrigger className="bg-background border-border/30 h-12 rounded-xl text-white">
+                          <SelectValue placeholder="Como ocorreu?" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="Presencial">Presencial</SelectItem>
-                        <SelectItem value="Remota">Remota</SelectItem>
-                        <SelectItem value="Híbrida">Híbrida</SelectItem>
+                      <SelectContent className="bg-card/95 backdrop-blur border-border/40 text-white rounded-xl shadow-2xl">
+                        <SelectItem value="Presencial" className="py-2.5">
+                          Presencial
+                        </SelectItem>
+                        <SelectItem value="Remota" className="py-2.5">
+                          Remota
+                        </SelectItem>
+                        <SelectItem value="Híbrida" className="py-2.5">
+                          Híbrida
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -300,9 +325,15 @@ export default function Registrar() {
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Local do Evento</FormLabel>
+                    <FormLabel className="text-muted-foreground font-bold uppercase tracking-widest text-xs">
+                      Local
+                    </FormLabel>
                     <FormControl>
-                      <Input placeholder="Onde ocorreu o evento?" {...field} />
+                      <Input
+                        placeholder="Ex: Paço Municipal / Zoom"
+                        {...field}
+                        className="bg-background border-border/30 h-12 rounded-xl text-white placeholder:text-muted-foreground/50"
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -311,30 +342,43 @@ export default function Registrar() {
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 shadow-md">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-primary">Logística e Duração</h3>
-                <div className="text-sm font-bold bg-primary text-primary-foreground px-4 py-1.5 rounded-md shadow-sm uppercase tracking-wide">
-                  TOTAL DE HORAS DEDICADAS: {(tMeeting + tAction).toFixed(1)}h
-                </div>
+          {/* Duração Card */}
+          <Card className="border-border/20 shadow-xl bg-card rounded-2xl overflow-hidden relative">
+            <div className="absolute top-0 right-0 p-4 pt-5 pr-6 hidden sm:block">
+              <div className="text-xs font-black bg-primary text-primary-foreground px-4 py-2 rounded-xl shadow-lg uppercase tracking-widest border border-primary/20">
+                Total de Horas:{' '}
+                <span className="text-lg ml-1">{(tMeeting + tAction).toFixed(1)}h</span>
+              </div>
+            </div>
+            <div className="bg-muted/20 px-6 py-4 border-b border-border/10 flex items-center gap-3">
+              <CheckCircle2 className="h-5 w-5 text-chart-2" />
+              <h3 className="text-lg font-bold text-white">Logística e Dedicação de Horas</h3>
+            </div>
+
+            <CardContent className="p-6 md:p-8">
+              <div className="sm:hidden mb-6 text-center text-xs font-black bg-primary text-primary-foreground px-4 py-3 rounded-xl shadow-md uppercase tracking-widest border border-primary/20">
+                Total Dedicado:{' '}
+                <span className="text-base ml-1">{(tMeeting + tAction).toFixed(1)}h</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-secondary/30 p-5 rounded-xl mb-6 bg-secondary/5">
-                <div className="col-span-1 md:col-span-2 flex justify-between items-center mb-2">
-                  <h4 className="font-semibold text-sm text-secondary">Tempo de Reunião</h4>
-                  <span className="text-xs font-bold bg-secondary/20 text-secondary px-2 py-1 rounded">
-                    Duração: {tMeeting.toFixed(1)}h
-                  </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border border-border/20 p-6 rounded-2xl mb-8 bg-background/50 relative shadow-sm">
+                <div className="absolute -top-3 left-6 bg-chart-2 text-primary-foreground text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
+                  Reunião Principal ({tMeeting.toFixed(1)}h)
                 </div>
                 <FormField
                   control={form.control}
                   name="meetingStart"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Início da Reunião</FormLabel>
+                    <FormItem className="mt-2">
+                      <FormLabel className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
+                        Início da Reunião
+                      </FormLabel>
                       <FormControl>
-                        <Input type="datetime-local" {...field} className="bg-background" />
+                        <Input
+                          type="datetime-local"
+                          {...field}
+                          className="bg-card border-border/30 h-12 rounded-xl text-white"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -344,10 +388,16 @@ export default function Registrar() {
                   control={form.control}
                   name="meetingEnd"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Término da Reunião</FormLabel>
+                    <FormItem className="mt-2">
+                      <FormLabel className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
+                        Término da Reunião
+                      </FormLabel>
                       <FormControl>
-                        <Input type="datetime-local" {...field} className="bg-background" />
+                        <Input
+                          type="datetime-local"
+                          {...field}
+                          className="bg-card border-border/30 h-12 rounded-xl text-white"
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -359,10 +409,10 @@ export default function Registrar() {
                 control={form.control}
                 name="hasAction"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-4 space-y-0 rounded-xl border border-primary/20 p-5 bg-card shadow-sm mb-4">
+                  <FormItem className="flex flex-row items-start space-x-4 space-y-0 rounded-2xl border border-primary/30 p-5 bg-primary/5 shadow-sm mb-4 cursor-pointer group hover:bg-primary/10 transition-colors">
                     <FormControl>
                       <Checkbox
-                        className="mt-1 h-5 w-5"
+                        className="mt-1 h-5 w-5 border-2 rounded text-primary border-primary bg-transparent data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                         checked={field.value}
                         onCheckedChange={(checked) => {
                           field.onChange(checked)
@@ -372,13 +422,13 @@ export default function Registrar() {
                         }}
                       />
                     </FormControl>
-                    <div className="space-y-1.5 leading-none">
-                      <FormLabel className="text-base font-semibold cursor-pointer">
-                        Houve Ação Vinculada/Gerada?
+                    <div className="space-y-2 leading-none cursor-pointer flex-1">
+                      <FormLabel className="text-base font-bold text-white cursor-pointer">
+                        Esta reunião gerou ou desdobrou em uma Ação Vinculada?
                       </FormLabel>
-                      <p className="text-sm text-muted-foreground leading-snug">
-                        Marque esta opção caso o evento tenha gerado uma ação prática complementar
-                        (ex: operações, fiscalizações) que demandou tempo adicional da equipe.
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        Exemplo: Desdobramentos operacionais, fiscalizações conjuntas ou tempo
+                        adicional dedicado pós-reunião.
                       </p>
                     </div>
                   </FormItem>
@@ -386,21 +436,23 @@ export default function Registrar() {
               />
 
               {wHasAction && (
-                <div className="border-t border-border pt-6 mt-2 animate-in fade-in slide-in-from-top-4 duration-300">
-                  <div className="flex items-center justify-between mb-5">
-                    <h4 className="font-semibold text-sm text-primary">Ações Vinculadas Geradas</h4>
+                <div className="border-t border-border/20 pt-8 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="flex items-center justify-between mb-6">
+                    <h4 className="font-bold text-base text-white">
+                      Cronograma das Ações Vinculadas
+                    </h4>
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="border-primary text-primary hover:bg-primary/10"
+                      className="border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-xl h-10 px-4"
                       onClick={() => appendAction({ start: '', end: '' })}
                     >
-                      + Adicionar Nova Ação
+                      + Nova Ação Extra
                     </Button>
                   </div>
 
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     {actionsFields.map((field, index) => {
                       const duration = calculateHoursDifference(
                         form.watch(`actions.${index}.start`),
@@ -409,35 +461,40 @@ export default function Registrar() {
                       return (
                         <div
                           key={field.id}
-                          className="p-5 border border-primary/20 rounded-xl bg-card relative shadow-sm"
+                          className="p-6 border border-border/30 rounded-2xl bg-background/50 relative shadow-sm group"
                         >
                           <Button
                             type="button"
                             variant="ghost"
                             size="icon"
-                            className="absolute right-3 top-3 text-destructive hover:bg-destructive/10 h-8 w-8"
+                            className="absolute right-4 top-4 text-destructive hover:bg-destructive hover:text-white rounded-xl h-9 w-9 opacity-50 group-hover:opacity-100 transition-all"
                             onClick={() => removeAction(index)}
+                            title="Remover Ação"
                           >
                             <Trash className="w-4 h-4" />
                           </Button>
-                          <div className="col-span-1 md:col-span-2 flex justify-between items-center mr-12 mb-4">
-                            <h5 className="font-bold text-sm">Ação #{index + 1}</h5>
-                            <span className="text-xs font-bold bg-primary/20 text-primary px-2 py-1 rounded">
+                          <div className="flex items-center gap-3 mb-5 pr-12">
+                            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground font-black text-xs">
+                              {index + 1}
+                            </span>
+                            <span className="text-xs font-black bg-primary/10 text-primary px-3 py-1 rounded-full uppercase tracking-widest border border-primary/20">
                               Duração: {duration.toFixed(1)}h
                             </span>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mr-8">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mr-0 md:mr-8">
                             <FormField
                               control={form.control}
                               name={`actions.${index}.start`}
                               render={({ field: startField }) => (
                                 <FormItem>
-                                  <FormLabel className="text-xs">Início da Ação</FormLabel>
+                                  <FormLabel className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
+                                    Início da Ação Extra
+                                  </FormLabel>
                                   <FormControl>
                                     <Input
                                       type="datetime-local"
                                       {...startField}
-                                      className="bg-background"
+                                      className="bg-card border-border/30 h-11 rounded-xl text-white"
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -448,12 +505,14 @@ export default function Registrar() {
                               name={`actions.${index}.end`}
                               render={({ field: endField }) => (
                                 <FormItem>
-                                  <FormLabel className="text-xs">Término da Ação</FormLabel>
+                                  <FormLabel className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
+                                    Término da Ação Extra
+                                  </FormLabel>
                                   <FormControl>
                                     <Input
                                       type="datetime-local"
                                       {...endField}
-                                      className="bg-background"
+                                      className="bg-card border-border/30 h-11 rounded-xl text-white"
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -464,8 +523,9 @@ export default function Registrar() {
                       )
                     })}
                     {actionsFields.length === 0 && (
-                      <div className="text-center p-6 border border-dashed rounded-xl text-muted-foreground text-sm">
-                        Nenhuma ação adicionada. Clique no botão acima para adicionar.
+                      <div className="text-center p-8 border-2 border-dashed border-border/30 rounded-2xl text-muted-foreground font-medium text-sm bg-background/20">
+                        Nenhuma ação temporal informada. Clique no botão acima para computar horas
+                        extras.
                       </div>
                     )}
                   </div>
@@ -474,25 +534,29 @@ export default function Registrar() {
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 shadow-md">
-            <CardContent className="pt-6 space-y-6">
-              <h3 className="text-lg font-semibold text-primary">Engajamento</h3>
+          {/* Engajamento Card */}
+          <Card className="border-border/20 shadow-xl bg-card rounded-2xl overflow-hidden">
+            <div className="bg-muted/20 px-6 py-4 border-b border-border/10 flex items-center gap-3">
+              <Users className="h-5 w-5 text-chart-3" />
+              <h3 className="text-lg font-bold text-white">Engajamento / Presenças</h3>
+            </div>
+            <CardContent className="p-6 md:p-8 space-y-8">
               <FormField
                 control={form.control}
                 name="participantsPF"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex justify-between items-end">
-                      <FormLabel>
-                        Nomes dos Participantes - PF (separados por ponto e vírgula)
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-1">
+                      <FormLabel className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
+                        Pessoas Físicas (separadas por ponto e vírgula)
                       </FormLabel>
-                      <span className="text-xs font-bold bg-secondary/20 text-secondary px-3 py-1 rounded-full">
+                      <span className="text-[10px] font-black bg-chart-3/20 text-chart-3 px-3 py-1 rounded-full uppercase tracking-widest border border-chart-3/30 w-fit">
                         Total Pessoas: {parseSemicolonList(field.value || '').length}
                       </span>
                     </div>
                     <FormControl>
                       <Textarea
-                        className="min-h-[100px] resize-y"
+                        className="min-h-[120px] resize-y bg-background border-border/30 rounded-xl text-white p-4 placeholder:text-muted-foreground/40 text-base"
                         placeholder="Ex: João Silva; Maria Oliveira"
                         {...field}
                       />
@@ -506,18 +570,18 @@ export default function Registrar() {
                 name="participantsPJ"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex justify-between items-end">
-                      <FormLabel>
-                        Nomes das Instituições - PJ (separadas por ponto e vírgula)
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-1">
+                      <FormLabel className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
+                        Instituições PJ (separadas por ponto e vírgula)
                       </FormLabel>
-                      <span className="text-xs font-bold bg-secondary/20 text-secondary px-3 py-1 rounded-full">
+                      <span className="text-[10px] font-black bg-chart-4/20 text-chart-4 px-3 py-1 rounded-full uppercase tracking-widest border border-chart-4/30 w-fit">
                         Total Instituições: {parseSemicolonList(field.value || '').length}
                       </span>
                     </div>
                     <FormControl>
                       <Textarea
-                        className="min-h-[80px] resize-y"
-                        placeholder="Ex: Prefeitura Municipal; Corpo de Bombeiros; Polícia Civil"
+                        className="min-h-[100px] resize-y bg-background border-border/30 rounded-xl text-white p-4 placeholder:text-muted-foreground/40 text-base"
+                        placeholder="Ex: Prefeitura Municipal; Polícia Federal; Bombeiros"
                         {...field}
                       />
                     </FormControl>
@@ -528,26 +592,30 @@ export default function Registrar() {
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 shadow-md">
-            <CardContent className="pt-6 space-y-6">
-              <h3 className="text-lg font-semibold text-primary">Produtividade e Documentos</h3>
+          {/* Produtividade e Docs Card */}
+          <Card className="border-border/20 shadow-xl bg-card rounded-2xl overflow-hidden">
+            <div className="bg-muted/20 px-6 py-4 border-b border-border/10 flex items-center gap-3">
+              <FileText className="h-5 w-5 text-chart-5" />
+              <h3 className="text-lg font-bold text-white">Produtividade e Documentação</h3>
+            </div>
+            <CardContent className="p-6 md:p-8 space-y-8">
               <FormField
                 control={form.control}
                 name="deliberations"
                 render={({ field }) => (
                   <FormItem>
-                    <div className="flex justify-between items-end">
-                      <FormLabel>
-                        Descritivo das Deliberações (separadas por ponto e vírgula)
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-1">
+                      <FormLabel className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
+                        Registro de Deliberações (separadas por ponto e vírgula)
                       </FormLabel>
-                      <span className="text-xs font-bold bg-secondary/20 text-secondary px-3 py-1 rounded-full">
+                      <span className="text-[10px] font-black bg-chart-5/20 text-chart-5 px-3 py-1 rounded-full uppercase tracking-widest border border-chart-5/30 w-fit">
                         Total Deliberações: {parseSemicolonList(field.value || '').length}
                       </span>
                     </div>
                     <FormControl>
                       <Textarea
-                        className="min-h-[100px] resize-y"
-                        placeholder="Ex: Aprovada pauta principal; Definida data da próxima reunião; Encaminhado ofício ao setor responsável"
+                        className="min-h-[120px] resize-y bg-background border-border/30 rounded-xl text-white p-4 placeholder:text-muted-foreground/40 text-base leading-relaxed"
+                        placeholder="Ex: Aprovada diretriz de ação x; Pauta de segurança discutida;"
                         {...field}
                       />
                     </FormControl>
@@ -556,18 +624,19 @@ export default function Registrar() {
                 )}
               />
 
-              <div className="border-t border-border pt-6 space-y-5">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center bg-secondary/5 p-5 rounded-xl border border-dashed border-secondary/40 gap-4">
+              <div className="border-t border-border/20 pt-8 space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-muted/10 p-6 rounded-2xl border-2 border-dashed border-border/30 gap-6">
                   <div>
-                    <h4 className="font-semibold text-base">Arquivos Comprobatórios Anexos</h4>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Adicione PDFs, DOCX, TXT, Imagens (JPG, PNG) ou Áudios (MP3, WAV). Especifique
-                      o tipo para cada.
+                    <h4 className="font-bold text-lg text-white">Gestão de Anexos</h4>
+                    <p className="text-sm text-muted-foreground mt-2 max-w-lg leading-relaxed font-medium">
+                      Obrigatório classificar o{' '}
+                      <span className="text-white font-bold">Tipo de Documento</span> para cada
+                      arquivo (ATA, OFÍCIO, RELATÓRIO, etc), o que alimenta diretamente o Dashboard.
                     </p>
                   </div>
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="text-sm font-bold bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-sm whitespace-nowrap">
-                      Total Geral de Documentos: {docsFields.length}
+                  <div className="flex flex-col items-end gap-4 w-full md:w-auto">
+                    <div className="text-sm font-black bg-primary/10 text-primary px-5 py-2.5 rounded-xl border border-primary/20 whitespace-nowrap w-full md:w-auto text-center">
+                      DOCUMENTOS TOTAIS: {docsFields.length}
                     </div>
                     <Input
                       type="file"
@@ -585,9 +654,9 @@ export default function Registrar() {
                     />
                     <Label
                       htmlFor="file-upload"
-                      className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/90 h-10 px-5 py-2 shadow-sm"
+                      className="cursor-pointer inline-flex w-full md:w-auto items-center justify-center gap-3 whitespace-nowrap rounded-xl text-sm font-bold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-white hover:bg-secondary/80 h-12 px-6 shadow-md"
                     >
-                      <FileUp className="w-4 h-4" /> Anexar Documentos
+                      <FileUp className="w-5 h-5" /> Inserir Arquivos
                     </Label>
                   </div>
                 </div>
@@ -596,18 +665,22 @@ export default function Registrar() {
                   {docsFields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="p-5 border border-border rounded-xl bg-card space-y-4 shadow-sm relative grid grid-cols-1 md:grid-cols-[1fr_200px_auto] gap-4 items-start"
+                      className="p-5 border border-border/30 rounded-2xl bg-background/50 shadow-sm relative grid grid-cols-1 lg:grid-cols-[1fr_240px_auto] gap-5 items-start group"
                     >
                       <FormField
                         control={form.control}
                         name={`documents.${index}.name`}
                         render={({ field: nameField }) => (
-                          <FormItem className="flex-1">
-                            <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                              Nome do Arquivo Identificado
+                          <FormItem className="flex-1 mt-1">
+                            <FormLabel className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                              Arquivo Recebido
                             </FormLabel>
                             <FormControl>
-                              <Input {...nameField} readOnly className="bg-muted/30 font-medium" />
+                              <Input
+                                {...nameField}
+                                readOnly
+                                className="bg-transparent border-0 border-b border-border/50 rounded-none px-1 h-10 font-bold text-white focus-visible:ring-0 focus-visible:border-primary truncate"
+                              />
                             </FormControl>
                           </FormItem>
                         )}
@@ -616,41 +689,46 @@ export default function Registrar() {
                         control={form.control}
                         name={`documents.${index}.type`}
                         render={({ field: typeField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                              Tipo de Documento
+                          <FormItem className="mt-1">
+                            <FormLabel className="text-[10px] font-black text-primary uppercase tracking-widest">
+                              Categoria Obrigatória *
                             </FormLabel>
                             <Select onValueChange={typeField.onChange} value={typeField.value}>
                               <FormControl>
-                                <SelectTrigger className="bg-background border-primary/40 focus:ring-primary/50">
-                                  <SelectValue placeholder="Selecione o tipo..." />
+                                <SelectTrigger className="bg-card border-border/30 focus:ring-primary/50 h-11 rounded-xl font-bold text-white">
+                                  <SelectValue placeholder="Selecione..." />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent>
+                              <SelectContent className="bg-card/95 backdrop-blur border-border/40 text-white rounded-xl shadow-2xl">
                                 {DOC_TYPES.map((t) => (
-                                  <SelectItem key={t} value={t}>
+                                  <SelectItem
+                                    key={t}
+                                    value={t}
+                                    className="font-bold cursor-pointer py-2"
+                                  >
                                     {t}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
-                            <FormMessage />
+                            <FormMessage className="text-[10px] font-bold" />
                           </FormItem>
                         )}
                       />
                       <Button
                         type="button"
                         variant="ghost"
-                        className="mt-6 text-destructive hover:bg-destructive/10 h-10 w-10 p-0 shrink-0"
+                        className="lg:mt-7 text-destructive hover:bg-destructive hover:text-white rounded-xl h-11 w-11 p-0 shrink-0 border border-transparent hover:border-destructive/30 transition-all opacity-70 group-hover:opacity-100"
                         onClick={() => removeDoc(index)}
+                        title="Remover anexo"
                       >
                         <Trash className="w-5 h-5" />
                       </Button>
                     </div>
                   ))}
                   {docsFields.length === 0 && (
-                    <div className="text-center p-8 border border-dashed rounded-xl text-muted-foreground text-sm">
-                      Nenhum arquivo anexado nesta atividade.
+                    <div className="text-center p-8 border border-dashed border-border/30 rounded-2xl text-muted-foreground font-medium text-sm">
+                      Lista de documentos vazia.
                     </div>
                   )}
                 </div>
@@ -658,17 +736,20 @@ export default function Registrar() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-4 sticky bottom-6 bg-card/95 backdrop-blur-md p-5 border border-primary/10 rounded-2xl shadow-xl z-10">
+          <div className="flex justify-end gap-5 sticky bottom-6 bg-card/80 backdrop-blur-xl p-5 border border-border/30 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10 mt-10 w-fit ml-auto">
             <Button
-              variant="outline"
+              variant="ghost"
               type="button"
               onClick={() => navigate('/historico')}
-              className="w-32"
+              className="w-32 h-12 rounded-xl text-muted-foreground hover:text-white font-bold"
             >
               Cancelar
             </Button>
-            <Button type="submit" className="w-56 font-bold text-base shadow-md">
-              {editId ? 'Salvar Alterações' : 'Salvar Registro'}
+            <Button
+              type="submit"
+              className="w-64 h-12 font-black text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:shadow-[0_0_30px_rgba(var(--primary),0.5)] transition-all rounded-xl"
+            >
+              {editId ? 'ATUALIZAR REGISTRO' : 'SALVAR NOVO REGISTRO'}
             </Button>
           </div>
         </form>

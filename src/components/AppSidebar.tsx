@@ -25,56 +25,72 @@ export function AppSidebar() {
   const location = useLocation()
 
   return (
-    <Sidebar className="border-r shadow-sm no-print">
-      <SidebarHeader className="border-b border-border/50 py-5 px-4 bg-muted/20">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-primary/20 shadow-sm bg-white">
-            <img src={logoCmtecs} alt="CMTecs Logo" className="h-full w-full object-cover" />
+    <Sidebar className="border-r border-border/20 shadow-xl no-print bg-sidebar">
+      <SidebarHeader className="border-b border-border/10 py-6 px-6 bg-sidebar">
+        <div className="flex items-center gap-4">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-primary/30 shadow-lg bg-white p-0.5">
+            <img
+              src={logoCmtecs}
+              alt="CMTecs Logo"
+              className="h-full w-full object-cover rounded-full"
+            />
           </div>
           <div className="flex flex-col flex-1 truncate">
-            <span className="truncate font-bold text-base leading-tight text-primary">CMTecs</span>
-            <span className="truncate text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mt-0.5">
-              Gestão GGIM
-            </span>
+            <span className="truncate font-black text-xl tracking-tight text-white">CMTecs</span>
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent className="px-2 pt-4">
+      <SidebarContent className="px-4 pt-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground mb-2 px-2">
+          <SidebarGroupLabel className="text-[11px] uppercase tracking-widest text-muted-foreground mb-4 px-2 font-bold">
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton
-                    asChild
-                    isActive={location.pathname === item.url}
-                    className="mb-1 py-5 rounded-lg data-[active=true]:bg-primary/10 data-[active=true]:text-primary data-[active=true]:font-bold transition-all"
-                  >
-                    <Link to={item.url}>
-                      <item.icon className="h-5 w-5 mr-1" />
-                      <span className="text-sm">{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+            <SidebarMenu className="gap-2">
+              {items.map((item) => {
+                const isActive = location.pathname === item.url
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      className={`h-12 rounded-xl transition-all duration-200 ${
+                        isActive
+                          ? 'bg-muted/60 text-primary font-bold shadow-sm'
+                          : 'text-muted-foreground hover:text-white hover:bg-muted/30 font-medium'
+                      }`}
+                    >
+                      <Link to={item.url} className="flex items-center gap-3 px-2">
+                        <item.icon
+                          className={`h-5 w-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
+                        />
+                        <span className="text-sm">{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="border-t border-border/50 p-4 bg-muted/10">
+      <SidebarFooter className="p-4 bg-sidebar">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               isActive={location.pathname === '/profile'}
-              className="rounded-lg"
+              className={`h-12 rounded-xl transition-all duration-200 ${
+                location.pathname === '/profile'
+                  ? 'bg-muted/60 text-primary font-bold shadow-sm'
+                  : 'text-muted-foreground hover:text-white hover:bg-muted/30 font-medium'
+              }`}
             >
-              <Link to="/profile">
-                <Settings className="h-4 w-4 mr-1 text-muted-foreground" />
-                <span className="text-sm">Configurações</span>
+              <Link to="/profile" className="flex items-center gap-3 px-2">
+                <Settings
+                  className={`h-5 w-5 ${location.pathname === '/profile' ? 'text-primary' : 'text-muted-foreground'}`}
+                />
+                <span className="text-sm">Minha Conta</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

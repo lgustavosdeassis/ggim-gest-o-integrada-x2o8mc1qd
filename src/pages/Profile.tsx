@@ -50,30 +50,40 @@ export default function Profile() {
   const hasAvatarChanges = previewUrl !== user?.avatarUrl && previewUrl !== null
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-4xl mx-auto space-y-8 py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Minha Conta</h1>
-        <p className="text-muted-foreground mt-2">
-          Gerencie suas informações de perfil e preferências do sistema.
+        <h1 className="text-4xl font-black tracking-tight text-white mb-2">
+          Configurações da Conta
+        </h1>
+        <p className="text-muted-foreground text-base">
+          Gerencie seus dados de acesso e a personalização do seu perfil.
         </p>
       </div>
 
-      <Card className="shadow-sm border-muted/60">
-        <CardHeader>
-          <CardTitle>Foto do Perfil</CardTitle>
-          <CardDescription>
-            Atualize sua foto de perfil. Esta imagem será exibida na barra superior.
+      <Card className="shadow-2xl border-border/20 bg-card rounded-2xl overflow-hidden">
+        <CardHeader className="bg-muted/10 border-b border-border/10 pb-6">
+          <CardTitle className="text-xl font-bold text-white">Fotografia de Perfil</CardTitle>
+          <CardDescription className="text-sm font-medium">
+            Personalize a imagem que aparece no canto superior do sistema.
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
-          <Avatar className="h-28 w-28 border-4 border-background shadow-md">
-            <AvatarImage src={previewUrl || ''} className="object-cover" />
-            <AvatarFallback className="bg-primary/20 text-primary">
-              <User className="h-12 w-12" />
-            </AvatarFallback>
-          </Avatar>
+        <CardContent className="p-8 flex flex-col sm:flex-row gap-8 items-start sm:items-center">
+          <div
+            className="relative group cursor-pointer"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Avatar className="h-32 w-32 border-4 border-background shadow-2xl transition-all duration-300 group-hover:opacity-80">
+              <AvatarImage src={previewUrl || ''} className="object-cover" />
+              <AvatarFallback className="bg-primary/20 text-primary font-bold text-3xl">
+                {user?.name?.charAt(0) || <User className="h-12 w-12" />}
+              </AvatarFallback>
+            </Avatar>
+            <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Upload className="h-8 w-8 text-white" />
+            </div>
+          </div>
 
-          <div className="space-y-4 flex-1">
+          <div className="space-y-5 flex-1">
             <input
               type="file"
               ref={fileInputRef}
@@ -81,82 +91,123 @@ export default function Profile() {
               accept="image/*"
               onChange={handleFileChange}
             />
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-4">
               <Button
-                variant={hasAvatarChanges ? 'outline' : 'default'}
+                variant={hasAvatarChanges ? 'outline' : 'secondary'}
                 onClick={() => fileInputRef.current?.click()}
-                className={hasAvatarChanges ? '' : 'font-semibold'}
+                className={`h-12 px-6 rounded-xl font-bold transition-all ${
+                  hasAvatarChanges
+                    ? 'border-border/40 text-white hover:bg-muted/50'
+                    : 'bg-primary/10 text-primary hover:bg-primary/20'
+                }`}
               >
-                <Upload className="mr-2 h-4 w-4" /> Escolher nova imagem
+                <Upload className="mr-2 h-4 w-4" /> Alterar Fotografia
               </Button>
               {hasAvatarChanges && (
-                <Button onClick={handleSaveAvatar} disabled={isSavingAvatar} className="font-bold">
+                <Button
+                  onClick={handleSaveAvatar}
+                  disabled={isSavingAvatar}
+                  className="h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(var(--primary),0.3)] transition-all"
+                >
                   {isSavingAvatar ? (
                     'Salvando...'
                   ) : (
                     <>
-                      <Check className="mr-2 h-4 w-4" /> Salvar foto
+                      <Check className="mr-2 h-5 w-5" /> Confirmar Nova Foto
                     </>
                   )}
                 </Button>
               )}
             </div>
-            <p className="text-sm text-muted-foreground">
-              Recomendado: Imagem quadrada em formato JPG ou PNG, máximo de 2MB.
+            <p className="text-sm text-muted-foreground font-medium">
+              Utilize imagens JPG ou PNG de até 2MB. Dimensões quadradas (1:1) são recomendadas.
             </p>
           </div>
         </CardContent>
       </Card>
 
-      <Card className="shadow-sm border-muted/60">
-        <CardHeader className="flex flex-row items-center justify-between">
+      <Card className="shadow-2xl border-border/20 bg-card rounded-2xl overflow-hidden relative">
+        <CardHeader className="bg-muted/10 border-b border-border/10 pb-6 flex flex-row items-center justify-between">
           <div>
-            <CardTitle>Informações Pessoais</CardTitle>
-            <CardDescription>Seus dados cadastrais básicos no sistema GGIM.</CardDescription>
+            <CardTitle className="text-xl font-bold text-white">Dados Profissionais</CardTitle>
+            <CardDescription className="text-sm font-medium">
+              Informações de identificação institucional.
+            </CardDescription>
           </div>
           {!isEditing && (
-            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-              <Pencil className="h-4 w-4 mr-2" /> Editar
+            <Button
+              variant="outline"
+              onClick={() => setIsEditing(true)}
+              className="h-11 px-5 rounded-xl border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground font-bold transition-all"
+            >
+              <Pencil className="h-4 w-4 mr-2" /> Editar Dados
             </Button>
           )}
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-8">
           <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="name">Nome completo</Label>
+            <div className="space-y-2.5">
+              <Label
+                htmlFor="name"
+                className="text-xs font-bold text-muted-foreground uppercase tracking-widest"
+              >
+                Nome Completo
+              </Label>
               <Input
                 id="name"
                 value={isEditing ? formData.name : user?.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 readOnly={!isEditing}
-                className={!isEditing ? 'bg-muted/30 font-medium' : ''}
+                className={`h-12 rounded-xl text-white transition-all ${
+                  !isEditing
+                    ? 'bg-muted/20 border-transparent font-medium shadow-inner'
+                    : 'bg-background border-primary/50 focus-visible:ring-primary shadow-sm'
+                }`}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">E-mail Institucional</Label>
+            <div className="space-y-2.5">
+              <Label
+                htmlFor="email"
+                className="text-xs font-bold text-muted-foreground uppercase tracking-widest"
+              >
+                E-mail de Acesso
+              </Label>
               <Input
                 id="email"
                 type="email"
                 value={isEditing ? formData.email : user?.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 readOnly={!isEditing}
-                className={!isEditing ? 'bg-muted/30 font-medium' : ''}
+                className={`h-12 rounded-xl text-white transition-all ${
+                  !isEditing
+                    ? 'bg-muted/20 border-transparent font-medium shadow-inner'
+                    : 'bg-background border-primary/50 focus-visible:ring-primary shadow-sm'
+                }`}
               />
             </div>
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="role">Cargo / Função</Label>
+            <div className="space-y-2.5 md:col-span-2">
+              <Label
+                htmlFor="role"
+                className="text-xs font-bold text-muted-foreground uppercase tracking-widest"
+              >
+                Atribuição / Cargo
+              </Label>
               <Input
                 id="role"
                 value={isEditing ? formData.role : user?.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 readOnly={!isEditing}
-                className={!isEditing ? 'bg-muted/30 font-medium' : ''}
+                className={`h-12 rounded-xl text-white transition-all ${
+                  !isEditing
+                    ? 'bg-muted/20 border-transparent font-medium shadow-inner'
+                    : 'bg-background border-primary/50 focus-visible:ring-primary shadow-sm'
+                }`}
               />
             </div>
           </div>
 
           {isEditing && (
-            <div className="flex justify-end gap-3 mt-6 pt-6 border-t">
+            <div className="flex justify-end gap-4 mt-8 pt-8 border-t border-border/20">
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -167,11 +218,15 @@ export default function Profile() {
                     role: user?.role || '',
                   })
                 }}
+                className="h-12 px-6 rounded-xl font-bold text-muted-foreground hover:text-white hover:bg-muted/50"
               >
-                <X className="h-4 w-4 mr-2" /> Cancelar
+                <X className="h-5 w-5 mr-2" /> Cancelar
               </Button>
-              <Button onClick={handleSaveProfile} className="font-bold">
-                <Save className="h-4 w-4 mr-2" /> Salvar Alterações
+              <Button
+                onClick={handleSaveProfile}
+                className="h-12 px-8 rounded-xl font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.4)] transition-all"
+              >
+                <Save className="h-5 w-5 mr-2" /> Efetivar Alterações
               </Button>
             </div>
           )}
