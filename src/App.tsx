@@ -1,22 +1,16 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Toaster } from '@/components/ui/toaster'
-import { Toaster as Sonner } from '@/components/ui/sonner'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import Layout from './components/Layout'
-import { DataStoreProvider } from './stores/main'
+import Layout from '@/components/Layout'
+import Index from '@/pages/Index'
+import Registrar from '@/pages/Registrar'
+import Historico from '@/pages/Historico'
+import Importar from '@/pages/Importar'
+import NotFound from '@/pages/NotFound'
 
-import Index from './pages/Index'
-import Registrar from './pages/Registrar'
-import Historico from './pages/Historico'
-import Importar from './pages/Importar'
-import NotFound from './pages/NotFound'
-
-const App = () => (
-  <DataStoreProvider>
-    <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
+export default function App() {
+  return (
+    <TooltipProvider>
+      <BrowserRouter>
         <Routes>
           <Route element={<Layout />}>
             <Route path="/" element={<Index />} />
@@ -26,9 +20,7 @@ const App = () => (
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </TooltipProvider>
-    </BrowserRouter>
-  </DataStoreProvider>
-)
-
-export default App
+      </BrowserRouter>
+    </TooltipProvider>
+  )
+}

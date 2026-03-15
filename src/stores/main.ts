@@ -1,72 +1,38 @@
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react'
-import { ActivityRecord, DashboardFilters } from '@/lib/types'
-import { mockRecords } from '@/lib/mock-data'
+import { create } from 'zustand'
+import { Activity } from '@/lib/types'
+import { mockActivities } from '@/lib/mock-data'
 
-interface DataStore {
-  records: ActivityRecord[]
-  addRecord: (record: ActivityRecord) => void
-  updateRecord: (id: string, record: Partial<ActivityRecord>) => void
-  deleteRecord: (id: string) => void
-  filters: DashboardFilters
-  setFilters: (filters: DashboardFilters) => void
-  filteredRecords: ActivityRecord[]
+interface AppState {
+  activities: Activity[]
+  addActivity: (activity: Omit<Activity, 'id' | 'createdAt'>) => void
+  updateActivity: (id: string, activity: Partial<Activity>) => void
+  deleteActivity: (id: string) => void
+  bulkDeleteActivities: (ids: string[]) => void
 }
 
-const DataStoreContext = createContext<DataStore | null>(null)
-
-export function DataStoreProvider({ children }: { children: ReactNode }) {
-  const [records, setRecords] = useState<ActivityRecord[]>(mockRecords)
-  const [filters, setFilters] = useState<DashboardFilters>({
-    startDate: '',
-    endDate: '',
-    instances: [],
-  })
-
-  const addRecord = (record: ActivityRecord) => setRecords((prev) => [record, ...prev])
-
-  const updateRecord = (id: string, updated: Partial<ActivityRecord>) => {
-    setRecords((prev) => prev.map((r) => (r.id === id ? { ...r, ...updated } : r)))
-  }
-
-  const deleteRecord = (id: string) => setRecords((prev) => prev.filter((r) => r.id !== id))
-
-  const filteredRecords = useMemo(() => {
-    return records.filter((r) => {
-      let match = true
-      if (filters.instances.length > 0) {
-        match = match && filters.instances.includes(r.instance)
-      }
-      if (filters.startDate) {
-        match = match && new Date(r.meetingStart) >= new Date(filters.startDate)
-      }
-      if (filters.endDate) {
-        const end = new Date(filters.endDate)
-        end.setHours(23, 59, 59, 999)
-        match = match && new Date(r.meetingEnd) <= end
-      }
-      return match
-    })
-  }, [records, filters])
-
-  return React.createElement(
-    DataStoreContext.Provider,
-    {
-      value: {
-        records,
-        addRecord,
-        updateRecord,
-        deleteRecord,
-        filters,
-        setFilters,
-        filteredRecords,
-      },
-    },
-    children,
-  )
-}
-
-export default function useDataStore() {
-  const context = useContext(DataStoreContext)
-  if (!context) throw new Error('useDataStore must be used within a DataStoreProvider')
-  return context
-}
+export const useAppStore = create<AppState>((set) => ({
+  activities: mockActivities,
+  addActivity: (activity) =>
+    set((state) => ({
+      activities: [
+        {
+          ...activity,
+          id: Math.random().toString(36).substr(2, 9),
+          createdAt: new Date().toISOString(),
+        } as Activity,
+        ...state.activities,
+      ],
+    })),
+  updateActivity: (id, updated) =>
+    set((state) => ({
+      activities: state.activities.map((a) => (a.id === id ? { ...a, ...updated } : a)),
+    })),
+  deleteActivity: (id) =>
+    set((state) => ({
+      activities: state.activities.filter((a) => a.id !== id),
+    })),
+  bulkDeleteActivities: (ids) =>
+    set((state) => ({
+      activities: state.activities.filter((a) => !ids.includes(a.id)),
+    })),
+}))

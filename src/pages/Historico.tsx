@@ -1,6 +1,6 @@
-import { useState, useMemo } from 'react'
-import useDataStore from '@/stores/main'
-import { ActivityRecord } from '@/lib/types'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAppStore } from '@/stores/main'
 import {
   Table,
   TableBody,
@@ -9,247 +9,231 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Search, MoreHorizontal, Pencil, Trash2, Eye, ChevronDown } from 'lucide-react'
-import { formatDateTime } from '@/lib/utils'
-import { useToast } from '@/hooks/use-toast'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Checkbox } from '@/components/ui/checkbox'
+import { MoreHorizontal, Search, Trash, Eye, Pencil } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { Activity } from '@/lib/types'
 
 export default function Historico() {
-  const { records, deleteRecord } = useDataStore()
-  const { toast } = useToast()
-  const [search, setSearch] = useState('')
+  const navigate = useNavigate()
+  const { activities, deleteActivity, bulkDeleteActivities } = useAppStore()
+  const [searchTerm, setSearchTerm] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [viewRecord, setViewRecord] = useState<ActivityRecord | null>(null)
-  const [editRecord, setEditRecord] = useState<ActivityRecord | null>(null)
+  const [viewActivity, setViewActivity] = useState<Activity | null>(null)
 
-  const filtered = useMemo(
-    () =>
-      records.filter(
-        (r) =>
-          r.instance.toLowerCase().includes(search.toLowerCase()) ||
-          r.eventType.toLowerCase().includes(search.toLowerCase()),
-      ),
-    [records, search],
+  const filteredActivities = activities.filter(
+    (act) =>
+      act.instance.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      act.type.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filtered.length) setSelectedIds(new Set())
-    else setSelectedIds(new Set(filtered.map((r) => r.id)))
+    if (selectedIds.size === filteredActivities.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(filteredActivities.map((a) => a.id)))
+    }
   }
 
   const toggleSelect = (id: string) => {
-    const next = new Set(selectedIds)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    setSelectedIds(next)
+    const newSelected = new Set(selectedIds)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
+    setSelectedIds(newSelected)
+  }
+
+  const handleBulkDelete = () => {
+    if (window.confirm('Tem certeza que deseja excluir os registros selecionados?')) {
+      bulkDeleteActivities(Array.from(selectedIds))
+      setSelectedIds(new Set())
+    }
+  }
+
+  const handleDelete = (id: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este registro?')) {
+      deleteActivity(id)
+      const newSelected = new Set(selectedIds)
+      newSelected.delete(id)
+      setSelectedIds(newSelected)
+    }
   }
 
   return (
-    <div className="max-w-7xl mx-auto pb-12 animate-fade-in">
-      <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Histórico de Registros</h1>
-          <p className="text-muted-foreground mt-1">
+          <p className="text-muted-foreground">
             Consulte e gerencie todas as atividades cadastradas.
           </p>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
-          <div className="relative flex-1 md:w-[300px]">
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative w-full sm:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Buscar por instância ou tipo..."
-              className="pl-9"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar..."
+              className="pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           {selectedIds.size > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="destructive" className="whitespace-nowrap">
-                  Ações ({selectedIds.size}) <ChevronDown className="ml-2 h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  className="text-destructive focus:text-destructive cursor-pointer"
-                  onSelect={(e) => {
-                    if (window.confirm(`Excluir ${selectedIds.size} registros selecionados?`)) {
-                      selectedIds.forEach((id) => deleteRecord(id))
-                      setSelectedIds(new Set())
-                      toast({
-                        title: 'Registros excluídos',
-                        description: 'Os registros selecionados foram removidos com sucesso.',
-                      })
-                    } else {
-                      e.preventDefault()
-                    }
-                  }}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" /> Excluir Selecionados
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <Button variant="destructive" onClick={handleBulkDelete}>
+              <Trash className="h-4 w-4 mr-2" />
+              Excluir ({selectedIds.size})
+            </Button>
           )}
         </div>
       </div>
 
-      <Card className="shadow-subtle overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader className="bg-slate-50/50">
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[50px]">
+                <Checkbox
+                  checked={
+                    selectedIds.size === filteredActivities.length && filteredActivities.length > 0
+                  }
+                  onCheckedChange={toggleSelectAll}
+                  aria-label="Selecionar todos"
+                />
+              </TableHead>
+              <TableHead>Data Inicial</TableHead>
+              <TableHead>Instância</TableHead>
+              <TableHead>Tipo / Modalidade</TableHead>
+              <TableHead>Participantes</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredActivities.length === 0 ? (
               <TableRow>
-                <TableHead className="w-12 text-center">
-                  <Checkbox
-                    checked={filtered.length > 0 && selectedIds.size === filtered.length}
-                    onCheckedChange={toggleSelectAll}
-                  />
-                </TableHead>
-                <TableHead className="w-[120px]">Data Inicial</TableHead>
-                <TableHead>Instância</TableHead>
-                <TableHead>Tipo / Modalidade</TableHead>
-                <TableHead>Participantes</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  Nenhum registro encontrado.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
-                    Nenhum registro encontrado.
+            ) : (
+              filteredActivities.map((act) => (
+                <TableRow key={act.id}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedIds.has(act.id)}
+                      onCheckedChange={() => toggleSelect(act.id)}
+                      aria-label={`Selecionar registro ${act.id}`}
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {format(new Date(act.startDate), 'dd/MM/yyyy, HH:mm', { locale: ptBR })}
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium">{act.instance}</div>
+                    <div className="text-xs text-muted-foreground">{act.location}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold">
+                      {act.type}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">{act.modality}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <span className="font-medium">{act.participantsPF}</span> PF •{' '}
+                      <span className="font-medium">{act.participantsPJ}</span> PJ
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {act.documents.length} Docs Anexos
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Abrir menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => setViewActivity(act)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Visualizar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => navigate(`/registrar?edit=${act.id}`)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600 focus:bg-red-50 focus:text-red-600"
+                          onClick={() => handleDelete(act.id)}
+                        >
+                          <Trash className="mr-2 h-4 w-4" />
+                          Excluir
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ) : (
-                filtered.map((r) => (
-                  <TableRow key={r.id} data-state={selectedIds.has(r.id) ? 'selected' : undefined}>
-                    <TableCell className="text-center">
-                      <Checkbox
-                        checked={selectedIds.has(r.id)}
-                        onCheckedChange={() => toggleSelect(r.id)}
-                      />
-                    </TableCell>
-                    <TableCell className="font-medium text-xs whitespace-nowrap">
-                      {formatDateTime(r.meetingStart)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{r.instance}</div>
-                      <div className="text-xs text-muted-foreground">{r.location}</div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="mb-1">
-                        {r.eventType}
-                      </Badge>
-                      <div className="text-xs text-muted-foreground">{r.modality}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="text-xs">
-                        <span className="font-semibold text-primary">
-                          {r.participantsPF.split(';').filter(Boolean).length}
-                        </span>{' '}
-                        PF •{' '}
-                        <span className="font-semibold text-secondary">
-                          {r.participantsPJ.split(';').filter(Boolean).length}
-                        </span>{' '}
-                        PJ
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {r.files.length} Docs Anexos
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onSelect={() => setViewRecord(r)}
-                          >
-                            <Eye className="mr-2 h-4 w-4" /> Visualizar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="cursor-pointer"
-                            onSelect={() => setEditRecord(r)}
-                          >
-                            <Pencil className="mr-2 h-4 w-4" /> Editar
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="cursor-pointer text-destructive focus:text-destructive"
-                            onSelect={(e) => {
-                              if (window.confirm('Excluir registro?')) {
-                                deleteRecord(r.id)
-                              } else {
-                                e.preventDefault()
-                              }
-                            }}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Excluir
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-      <Dialog open={!!viewRecord} onOpenChange={(open) => !open && setViewRecord(null)}>
+      <Dialog open={!!viewActivity} onOpenChange={(open) => !open && setViewActivity(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Visualizar Registro</DialogTitle>
+            <DialogTitle>Detalhes da Atividade</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <p className="text-sm font-semibold">Instância / Tipo</p>
-              <p className="text-sm text-muted-foreground">
-                {viewRecord?.instance} - {viewRecord?.eventType}
-              </p>
+          {viewActivity && (
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="font-semibold text-muted-foreground">Instância</span>
+                  <p>{viewActivity.instance}</p>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground">Tipo de Evento</span>
+                  <p>{viewActivity.type}</p>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground">Data e Hora</span>
+                  <p>{format(new Date(viewActivity.startDate), 'dd/MM/yyyy HH:mm')}</p>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground">Local</span>
+                  <p>{viewActivity.location}</p>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground">Participantes PF</span>
+                  <p>{viewActivity.participantsPF}</p>
+                </div>
+                <div>
+                  <span className="font-semibold text-muted-foreground">Participantes PJ</span>
+                  <p>{viewActivity.participantsPJ}</p>
+                </div>
+              </div>
+              {viewActivity.description && (
+                <div>
+                  <span className="font-semibold text-muted-foreground">Descrição</span>
+                  <p className="mt-1">{viewActivity.description}</p>
+                </div>
+              )}
             </div>
-            <div>
-              <p className="text-sm font-semibold">Local e Modalidade</p>
-              <p className="text-sm text-muted-foreground">
-                {viewRecord?.location} ({viewRecord?.modality})
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-semibold">Datas</p>
-              <p className="text-sm text-muted-foreground">
-                {viewRecord && formatDateTime(viewRecord.meetingStart)} até{' '}
-                {viewRecord && formatDateTime(viewRecord.meetingEnd)}
-              </p>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-      <Dialog open={!!editRecord} onOpenChange={(open) => !open && setEditRecord(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Registro</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 text-sm text-muted-foreground">
-            Funcionalidade de edição completa será implementada no módulo de Registrar.
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={() => setEditRecord(null)}>Fechar</Button>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

@@ -1,192 +1,194 @@
 import { useState, useRef } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { UploadCloud, FileType, CheckCircle2, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { UploadCloud, FileSpreadsheet, CheckCircle2, ArrowRight } from 'lucide-react'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
-import { useNavigate } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 
 export default function Importar() {
-  const [step, setStep] = useState(1)
   const [isDragging, setIsDragging] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadComplete, setUploadComplete] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
-  const navigate = useNavigate()
 
-  const processFile = () => {
-    setStep(2)
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(true)
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      processFile()
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const validateAndSetFile = (selectedFile: File) => {
+    const validTypes = [
+      'text/csv',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+    ]
+
+    if (!validTypes.includes(selectedFile.type) && !selectedFile.name.match(/\.(csv|xlsx)$/)) {
+      toast({
+        title: 'Arquivo inválido',
+        description: 'Por favor, envie apenas arquivos CSV ou XLSX.',
+        variant: 'destructive',
+      })
+      return
     }
+
+    setFile(selectedFile)
+    setUploadComplete(false)
+    setUploadProgress(0)
   }
 
-  const handleDragEnter = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(true)
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
     setIsDragging(false)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setIsDragging(false)
-
-    let file: File | null = null
 
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      file = e.dataTransfer.files[0]
-    } else if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-      const item = e.dataTransfer.items[0]
-      if (item.kind === 'file') {
-        file = item.getAsFile()
-      }
-    }
-
-    if (file) {
-      if (file.name.endsWith('.csv') || file.name.endsWith('.xlsx')) {
-        processFile()
-      } else {
-        toast({
-          title: 'Arquivo inválido',
-          description: 'Apenas arquivos .csv e .xlsx são suportados.',
-          variant: 'destructive',
-        })
-      }
+      validateAndSetFile(e.dataTransfer.files[0])
     }
   }
 
-  const handleSimulateImport = () => {
-    toast({
-      title: 'Importando...',
-      description: 'Processando os registros da planilha.',
-    })
-    setTimeout(() => {
-      toast({
-        title: 'Importação Concluída',
-        description: 'Foram processados 12 registros da planilha com sucesso.',
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      validateAndSetFile(e.target.files[0])
+    }
+  }
+
+  const handleUpload = () => {
+    if (!file) return
+
+    setIsUploading(true)
+    setUploadProgress(0)
+
+    // Mock upload process
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval)
+          setIsUploading(false)
+          setUploadComplete(true)
+          toast({
+            title: 'Importação concluída',
+            description: `${file.name} foi importado com sucesso.`,
+          })
+          return 100
+        }
+        return prev + 10
       })
-      navigate('/historico')
-    }, 2000)
+    }, 200)
+  }
+
+  const resetUpload = () => {
+    setFile(null)
+    setUploadProgress(0)
+    setUploadComplete(false)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
   }
 
   return (
-    <div className="max-w-3xl mx-auto pb-12 animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Importação de Dados</h1>
-        <p className="text-muted-foreground mt-1">
-          Carregue planilhas antigas (.xlsx, .csv) para o sistema.
+    <div className="flex flex-col gap-6 max-w-3xl mx-auto">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Importar Dados</h1>
+        <p className="text-muted-foreground">
+          Faça a migração do histórico de dados através de planilhas CSV ou XLSX.
         </p>
       </div>
 
-      <div className="grid gap-6">
-        {step === 1 && (
-          <Card
-            className={cn(
-              'shadow-subtle border-dashed border-2 transition-colors duration-200',
-              isDragging ? 'border-primary bg-primary/5' : 'border-primary/20',
-            )}
-            onDragEnter={handleDragEnter}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <CardContent className="flex flex-col items-center justify-center p-12 text-center">
-              <div className="h-20 w-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
-                <UploadCloud className="h-10 w-10 text-primary" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload de Arquivo</CardTitle>
+          <CardDescription>
+            Arraste e solte o arquivo ou clique para procurar no seu computador.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!file ? (
+            <div
+              className={cn(
+                'border-2 border-dashed rounded-lg p-12 text-center transition-colors duration-200 ease-in-out cursor-pointer hover:bg-slate-50',
+                isDragging ? 'border-primary bg-primary/5' : 'border-slate-200',
+              )}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                onChange={handleFileInput}
+              />
+              <div className="flex flex-col items-center gap-4">
+                <div className="p-4 bg-primary/10 rounded-full">
+                  <UploadCloud className="w-8 h-8 text-primary" />
+                </div>
+                <div>
+                  <p className="text-lg font-medium">Arraste um arquivo CSV ou XLSX</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    ou clique para procurar arquivo
+                  </p>
+                </div>
+                <div className="flex gap-2 text-xs text-muted-foreground mt-4">
+                  <span className="flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" /> Tamanho máx: 10MB
+                  </span>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Arraste e solte sua planilha aqui</h3>
-              <p className="text-sm text-muted-foreground max-w-md mb-8">
-                O sistema tentará mapear automaticamente as colunas da sua planilha com os campos do
-                banco de dados do GGIM. Aceita .CSV ou .XLSX.
-              </p>
+            </div>
+          ) : (
+            <div className="border rounded-lg p-6 space-y-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                  <FileType className="w-6 h-6" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium text-sm truncate max-w-[300px] sm:max-w-[400px]">
+                      {file.name}
+                    </p>
+                    {uploadComplete && <CheckCircle2 className="w-5 h-5 text-green-500" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                  </p>
+                </div>
+              </div>
 
-              <div className="flex gap-4">
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  accept=".csv, .xlsx"
-                  className="sr-only"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <FileSpreadsheet className="mr-2 h-4 w-4" />
-                  Procurar Arquivo
+              {(isUploading || uploadComplete) && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{uploadComplete ? 'Concluído' : 'Enviando...'}</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <Progress value={uploadProgress} className="h-2" />
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button variant="outline" onClick={resetUpload} disabled={isUploading}>
+                  {uploadComplete ? 'Importar outro' : 'Cancelar'}
                 </Button>
+                {!uploadComplete && (
+                  <Button onClick={handleUpload} disabled={isUploading}>
+                    {isUploading ? 'Processando...' : 'Confirmar Importação'}
+                  </Button>
+                )}
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {step === 2 && (
-          <Card className="shadow-subtle animate-fade-in-up">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-500" />
-                Arquivo Carregado e Analisado
-              </CardTitle>
-              <CardDescription>
-                Mapeamento de colunas detectado. Verifique e confirme a importação.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="rounded-md border overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/50 border-b">
-                    <tr>
-                      <th className="p-3 text-left font-medium">Coluna no Excel</th>
-                      <th className="p-3 text-center w-10"></th>
-                      <th className="p-3 text-left font-medium">Campo no Sistema</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {[
-                      'Instância',
-                      'Tipo de Evento',
-                      'Data Inicial',
-                      'Local',
-                      'Participantes PF',
-                    ].map((field, i) => (
-                      <tr key={i}>
-                        <td className="p-3 font-mono text-xs bg-slate-50">{field}</td>
-                        <td className="p-3 text-center text-muted-foreground">
-                          <ArrowRight className="h-4 w-4 inline" />
-                        </td>
-                        <td className="p-3 font-semibold text-primary">{field}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              <div className="flex justify-end gap-4">
-                <Button variant="outline" onClick={() => setStep(1)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSimulateImport}>Processar Importação</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

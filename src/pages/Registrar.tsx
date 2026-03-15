@@ -1,13 +1,19 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useToast } from '@/hooks/use-toast'
-import useDataStore from '@/stores/main'
-import { INSTANCES, EVENT_TYPES, DOCUMENT_CATEGORIES, ActivityRecord } from '@/lib/types'
+import { useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useForm, useFieldArray } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
+import { useAppStore } from '@/stores/main'
 import { Button } from '@/components/ui/button'
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -15,393 +21,395 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Switch } from '@/components/ui/switch'
-import { calculateHoursDifference, parseSemicolonList } from '@/lib/utils'
+import { Textarea } from '@/components/ui/textarea'
+import { useToast } from '@/hooks/use-toast'
+import { Card, CardContent } from '@/components/ui/card'
+import { Trash } from 'lucide-react'
+
+const INSTANCIAS = [
+  'Colegiado Pleno',
+  'Eventos Institucionais',
+  'CMTEC AIFU',
+  'CMTEC PVC',
+  'CMTEC PVCCA/RP',
+  'CMTEC PVCM/CMDM',
+  'CMTEC TRAN/PVT',
+  'CMTEC MA',
+  'CMTEC AP/COMUD',
+  'CMTEC ETP',
+]
+
+const EVENTOS_TIPO = [
+  'Reunião Ordinária',
+  'Reunião Extraordinária',
+  'Reunião Institucional',
+  'Visita Técnica',
+  'Capacitação',
+  'Seminário',
+  'Treinamento',
+  'Curso',
+  'Congressos',
+  'Colóquio',
+  'Fórum',
+  'Webinário',
+  'Palestras',
+  'Apresentação',
+  'Networking',
+  'Convenção',
+  'Conferência',
+  'Confraternização',
+  'Projeto',
+  'Programa',
+  'Feira',
+  'Exposição',
+  'Mesa Redonda',
+  'Painel',
+  'Workshop',
+  'Oficina',
+  'Roadshop',
+  'Campanha',
+  'Blitz',
+  'Operação',
+]
+
+const DOC_CATEGORIAS = ['Ofício', 'Ata', 'Relatório', 'Email', 'SID', 'Transcrição', 'Outros']
+
+const formSchema = z.object({
+  instance: z.string().min(1, 'Selecione uma instância'),
+  type: z.string().min(1, 'Selecione o tipo'),
+  modality: z.string().min(1, 'Selecione a modalidade'),
+  startDate: z.string().min(1, 'Data é obrigatória'),
+  location: z.string().min(1, 'Local é obrigatório'),
+  participantsPF: z.coerce.number().min(0),
+  participantsPJ: z.coerce.number().min(0),
+  description: z.string().optional(),
+  documents: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        category: z.string().min(1, 'Categoria é obrigatória'),
+        name: z.string().min(1, 'Nome é obrigatório'),
+      }),
+    )
+    .optional(),
+})
+
+type FormValues = z.infer<typeof formSchema>
 
 export default function Registrar() {
-  const { addRecord } = useDataStore()
-  const { toast } = useToast()
+  const [searchParams] = useSearchParams()
+  const editId = searchParams.get('edit')
   const navigate = useNavigate()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
+  const { activities, addActivity, updateActivity } = useAppStore()
 
-  // Form State
-  const [formData, setFormData] = useState<Partial<ActivityRecord>>({
-    instance: '',
-    eventType: '',
-    modality: 'Presencial',
-    location: '',
-    meetingStart: '',
-    meetingEnd: '',
-    hasAction: false,
-    actionStart: '',
-    actionEnd: '',
-    participantsPF: '',
-    participantsPJ: '',
-    deliberations: '',
-    documentCategories: [],
-    documentDetails: '',
-    files: [],
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      instance: '',
+      type: '',
+      modality: '',
+      startDate: '',
+      location: '',
+      participantsPF: 0,
+      participantsPJ: 0,
+      description: '',
+      documents: [],
+    },
   })
 
-  const handleChange = (field: keyof ActivityRecord, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-  }
+  const {
+    fields: docsFields,
+    append: appendDoc,
+    remove: removeDoc,
+  } = useFieldArray({
+    control: form.control,
+    name: 'documents',
+  })
 
-  const handleDocCatToggle = (cat: string) => {
-    setFormData((prev) => {
-      const cats = prev.documentCategories || []
-      if (cats.includes(cat)) return { ...prev, documentCategories: cats.filter((c) => c !== cat) }
-      return { ...prev, documentCategories: [...cats, cat] }
-    })
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files).map((f) => f.name)
-      setFormData((prev) => ({ ...prev, files: [...(prev.files || []), ...newFiles] }))
+  useEffect(() => {
+    if (editId) {
+      const activity = activities.find((a) => a.id === editId)
+      if (activity) {
+        form.reset({
+          instance: activity.instance,
+          type: activity.type,
+          modality: activity.modality,
+          startDate: activity.startDate
+            ? new Date(activity.startDate).toISOString().slice(0, 16)
+            : '',
+          location: activity.location,
+          participantsPF: activity.participantsPF,
+          participantsPJ: activity.participantsPJ,
+          description: activity.description || '',
+          documents: activity.documents || [],
+        })
+      }
     }
-  }
+  }, [editId, activities, form])
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-
-    // Basic validation
-    if (
-      !formData.instance ||
-      !formData.eventType ||
-      !formData.meetingStart ||
-      !formData.meetingEnd
-    ) {
-      toast({
-        title: 'Erro de Validação',
-        description: 'Preencha os campos obrigatórios.',
-        variant: 'destructive',
-      })
-      setIsSubmitting(false)
-      return
+  const onSubmit = (data: FormValues) => {
+    const payload = {
+      ...data,
+      documents: (data.documents || []).map((doc) => ({
+        ...doc,
+        id: doc.id || Math.random().toString(36).substr(2, 9),
+      })),
+      startDate: new Date(data.startDate).toISOString(),
     }
 
-    setTimeout(() => {
-      const record: ActivityRecord = {
-        ...formData,
-        id: `reg-${Date.now()}`,
-        createdAt: new Date().toISOString(),
-      } as ActivityRecord
-
-      addRecord(record)
-      toast({ title: 'Sucesso!', description: 'Atividade registrada com sucesso no sistema GGIM.' })
-      navigate('/historico')
-    }, 600)
+    if (editId) {
+      updateActivity(editId, payload)
+      toast({ title: 'Sucesso', description: 'Atividade atualizada com sucesso.' })
+    } else {
+      addActivity(payload)
+      toast({ title: 'Sucesso', description: 'Atividade registrada com sucesso.' })
+    }
+    navigate('/historico')
   }
-
-  const meetingHours = calculateHoursDifference(
-    formData.meetingStart || '',
-    formData.meetingEnd || '',
-  )
-  const actionHours = formData.hasAction
-    ? calculateHoursDifference(formData.actionStart || '', formData.actionEnd || '')
-    : 0
-
-  const pfCount = parseSemicolonList(formData.participantsPF || '').length
-  const pjCount = parseSemicolonList(formData.participantsPJ || '').length
-  const deliberationsCount = parseSemicolonList(formData.deliberations || '').length
 
   return (
-    <div className="max-w-4xl mx-auto pb-12 animate-fade-in">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight">Registrar Nova Atividade</h1>
-        <p className="text-muted-foreground mt-1">
-          Preencha os dados abaixo para compor os relatórios gerenciais.
+    <div className="flex flex-col gap-6 max-w-3xl mx-auto">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">
+          {editId ? 'Editar Atividade' : 'Registrar Atividade'}
+        </h1>
+        <p className="text-muted-foreground">
+          {editId
+            ? 'Altere as informações do registro existente.'
+            : 'Preencha o formulário para adicionar uma nova atividade.'}
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Step 1 */}
-        <Card className="shadow-subtle">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-lg">1. Logística e Identificação</CardTitle>
-            <CardDescription>Classificação primária do evento.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-6 pt-6">
-            <div className="space-y-2">
-              <Label>
-                Instância <span className="text-destructive">*</span>
-              </Label>
-              <Select value={formData.instance} onValueChange={(v) => handleChange('instance', v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a instância" />
-                </SelectTrigger>
-                <SelectContent>
-                  {INSTANCES.map((i) => (
-                    <SelectItem key={i} value={i}>
-                      {i}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>
-                Tipo de Evento <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={formData.eventType}
-                onValueChange={(v) => handleChange('eventType', v)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {EVENT_TYPES.map((i) => (
-                    <SelectItem key={i} value={i}>
-                      {i}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Modalidade</Label>
-              <Select value={formData.modality} onValueChange={(v) => handleChange('modality', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Presencial">Presencial</SelectItem>
-                  <SelectItem value="Remota">Remota</SelectItem>
-                  <SelectItem value="Híbrida">Híbrida</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Local do Evento / Plataforma</Label>
-              <Input
-                placeholder="Ex: Paço Municipal"
-                value={formData.location}
-                onChange={(e) => handleChange('location', e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Step 2 */}
-        <Card className="shadow-subtle">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-lg">2. Métricas de Tempo</CardTitle>
-            <CardDescription>
-              Defina os horários para cálculo automático de dedicação (suporta múltiplos dias).
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-6">
-            <div className="grid md:grid-cols-3 gap-6 items-end">
-              <div className="space-y-2">
-                <Label>
-                  Início da Reunião <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  type="datetime-local"
-                  value={formData.meetingStart}
-                  onChange={(e) => handleChange('meetingStart', e.target.value)}
+      <Card>
+        <CardContent className="pt-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="instance"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Instância</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {INSTANCIAS.map((i) => (
+                            <SelectItem key={i} value={i}>
+                              {i}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="space-y-2">
-                <Label>
-                  Término da Reunião <span className="text-destructive">*</span>
-                </Label>
-                <Input
-                  type="datetime-local"
-                  value={formData.meetingEnd}
-                  onChange={(e) => handleChange('meetingEnd', e.target.value)}
+
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Evento</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {EVENTOS_TIPO.map((i) => (
+                            <SelectItem key={i} value={i}>
+                              {i}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
-              <div className="bg-muted p-3 rounded-md flex justify-between items-center h-[42px]">
-                <span className="text-sm font-medium">Duração:</span>
-                <span className="font-mono">{meetingHours.toFixed(1)}h</span>
-              </div>
-            </div>
 
-            <div className="flex items-center space-x-2 border-t pt-6">
-              <Switch
-                id="hasAction"
-                checked={formData.hasAction}
-                onCheckedChange={(v) => handleChange('hasAction', v)}
-              />
-              <Label htmlFor="hasAction" className="font-semibold cursor-pointer">
-                Houve Ação Vinculada em sequência?
-              </Label>
-            </div>
+                <FormField
+                  control={form.control}
+                  name="modality"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Modalidade</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="Presencial">Presencial</SelectItem>
+                          <SelectItem value="Remota">Remota</SelectItem>
+                          <SelectItem value="Híbrida">Híbrida</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-            {formData.hasAction && (
-              <div className="grid md:grid-cols-3 gap-6 items-end p-4 bg-secondary/5 rounded-lg border border-secondary/20 animate-fade-in-up">
-                <div className="space-y-2">
-                  <Label>Início da Ação</Label>
-                  <Input
-                    type="datetime-local"
-                    value={formData.actionStart}
-                    onChange={(e) => handleChange('actionStart', e.target.value)}
+                <FormField
+                  control={form.control}
+                  name="startDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data e Hora</FormLabel>
+                      <FormControl>
+                        <Input type="datetime-local" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Local</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Onde ocorreu o evento?" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="participantsPF"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pessoas Físicas (PF)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="participantsPJ"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Pessoas Jurídicas (PJ)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Término da Ação</Label>
-                  <Input
-                    type="datetime-local"
-                    value={formData.actionEnd}
-                    onChange={(e) => handleChange('actionEnd', e.target.value)}
-                  />
+              </div>
+
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    Documentos Gerados
+                  </h3>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => appendDoc({ category: '', name: '' })}
+                  >
+                    Adicionar Documento
+                  </Button>
                 </div>
-                <div className="bg-secondary/20 text-secondary-foreground p-3 rounded-md flex justify-between items-center h-[42px]">
-                  <span className="text-sm font-medium">Ação:</span>
-                  <span className="font-mono">{actionHours.toFixed(1)}h</span>
-                </div>
-              </div>
-            )}
 
-            <div className="flex justify-end pt-2">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground uppercase font-bold tracking-wider">
-                  Total de Horas Dedicadas
-                </p>
-                <p className="text-3xl font-bold text-primary">
-                  {(meetingHours + actionHours).toFixed(1)}h
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Step 3 */}
-        <Card className="shadow-subtle">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-lg">3. Engajamento</CardTitle>
-            <CardDescription>Separe os nomes por ponto e vírgula (;)</CardDescription>
-          </CardHeader>
-          <CardContent className="grid md:grid-cols-2 gap-6 pt-6">
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label>Participantes PF (Nomes)</Label>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
-                  {pfCount} participações detectadas
-                </span>
-              </div>
-              <Textarea
-                placeholder="João Silva; Maria Souza;"
-                className="min-h-[120px]"
-                value={formData.participantsPF}
-                onChange={(e) => handleChange('participantsPF', e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <div className="flex justify-between">
-                <Label>Instituições PJ</Label>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
-                  {pjCount} instituições detectadas
-                </span>
-              </div>
-              <Textarea
-                placeholder="Polícia Militar; Guarda Municipal;"
-                className="min-h-[120px]"
-                value={formData.participantsPJ}
-                onChange={(e) => handleChange('participantsPJ', e.target.value)}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Step 4 */}
-        <Card className="shadow-subtle">
-          <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-lg">4. Produtividade e Evidências</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            <div className="space-y-2">
-              <div className="flex justify-between items-end">
-                <Label>Deliberações (separe por ;)</Label>
-                <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                  Quantidade: {deliberationsCount}
-                </span>
-              </div>
-              <Textarea
-                placeholder="Aprovado projeto X; Encaminhado para comissão Y;"
-                value={formData.deliberations}
-                onChange={(e) => handleChange('deliberations', e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-3">
-              <Label>Categorização dos Documentos Gerados</Label>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {DOCUMENT_CATEGORIES.map((cat) => (
-                  <div key={cat} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`cat-${cat}`}
-                      checked={(formData.documentCategories || []).includes(cat)}
-                      onCheckedChange={() => handleDocCatToggle(cat)}
+                {docsFields.map((field, index) => (
+                  <div
+                    key={field.id}
+                    className="flex items-start gap-4 p-4 border rounded-lg bg-slate-50/50"
+                  >
+                    <FormField
+                      control={form.control}
+                      name={`documents.${index}.category`}
+                      render={({ field: catField }) => (
+                        <FormItem className="flex-1">
+                          <FormLabel>Categoria</FormLabel>
+                          <Select onValueChange={catField.onChange} value={catField.value}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione..." />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {DOC_CATEGORIAS.map((i) => (
+                                <SelectItem key={i} value={i}>
+                                  {i}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
-                    <label
-                      htmlFor={`cat-${cat}`}
-                      className="text-sm font-medium leading-none cursor-pointer"
+                    <FormField
+                      control={form.control}
+                      name={`documents.${index}.name`}
+                      render={({ field: nameField }) => (
+                        <FormItem className="flex-[2]">
+                          <FormLabel>Nome do Arquivo</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Ata de Reunião 123" {...nameField} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="mt-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => removeDoc(index)}
                     >
-                      {cat}
-                    </label>
+                      <Trash className="w-4 h-4" />
+                    </Button>
                   </div>
                 ))}
               </div>
-            </div>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label>Upload de Arquivos</Label>
-                <Input
-                  type="file"
-                  multiple
-                  accept=".pdf,.docx,.txt,.jpg,.png,.mp3,.wav"
-                  onChange={handleFileChange}
-                  className="cursor-pointer file:cursor-pointer"
-                />
-                <p className="text-xs text-muted-foreground">
-                  PDF, DOCX, TXT, JPG, PNG, MP3, WAV permitidos.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Total Geral de Documentos ({formData.files?.length || 0})</Label>
-                <div className="bg-muted min-h-[40px] rounded-md p-2 text-sm max-h-[100px] overflow-y-auto">
-                  {formData.files?.length ? (
-                    formData.files.map((f, i) => (
-                      <div key={i} className="flex items-center gap-2 mb-1 last:mb-0">
-                        <span className="w-1.5 h-1.5 bg-primary rounded-full shrink-0" />
-                        <span className="truncate">{f}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <span className="text-muted-foreground italic">Nenhum arquivo anexado</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Detalhamento Adicional</Label>
-              <Textarea
-                placeholder="Observações extras sobre a documentação."
-                className="min-h-[80px]"
-                value={formData.documentDetails}
-                onChange={(e) => handleChange('documentDetails', e.target.value)}
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição (Opcional)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Detalhes adicionais..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </CardContent>
-        </Card>
 
-        <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => navigate('/historico')}>
-            Cancelar
-          </Button>
-          <Button type="submit" size="lg" disabled={isSubmitting} className="min-w-[150px]">
-            {isSubmitting ? 'Salvando...' : 'Salvar Registro'}
-          </Button>
-        </div>
-      </form>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" type="button" onClick={() => navigate('/historico')}>
+                  Cancelar
+                </Button>
+                <Button type="submit">{editId ? 'Salvar Alterações' : 'Salvar Atividade'}</Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
     </div>
   )
 }
