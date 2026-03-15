@@ -1,7 +1,7 @@
 export interface Document {
   id: string
   name: string
-  categories: string[]
+  type: string
 }
 
 export interface ActivityAction {

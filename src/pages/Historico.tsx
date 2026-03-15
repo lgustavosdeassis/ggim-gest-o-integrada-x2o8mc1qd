@@ -119,13 +119,14 @@ export default function Historico() {
               <TableHead>Instância / Local</TableHead>
               <TableHead>Tipo / Modalidade</TableHead>
               <TableHead>Engajamento / Carga Horária</TableHead>
+              <TableHead>Documentos</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredActivities.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Nenhum registro encontrado.
                 </TableCell>
               </TableRow>
@@ -183,8 +184,24 @@ export default function Historico() {
                       </div>
                       <div className="text-xs text-muted-foreground font-medium flex items-center gap-1 mt-0.5">
                         <Clock className="w-3 h-3" /> {(mtgDuration + actDuration).toFixed(1)}h
-                        Total • {act.documents?.length || 0} Docs
+                        Total
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {act.documents && act.documents.length > 0 ? (
+                        <div className="flex flex-wrap gap-1 max-w-[150px]">
+                          {act.documents.map((d, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center rounded border border-primary/20 px-1.5 py-0.5 text-[10px] font-bold bg-primary/5 text-primary truncate"
+                            >
+                              {d.type || 'OUTROS'}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Nenhum</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -351,8 +368,8 @@ export default function Historico() {
                       {viewActivity.documents.map((doc, idx) => (
                         <div key={idx} className="flex flex-col bg-muted/10 p-2 border rounded">
                           <span className="font-medium text-sm">{doc.name}</span>
-                          <span className="text-xs text-muted-foreground mt-0.5">
-                            Categorias: {doc.categories.join(', ') || 'Nenhuma'}
+                          <span className="text-xs font-bold text-primary mt-0.5">
+                            Tipo: {doc.type || 'Não especificado'}
                           </span>
                         </div>
                       ))}

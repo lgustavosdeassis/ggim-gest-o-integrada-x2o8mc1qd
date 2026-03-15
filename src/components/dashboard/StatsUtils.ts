@@ -29,6 +29,7 @@ export interface DashboardStats {
     totalDeliberations: number
     totalDocs: number
     docsData: { name: string; value: number; fill: string }[]
+    docsByType: Record<string, number>
   }
 }
 
@@ -76,7 +77,12 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     allPj.push(...pjs)
     pfCountsPerEvent.push(pfs.length)
 
-    if (r.documents) r.documents.forEach((d) => allDocs.push(...d.categories))
+    if (r.documents) {
+      r.documents.forEach((d) => {
+        if (d.type) allDocs.push(d.type)
+        else if ((d as any).categories) allDocs.push(...(d as any).categories)
+      })
+    }
     totalDeliberations += parseSemicolonList(r.deliberations).length
   })
 
@@ -103,15 +109,29 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
 
-  const docsData = Object.entries(
-    allDocs.reduce(
-      (acc, doc) => {
-        acc[doc] = (acc[doc] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>,
-    ),
+  const DOC_TYPES = ['ATA', 'OFÍCIO', 'RELATÓRIO', 'TRANSCRIÇÃO', 'EMAIL', 'SID', 'FOTO', 'OUTROS']
+  const docsByType = DOC_TYPES.reduce(
+    (acc, t) => {
+      acc[t] = 0
+      return acc
+    },
+    {} as Record<string, number>,
   )
+
+  allDocs.forEach((t) => {
+    const upper = t.toUpperCase()
+    let mapped = upper
+    if (upper === 'E-MAIL') mapped = 'EMAIL'
+    if (upper === 'ÁUDIO' || upper === 'FOTOS') mapped = upper === 'FOTOS' ? 'FOTO' : 'OUTROS'
+
+    if (docsByType[mapped] !== undefined) {
+      docsByType[mapped]++
+    } else {
+      docsByType['OUTROS']++
+    }
+  })
+
+  const docsData = Object.entries(docsByType)
     .map(([name, value], i) => ({
       name,
       value,
@@ -155,6 +175,7 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
       totalDeliberations,
       totalDocs: allDocs.length,
       docsData,
+      docsByType,
     },
   }
 }

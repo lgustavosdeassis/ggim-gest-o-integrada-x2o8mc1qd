@@ -30,6 +30,7 @@ export default function Importar() {
           participantsPF: 'Ana Silva; Carlos Souza; Roberto Costa',
           participantsPJ: 'PMFI; Guarda Municipal',
           deliberations: 'Aprovação de diretrizes; Encaminhamento de ofício',
+          documents: [{ id: 'mig1', name: 'Ata_Assinada.pdf', type: 'ATA' }],
         },
         {
           instance: 'Eventos Institucionais',
@@ -41,6 +42,7 @@ export default function Importar() {
           participantsPF: 'Pedro Alves; João Marcos; Maria Oliveira',
           participantsPJ: 'Corpo de Bombeiros',
           deliberations: 'Apresentação de resultados',
+          documents: [{ id: 'mig2', name: 'Relatorio_Evento.pdf', type: 'RELATÓRIO' }],
         },
       ]
 
@@ -48,7 +50,7 @@ export default function Importar() {
         ...row,
         hasAction: false,
         actions: [],
-        documents: [],
+        documents: row.documents || [],
       }))
 
       importActivities(imported)
@@ -137,7 +139,7 @@ export default function Importar() {
                   </p>
                   <p className="text-sm text-muted-foreground mt-2 max-w-sm mx-auto">
                     Suporta formatos .csv e .xlsx. O sistema irá identificar as colunas e
-                    integrá-las ao banco de dados automaticamente.
+                    integrá-las ao banco de dados automaticamente, incluindo "Tipo de Documento".
                   </p>
                 </div>
               </div>

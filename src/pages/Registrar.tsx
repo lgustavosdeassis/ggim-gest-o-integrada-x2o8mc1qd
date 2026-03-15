@@ -71,17 +71,8 @@ const EVENTOS_TIPO = [
   'Operação',
   'Visita técnica',
 ]
-const DOC_CATEGORIES = [
-  'Ofício',
-  'Ata',
-  'Relatório',
-  'Transcrição',
-  'E-mail',
-  'SID',
-  'Fotos',
-  'Áudio',
-  'Outros',
-]
+
+const DOC_TYPES = ['ATA', 'OFÍCIO', 'RELATÓRIO', 'TRANSCRIÇÃO', 'EMAIL', 'SID', 'FOTO', 'OUTROS']
 
 const formSchema = z.object({
   instance: z.string().min(1, 'Obrigatório'),
@@ -108,7 +99,7 @@ const formSchema = z.object({
       z.object({
         id: z.string().optional(),
         name: z.string().min(1, 'Obrigatório'),
-        categories: z.array(z.string()).default([]),
+        type: z.string().min(1, 'Selecione um tipo'),
       }),
     )
     .optional(),
@@ -169,7 +160,18 @@ export default function Registrar() {
           ]
           initialHasAction = true
         }
-        form.reset({ ...activity, hasAction: initialHasAction, actions: initialActions })
+
+        const migratedDocs = (activity.documents || []).map((d) => ({
+          ...d,
+          type: d.type || (d as any).categories?.[0]?.toUpperCase() || 'OUTROS',
+        }))
+
+        form.reset({
+          ...activity,
+          hasAction: initialHasAction,
+          actions: initialActions,
+          documents: migratedDocs,
+        })
       }
     }
   }, [editId, activities, form])
@@ -190,10 +192,10 @@ export default function Registrar() {
     } as any
     if (editId) {
       updateActivity(editId, payload)
-      toast({ title: 'Atividade atualizada.' })
+      toast({ title: 'Atividade atualizada com sucesso.' })
     } else {
       addActivity(payload)
-      toast({ title: 'Atividade registrada.' })
+      toast({ title: 'Atividade registrada com sucesso.' })
     }
     navigate('/historico')
   }
@@ -559,7 +561,8 @@ export default function Registrar() {
                   <div>
                     <h4 className="font-semibold text-base">Arquivos Comprobatórios Anexos</h4>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Adicione PDFs, DOCX, TXT, Imagens (JPG, PNG) ou Áudios (MP3, WAV).
+                      Adicione PDFs, DOCX, TXT, Imagens (JPG, PNG) ou Áudios (MP3, WAV). Especifique
+                      o tipo para cada.
                     </p>
                   </div>
                   <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -575,7 +578,7 @@ export default function Registrar() {
                       onChange={(e) => {
                         const files = Array.from(e.target.files || [])
                         files.forEach((file) => {
-                          appendDoc({ name: file.name, categories: [] })
+                          appendDoc({ name: file.name, type: '' })
                         })
                         e.target.value = ''
                       }}
@@ -584,7 +587,7 @@ export default function Registrar() {
                       htmlFor="file-upload"
                       className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/90 h-10 px-5 py-2 shadow-sm"
                     >
-                      <FileUp className="w-4 h-4" /> Anexar
+                      <FileUp className="w-4 h-4" /> Anexar Documentos
                     </Label>
                   </div>
                 </div>
@@ -593,67 +596,56 @@ export default function Registrar() {
                   {docsFields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="p-5 border border-border rounded-xl bg-card space-y-4 shadow-sm relative"
+                      className="p-5 border border-border rounded-xl bg-card space-y-4 shadow-sm relative grid grid-cols-1 md:grid-cols-[1fr_200px_auto] gap-4 items-start"
                     >
-                      <div className="flex items-start gap-4">
-                        <FormField
-                          control={form.control}
-                          name={`documents.${index}.name`}
-                          render={({ field: nameField }) => (
-                            <FormItem className="flex-1">
-                              <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                Nome do Arquivo Identificado
-                              </FormLabel>
-                              <FormControl>
-                                <Input
-                                  {...nameField}
-                                  readOnly
-                                  className="bg-muted/30 font-medium"
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          className="mt-6 text-destructive hover:bg-destructive/10 h-10 w-10 p-0"
-                          onClick={() => removeDoc(index)}
-                        >
-                          <Trash className="w-5 h-5" />
-                        </Button>
-                      </div>
                       <FormField
                         control={form.control}
-                        name={`documents.${index}.categories`}
-                        render={({ field: catField }) => (
-                          <FormItem>
+                        name={`documents.${index}.name`}
+                        render={({ field: nameField }) => (
+                          <FormItem className="flex-1">
                             <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                              Categorização do Documento
+                              Nome do Arquivo Identificado
                             </FormLabel>
-                            <div className="flex flex-wrap gap-2 pt-2">
-                              {DOC_CATEGORIES.map((cat) => (
-                                <label
-                                  key={cat}
-                                  className={`flex items-center gap-2 text-sm border px-3 py-1.5 rounded-md cursor-pointer transition-colors ${catField.value?.includes(cat) ? 'bg-primary/20 border-primary text-foreground font-medium' : 'hover:bg-muted/50 text-muted-foreground'}`}
-                                >
-                                  <Checkbox
-                                    checked={catField.value?.includes(cat)}
-                                    onCheckedChange={(checked) =>
-                                      checked
-                                        ? catField.onChange([...(catField.value || []), cat])
-                                        : catField.onChange(
-                                            (catField.value || []).filter((v: string) => v !== cat),
-                                          )
-                                    }
-                                  />
-                                  {cat}
-                                </label>
-                              ))}
-                            </div>
+                            <FormControl>
+                              <Input {...nameField} readOnly className="bg-muted/30 font-medium" />
+                            </FormControl>
                           </FormItem>
                         )}
                       />
+                      <FormField
+                        control={form.control}
+                        name={`documents.${index}.type`}
+                        render={({ field: typeField }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                              Tipo de Documento
+                            </FormLabel>
+                            <Select onValueChange={typeField.onChange} value={typeField.value}>
+                              <FormControl>
+                                <SelectTrigger className="bg-background border-primary/40 focus:ring-primary/50">
+                                  <SelectValue placeholder="Selecione o tipo..." />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {DOC_TYPES.map((t) => (
+                                  <SelectItem key={t} value={t}>
+                                    {t}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="mt-6 text-destructive hover:bg-destructive/10 h-10 w-10 p-0 shrink-0"
+                        onClick={() => removeDoc(index)}
+                      >
+                        <Trash className="w-5 h-5" />
+                      </Button>
                     </div>
                   ))}
                   {docsFields.length === 0 && (
