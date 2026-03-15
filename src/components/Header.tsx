@@ -24,7 +24,7 @@ export function Header() {
             <span className="hidden lg:inline">
               Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
             </span>
-            <span className="inline lg:hidden">GGIM Foz do Iguaçu</span>
+            <span className="inline lg:hidden">GGIM</span>
           </h1>
         </div>
       </div>
