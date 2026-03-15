@@ -50,13 +50,13 @@ export default function Index() {
   return (
     <div className="flex-1 space-y-8 max-w-[1600px] mx-auto min-h-[calc(100vh-80px)]">
       {/* Print Header */}
-      <div className="hidden print:flex items-center gap-4 mb-8 border-b border-gray-300 pb-4">
+      <div className="hidden print:flex items-center gap-4 mb-8 border-b border-border pb-4">
         <img src={logoGgim} alt="Logo GGIM" className="h-16 object-contain" />
         <div>
-          <h1 className="text-2xl font-bold text-black">
+          <h1 className="text-2xl font-bold text-foreground">
             Relatório Gerencial - GGIM Foz do Iguaçu
           </h1>
-          <p className="text-sm text-gray-800 font-medium mt-1">
+          <p className="text-sm text-foreground font-medium mt-1">
             Filtros:{' '}
             <span className="font-bold">
               {selectedInstances.length ? selectedInstances.join(', ') : 'Todas as Instâncias'}
@@ -72,10 +72,10 @@ export default function Index() {
 
       <div className="flex flex-col space-y-4 md:flex-row md:items-end md:justify-between md:space-y-0 no-print">
         <div>
-          <h2 className="text-4xl font-black tracking-tight text-white mb-2">
+          <h2 className="text-4xl font-black tracking-tight text-foreground mb-2">
             Painel Gerencial GGIM
           </h2>
-          <p className="text-muted-foreground text-base">
+          <p className="text-muted-foreground text-base font-medium">
             Acompanhamento consolidado de atividades, produtividade e engajamento em tempo real.
           </p>
         </div>
@@ -89,7 +89,7 @@ export default function Index() {
       </div>
 
       {/* Filters */}
-      <div className="bg-card border border-border/20 rounded-2xl p-5 flex flex-col md:flex-row gap-5 items-end no-print shadow-xl">
+      <div className="bg-card border border-border rounded-2xl p-5 flex flex-col md:flex-row gap-5 items-end no-print shadow-sm">
         <div className="w-full md:w-1/3 space-y-2">
           <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
             <Filter className="w-3.5 h-3.5" /> Instâncias
@@ -98,7 +98,7 @@ export default function Index() {
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
-                className="w-full justify-between text-left font-medium bg-background border-border/30 hover:bg-muted/50 hover:text-white h-11 rounded-xl"
+                className="w-full justify-between text-left font-medium bg-background border-border hover:bg-muted h-11 rounded-xl text-foreground"
               >
                 <span className="truncate">
                   {selectedInstances.length === 0
@@ -108,29 +108,28 @@ export default function Index() {
               </Button>
             </PopoverTrigger>
             <PopoverContent
-              className="w-72 max-h-80 overflow-y-auto border-border/40 bg-card/95 backdrop-blur shadow-2xl rounded-xl p-4"
+              className="w-72 max-h-80 overflow-y-auto border-border bg-popover shadow-2xl rounded-xl p-4"
               align="start"
             >
               <div className="space-y-2">
-                <div className="flex items-center space-x-3 p-1 rounded-md hover:bg-white/5 transition-colors">
+                <div className="flex items-center space-x-3 p-1 rounded-md hover:bg-accent transition-colors">
                   <Checkbox
                     id="all-instances"
                     checked={selectedInstances.length === 0}
                     onCheckedChange={() => setSelectedInstances([])}
-                    className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                   <Label
                     htmlFor="all-instances"
-                    className="font-bold text-white cursor-pointer leading-none flex-1 py-1"
+                    className="font-bold text-foreground cursor-pointer leading-none flex-1 py-1"
                   >
                     Todas as Instâncias
                   </Label>
                 </div>
-                <div className="h-px bg-border/40 my-2" />
+                <div className="h-px bg-border my-2" />
                 {INSTANCIAS.map((i) => (
                   <div
                     key={i}
-                    className="flex items-center space-x-3 p-1 rounded-md hover:bg-white/5 transition-colors"
+                    className="flex items-center space-x-3 p-1 rounded-md hover:bg-accent transition-colors"
                   >
                     <Checkbox
                       id={`inst-${i}`}
@@ -139,11 +138,10 @@ export default function Index() {
                         if (checked) setSelectedInstances([...selectedInstances, i])
                         else setSelectedInstances(selectedInstances.filter((x) => x !== i))
                       }}
-                      className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                     <Label
                       htmlFor={`inst-${i}`}
-                      className="font-medium text-gray-200 cursor-pointer leading-none flex-1 py-1"
+                      className="font-medium text-foreground cursor-pointer leading-none flex-1 py-1"
                     >
                       {i}
                     </Label>
@@ -161,7 +159,7 @@ export default function Index() {
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="bg-background border-border/30 h-11 rounded-xl"
+            className="bg-background border-border h-11 rounded-xl text-foreground"
           />
         </div>
         <div className="w-full md:w-1/4 space-y-2">
@@ -172,13 +170,13 @@ export default function Index() {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="bg-background border-border/30 h-11 rounded-xl"
+            className="bg-background border-border h-11 rounded-xl text-foreground"
           />
         </div>
         <div className="w-full md:w-auto pb-0.5">
           <Button
             variant="ghost"
-            className="text-muted-foreground hover:text-white hover:bg-destructive/20 h-10 px-4 rounded-xl font-medium"
+            className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-10 px-4 rounded-xl font-medium"
             onClick={() => {
               setStartDate('')
               setEndDate('')

@@ -213,7 +213,7 @@ export default function Registrar() {
   return (
     <div className="flex flex-col gap-8 max-w-5xl mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-4xl font-black tracking-tight text-white mb-2">
+        <h1 className="text-4xl font-black tracking-tight text-foreground mb-2">
           {editId ? 'Editar Atividade' : 'Registrar Atividade'}
         </h1>
         <p className="text-muted-foreground text-base">
@@ -224,10 +224,10 @@ export default function Registrar() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           {/* Identificação Card */}
-          <Card className="border-border/20 shadow-xl bg-card rounded-2xl overflow-hidden">
-            <div className="bg-muted/20 px-6 py-4 border-b border-border/10 flex items-center gap-3">
+          <Card className="border-border shadow-sm bg-card rounded-2xl overflow-hidden">
+            <div className="bg-muted/50 px-6 py-4 border-b border-border flex items-center gap-3">
               <ListPlus className="h-5 w-5 text-primary" />
-              <h3 className="text-lg font-bold text-white">Identificação do Evento</h3>
+              <h3 className="text-lg font-bold text-foreground">Identificação do Evento</h3>
             </div>
             <CardContent className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
@@ -240,16 +240,16 @@ export default function Registrar() {
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="bg-background border-border/30 h-12 rounded-xl text-white">
+                        <SelectTrigger className="bg-background border-border h-12 rounded-xl text-foreground">
                           <SelectValue placeholder="Selecione a instância" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-card/95 backdrop-blur border-border/40 text-white rounded-xl shadow-2xl">
+                      <SelectContent className="bg-popover border-border text-popover-foreground rounded-xl shadow-lg">
                         {INSTANCIAS.map((i) => (
                           <SelectItem
                             key={i}
                             value={i}
-                            className="focus:bg-muted focus:text-white cursor-pointer py-2.5"
+                            className="focus:bg-accent focus:text-accent-foreground cursor-pointer py-2.5"
                           >
                             {i}
                           </SelectItem>
@@ -270,16 +270,16 @@ export default function Registrar() {
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="bg-background border-border/30 h-12 rounded-xl text-white">
+                        <SelectTrigger className="bg-background border-border h-12 rounded-xl text-foreground">
                           <SelectValue placeholder="Selecione a tipologia" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-card/95 backdrop-blur border-border/40 text-white rounded-xl shadow-2xl">
+                      <SelectContent className="bg-popover border-border text-popover-foreground rounded-xl shadow-lg">
                         {EVENTOS_TIPO.map((i) => (
                           <SelectItem
                             key={i}
                             value={i}
-                            className="focus:bg-muted focus:text-white cursor-pointer py-2.5"
+                            className="focus:bg-accent focus:text-accent-foreground cursor-pointer py-2.5"
                           >
                             {i}
                           </SelectItem>
@@ -300,11 +300,11 @@ export default function Registrar() {
                     </FormLabel>
                     <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger className="bg-background border-border/30 h-12 rounded-xl text-white">
+                        <SelectTrigger className="bg-background border-border h-12 rounded-xl text-foreground">
                           <SelectValue placeholder="Como ocorreu?" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-card/95 backdrop-blur border-border/40 text-white rounded-xl shadow-2xl">
+                      <SelectContent className="bg-popover border-border text-popover-foreground rounded-xl shadow-lg">
                         <SelectItem value="Presencial" className="py-2.5">
                           Presencial
                         </SelectItem>
@@ -332,7 +332,7 @@ export default function Registrar() {
                       <Input
                         placeholder="Ex: Paço Municipal / Zoom"
                         {...field}
-                        className="bg-background border-border/30 h-12 rounded-xl text-white placeholder:text-muted-foreground/50"
+                        className="bg-background border-border h-12 rounded-xl text-foreground placeholder:text-muted-foreground/50"
                       />
                     </FormControl>
                     <FormMessage />
@@ -343,25 +343,25 @@ export default function Registrar() {
           </Card>
 
           {/* Duração Card */}
-          <Card className="border-border/20 shadow-xl bg-card rounded-2xl overflow-hidden relative">
+          <Card className="border-border shadow-sm bg-card rounded-2xl overflow-hidden relative">
             <div className="absolute top-0 right-0 p-4 pt-5 pr-6 hidden sm:block">
-              <div className="text-xs font-black bg-primary text-primary-foreground px-4 py-2 rounded-xl shadow-lg uppercase tracking-widest border border-primary/20">
+              <div className="text-xs font-black bg-primary text-primary-foreground px-4 py-2 rounded-xl shadow-sm uppercase tracking-widest border border-primary/20">
                 Total de Horas:{' '}
                 <span className="text-lg ml-1">{(tMeeting + tAction).toFixed(1)}h</span>
               </div>
             </div>
-            <div className="bg-muted/20 px-6 py-4 border-b border-border/10 flex items-center gap-3">
+            <div className="bg-muted/50 px-6 py-4 border-b border-border flex items-center gap-3">
               <CheckCircle2 className="h-5 w-5 text-chart-2" />
-              <h3 className="text-lg font-bold text-white">Logística e Dedicação de Horas</h3>
+              <h3 className="text-lg font-bold text-foreground">Logística e Dedicação de Horas</h3>
             </div>
 
             <CardContent className="p-6 md:p-8">
-              <div className="sm:hidden mb-6 text-center text-xs font-black bg-primary text-primary-foreground px-4 py-3 rounded-xl shadow-md uppercase tracking-widest border border-primary/20">
+              <div className="sm:hidden mb-6 text-center text-xs font-black bg-primary text-primary-foreground px-4 py-3 rounded-xl shadow-sm uppercase tracking-widest border border-primary/20">
                 Total Dedicado:{' '}
                 <span className="text-base ml-1">{(tMeeting + tAction).toFixed(1)}h</span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border border-border/20 p-6 rounded-2xl mb-8 bg-background/50 relative shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border border-border p-6 rounded-2xl mb-8 bg-muted/30 relative">
                 <div className="absolute -top-3 left-6 bg-chart-2 text-primary-foreground text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
                   Reunião Principal ({tMeeting.toFixed(1)}h)
                 </div>
@@ -377,7 +377,7 @@ export default function Registrar() {
                         <Input
                           type="datetime-local"
                           {...field}
-                          className="bg-card border-border/30 h-12 rounded-xl text-white"
+                          className="bg-card border-border h-12 rounded-xl text-foreground shadow-sm"
                         />
                       </FormControl>
                       <FormMessage />
@@ -396,7 +396,7 @@ export default function Registrar() {
                         <Input
                           type="datetime-local"
                           {...field}
-                          className="bg-card border-border/30 h-12 rounded-xl text-white"
+                          className="bg-card border-border h-12 rounded-xl text-foreground shadow-sm"
                         />
                       </FormControl>
                       <FormMessage />
@@ -412,7 +412,7 @@ export default function Registrar() {
                   <FormItem className="flex flex-row items-start space-x-4 space-y-0 rounded-2xl border border-primary/30 p-5 bg-primary/5 shadow-sm mb-4 cursor-pointer group hover:bg-primary/10 transition-colors">
                     <FormControl>
                       <Checkbox
-                        className="mt-1 h-5 w-5 border-2 rounded text-primary border-primary bg-transparent data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+                        className="mt-1 h-5 w-5 border-2 rounded text-primary border-primary bg-background data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
                         checked={field.value}
                         onCheckedChange={(checked) => {
                           field.onChange(checked)
@@ -423,10 +423,10 @@ export default function Registrar() {
                       />
                     </FormControl>
                     <div className="space-y-2 leading-none cursor-pointer flex-1">
-                      <FormLabel className="text-base font-bold text-white cursor-pointer">
+                      <FormLabel className="text-base font-bold text-primary cursor-pointer">
                         Esta reunião gerou ou desdobrou em uma Ação Vinculada?
                       </FormLabel>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
+                      <p className="text-sm text-muted-foreground leading-relaxed font-medium">
                         Exemplo: Desdobramentos operacionais, fiscalizações conjuntas ou tempo
                         adicional dedicado pós-reunião.
                       </p>
@@ -436,16 +436,14 @@ export default function Registrar() {
               />
 
               {wHasAction && (
-                <div className="border-t border-border/20 pt-8 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="border-t border-border pt-8 mt-6 animate-in fade-in slide-in-from-top-4 duration-500">
                   <div className="flex items-center justify-between mb-6">
-                    <h4 className="font-bold text-base text-white">
+                    <h4 className="font-bold text-base text-foreground">
                       Cronograma das Ações Vinculadas
                     </h4>
                     <Button
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      className="border-primary/50 text-primary hover:bg-primary hover:text-primary-foreground font-bold rounded-xl h-10 px-4"
+                      className="bg-secondary text-secondary-foreground hover:bg-secondary/80 font-bold rounded-xl h-10 px-4 shadow-sm"
                       onClick={() => appendAction({ start: '', end: '' })}
                     >
                       + Nova Ação Extra
@@ -461,7 +459,7 @@ export default function Registrar() {
                       return (
                         <div
                           key={field.id}
-                          className="p-6 border border-border/30 rounded-2xl bg-background/50 relative shadow-sm group"
+                          className="p-6 border border-border rounded-2xl bg-muted/30 relative group"
                         >
                           <Button
                             type="button"
@@ -494,7 +492,7 @@ export default function Registrar() {
                                     <Input
                                       type="datetime-local"
                                       {...startField}
-                                      className="bg-card border-border/30 h-11 rounded-xl text-white"
+                                      className="bg-card border-border h-11 rounded-xl text-foreground shadow-sm"
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -512,7 +510,7 @@ export default function Registrar() {
                                     <Input
                                       type="datetime-local"
                                       {...endField}
-                                      className="bg-card border-border/30 h-11 rounded-xl text-white"
+                                      className="bg-card border-border h-11 rounded-xl text-foreground shadow-sm"
                                     />
                                   </FormControl>
                                 </FormItem>
@@ -523,7 +521,7 @@ export default function Registrar() {
                       )
                     })}
                     {actionsFields.length === 0 && (
-                      <div className="text-center p-8 border-2 border-dashed border-border/30 rounded-2xl text-muted-foreground font-medium text-sm bg-background/20">
+                      <div className="text-center p-8 border-2 border-dashed border-border rounded-2xl text-muted-foreground font-medium text-sm bg-muted/50">
                         Nenhuma ação temporal informada. Clique no botão acima para computar horas
                         extras.
                       </div>
@@ -535,10 +533,10 @@ export default function Registrar() {
           </Card>
 
           {/* Engajamento Card */}
-          <Card className="border-border/20 shadow-xl bg-card rounded-2xl overflow-hidden">
-            <div className="bg-muted/20 px-6 py-4 border-b border-border/10 flex items-center gap-3">
+          <Card className="border-border shadow-sm bg-card rounded-2xl overflow-hidden">
+            <div className="bg-muted/50 px-6 py-4 border-b border-border flex items-center gap-3">
               <Users className="h-5 w-5 text-chart-3" />
-              <h3 className="text-lg font-bold text-white">Engajamento / Presenças</h3>
+              <h3 className="text-lg font-bold text-foreground">Engajamento / Presenças</h3>
             </div>
             <CardContent className="p-6 md:p-8 space-y-8">
               <FormField
@@ -550,13 +548,13 @@ export default function Registrar() {
                       <FormLabel className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
                         Pessoas Físicas (separadas por ponto e vírgula)
                       </FormLabel>
-                      <span className="text-[10px] font-black bg-chart-3/20 text-chart-3 px-3 py-1 rounded-full uppercase tracking-widest border border-chart-3/30 w-fit">
+                      <span className="text-[10px] font-black bg-chart-3/10 text-chart-3 px-3 py-1 rounded-full uppercase tracking-widest border border-chart-3/30 w-fit">
                         Total Pessoas: {parseSemicolonList(field.value || '').length}
                       </span>
                     </div>
                     <FormControl>
                       <Textarea
-                        className="min-h-[120px] resize-y bg-background border-border/30 rounded-xl text-white p-4 placeholder:text-muted-foreground/40 text-base"
+                        className="min-h-[120px] resize-y bg-background border-border shadow-sm rounded-xl text-foreground p-4 placeholder:text-muted-foreground/60 text-base"
                         placeholder="Ex: João Silva; Maria Oliveira"
                         {...field}
                       />
@@ -574,13 +572,13 @@ export default function Registrar() {
                       <FormLabel className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
                         Instituições PJ (separadas por ponto e vírgula)
                       </FormLabel>
-                      <span className="text-[10px] font-black bg-chart-4/20 text-chart-4 px-3 py-1 rounded-full uppercase tracking-widest border border-chart-4/30 w-fit">
+                      <span className="text-[10px] font-black bg-chart-4/10 text-chart-4 px-3 py-1 rounded-full uppercase tracking-widest border border-chart-4/30 w-fit">
                         Total Instituições: {parseSemicolonList(field.value || '').length}
                       </span>
                     </div>
                     <FormControl>
                       <Textarea
-                        className="min-h-[100px] resize-y bg-background border-border/30 rounded-xl text-white p-4 placeholder:text-muted-foreground/40 text-base"
+                        className="min-h-[100px] resize-y bg-background border-border shadow-sm rounded-xl text-foreground p-4 placeholder:text-muted-foreground/60 text-base"
                         placeholder="Ex: Prefeitura Municipal; Polícia Federal; Bombeiros"
                         {...field}
                       />
@@ -593,10 +591,10 @@ export default function Registrar() {
           </Card>
 
           {/* Produtividade e Docs Card */}
-          <Card className="border-border/20 shadow-xl bg-card rounded-2xl overflow-hidden">
-            <div className="bg-muted/20 px-6 py-4 border-b border-border/10 flex items-center gap-3">
+          <Card className="border-border shadow-sm bg-card rounded-2xl overflow-hidden">
+            <div className="bg-muted/50 px-6 py-4 border-b border-border flex items-center gap-3">
               <FileText className="h-5 w-5 text-chart-5" />
-              <h3 className="text-lg font-bold text-white">Produtividade e Documentação</h3>
+              <h3 className="text-lg font-bold text-foreground">Produtividade e Documentação</h3>
             </div>
             <CardContent className="p-6 md:p-8 space-y-8">
               <FormField
@@ -608,13 +606,13 @@ export default function Registrar() {
                       <FormLabel className="text-muted-foreground font-bold text-xs uppercase tracking-widest">
                         Registro de Deliberações (separadas por ponto e vírgula)
                       </FormLabel>
-                      <span className="text-[10px] font-black bg-chart-5/20 text-chart-5 px-3 py-1 rounded-full uppercase tracking-widest border border-chart-5/30 w-fit">
+                      <span className="text-[10px] font-black bg-chart-5/10 text-chart-5 px-3 py-1 rounded-full uppercase tracking-widest border border-chart-5/30 w-fit">
                         Total Deliberações: {parseSemicolonList(field.value || '').length}
                       </span>
                     </div>
                     <FormControl>
                       <Textarea
-                        className="min-h-[120px] resize-y bg-background border-border/30 rounded-xl text-white p-4 placeholder:text-muted-foreground/40 text-base leading-relaxed"
+                        className="min-h-[120px] resize-y bg-background border-border shadow-sm rounded-xl text-foreground p-4 placeholder:text-muted-foreground/60 text-base leading-relaxed"
                         placeholder="Ex: Aprovada diretriz de ação x; Pauta de segurança discutida;"
                         {...field}
                       />
@@ -624,13 +622,13 @@ export default function Registrar() {
                 )}
               />
 
-              <div className="border-t border-border/20 pt-8 space-y-6">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-muted/10 p-6 rounded-2xl border-2 border-dashed border-border/30 gap-6">
+              <div className="border-t border-border pt-8 space-y-6">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-muted/40 p-6 rounded-2xl border-2 border-dashed border-border gap-6">
                   <div>
-                    <h4 className="font-bold text-lg text-white">Gestão de Anexos</h4>
+                    <h4 className="font-bold text-lg text-foreground">Gestão de Anexos</h4>
                     <p className="text-sm text-muted-foreground mt-2 max-w-lg leading-relaxed font-medium">
                       Obrigatório classificar o{' '}
-                      <span className="text-white font-bold">Tipo de Documento</span> para cada
+                      <span className="text-foreground font-bold">Tipo de Documento</span> para cada
                       arquivo (ATA, OFÍCIO, RELATÓRIO, etc), o que alimenta diretamente o Dashboard.
                     </p>
                   </div>
@@ -654,7 +652,7 @@ export default function Registrar() {
                     />
                     <Label
                       htmlFor="file-upload"
-                      className="cursor-pointer inline-flex w-full md:w-auto items-center justify-center gap-3 whitespace-nowrap rounded-xl text-sm font-bold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-white hover:bg-secondary/80 h-12 px-6 shadow-md"
+                      className="cursor-pointer inline-flex w-full md:w-auto items-center justify-center gap-3 whitespace-nowrap rounded-xl text-sm font-bold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/90 h-12 px-6 shadow-md"
                     >
                       <FileUp className="w-5 h-5" /> Inserir Arquivos
                     </Label>
@@ -665,7 +663,7 @@ export default function Registrar() {
                   {docsFields.map((field, index) => (
                     <div
                       key={field.id}
-                      className="p-5 border border-border/30 rounded-2xl bg-background/50 shadow-sm relative grid grid-cols-1 lg:grid-cols-[1fr_240px_auto] gap-5 items-start group"
+                      className="p-5 border border-border rounded-2xl bg-muted/30 shadow-sm relative grid grid-cols-1 lg:grid-cols-[1fr_240px_auto] gap-5 items-start group hover:border-primary/30 transition-colors"
                     >
                       <FormField
                         control={form.control}
@@ -679,7 +677,7 @@ export default function Registrar() {
                               <Input
                                 {...nameField}
                                 readOnly
-                                className="bg-transparent border-0 border-b border-border/50 rounded-none px-1 h-10 font-bold text-white focus-visible:ring-0 focus-visible:border-primary truncate"
+                                className="bg-transparent border-0 border-b border-border/50 rounded-none px-1 h-10 font-bold text-foreground focus-visible:ring-0 focus-visible:border-primary truncate"
                               />
                             </FormControl>
                           </FormItem>
@@ -695,16 +693,16 @@ export default function Registrar() {
                             </FormLabel>
                             <Select onValueChange={typeField.onChange} value={typeField.value}>
                               <FormControl>
-                                <SelectTrigger className="bg-card border-border/30 focus:ring-primary/50 h-11 rounded-xl font-bold text-white">
+                                <SelectTrigger className="bg-card border-border shadow-sm focus:ring-primary/50 h-11 rounded-xl font-bold text-foreground">
                                   <SelectValue placeholder="Selecione..." />
                                 </SelectTrigger>
                               </FormControl>
-                              <SelectContent className="bg-card/95 backdrop-blur border-border/40 text-white rounded-xl shadow-2xl">
+                              <SelectContent className="bg-popover border-border text-popover-foreground rounded-xl shadow-lg">
                                 {DOC_TYPES.map((t) => (
                                   <SelectItem
                                     key={t}
                                     value={t}
-                                    className="font-bold cursor-pointer py-2"
+                                    className="font-bold cursor-pointer py-2 focus:bg-accent focus:text-accent-foreground"
                                   >
                                     {t}
                                   </SelectItem>
@@ -727,7 +725,7 @@ export default function Registrar() {
                     </div>
                   ))}
                   {docsFields.length === 0 && (
-                    <div className="text-center p-8 border border-dashed border-border/30 rounded-2xl text-muted-foreground font-medium text-sm">
+                    <div className="text-center p-8 border border-dashed border-border rounded-2xl text-muted-foreground font-medium text-sm">
                       Lista de documentos vazia.
                     </div>
                   )}
@@ -736,18 +734,18 @@ export default function Registrar() {
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-5 sticky bottom-6 bg-card/80 backdrop-blur-xl p-5 border border-border/30 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-10 mt-10 w-fit ml-auto">
+          <div className="flex justify-end gap-5 sticky bottom-6 bg-card/90 backdrop-blur-xl p-5 border border-border rounded-3xl shadow-xl z-10 mt-10 w-fit ml-auto">
             <Button
               variant="ghost"
               type="button"
               onClick={() => navigate('/historico')}
-              className="w-32 h-12 rounded-xl text-muted-foreground hover:text-white font-bold"
+              className="w-32 h-12 rounded-xl text-muted-foreground hover:text-foreground font-bold hover:bg-muted"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
-              className="w-64 h-12 font-black text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.3)] hover:shadow-[0_0_30px_rgba(var(--primary),0.5)] transition-all rounded-xl"
+              className="w-64 h-12 font-black text-base bg-primary text-primary-foreground hover:bg-primary/90 shadow-md transition-all rounded-xl"
             >
               {editId ? 'ATUALIZAR REGISTRO' : 'SALVAR NOVO REGISTRO'}
             </Button>

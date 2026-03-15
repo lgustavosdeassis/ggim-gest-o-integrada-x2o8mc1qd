@@ -70,11 +70,13 @@ export default function Importar() {
   return (
     <div className="flex flex-col gap-8 max-w-4xl mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-4xl font-black tracking-tight text-white mb-2">Migração Automática</h1>
-        <p className="text-muted-foreground text-base">
-          Importe arquivos <span className="text-primary font-medium">.CSV</span> ou{' '}
-          <span className="text-primary font-medium">.XLSX</span>. A leitura, mapeamento de colunas
-          e cálculos de banco de dados são feitos instantaneamente pela IA.
+        <h1 className="text-4xl font-black tracking-tight text-foreground mb-2">
+          Migração Automática
+        </h1>
+        <p className="text-muted-foreground text-base font-medium">
+          Importe arquivos <span className="text-primary font-bold">.CSV</span> ou{' '}
+          <span className="text-primary font-bold">.XLSX</span>. A leitura, mapeamento de colunas e
+          cálculos de banco de dados são feitos instantaneamente pela IA.
         </p>
       </div>
 
@@ -84,15 +86,15 @@ export default function Importar() {
             key={s}
             className={cn(
               'h-1.5 rounded-full transition-all duration-500',
-              step >= s ? 'bg-primary' : 'bg-muted/50',
+              step >= s ? 'bg-primary' : 'bg-muted',
             )}
           />
         ))}
       </div>
 
-      <Card className="shadow-2xl border-border/20 bg-card rounded-2xl overflow-hidden">
-        <CardHeader className="bg-muted/10 border-b border-border/10 pb-6 pt-8">
-          <CardTitle className="text-xl font-bold flex items-center gap-3 text-white">
+      <Card className="shadow-sm border-border bg-card rounded-2xl overflow-hidden">
+        <CardHeader className="bg-muted/50 border-b border-border pb-6 pt-8">
+          <CardTitle className="text-xl font-bold flex items-center gap-3 text-foreground">
             <FileSpreadsheet className="h-6 w-6 text-primary" />
             {step === 1
               ? 'Passo 1: Selecione o Arquivo Base'
@@ -112,7 +114,7 @@ export default function Importar() {
                 'border-2 border-dashed rounded-3xl p-16 text-center cursor-pointer transition-all duration-300 relative group',
                 isDragging
                   ? 'border-primary bg-primary/5 scale-[0.99]'
-                  : 'border-border/50 hover:bg-muted/20 hover:border-primary/50',
+                  : 'border-border hover:bg-muted/50 hover:border-primary/50',
               )}
               onClick={() => fileInputRef.current?.click()}
               onDragOver={(e) => {
@@ -137,12 +139,14 @@ export default function Importar() {
                 onChange={handleFileChange}
               />
               <div className="flex flex-col items-center gap-6 pointer-events-none">
-                <div className="p-6 bg-card rounded-full text-primary border border-border/30 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <div className="p-6 bg-card rounded-full text-primary border border-border shadow-sm group-hover:scale-110 transition-transform duration-300">
                   <UploadCloud className="w-12 h-12" />
                 </div>
                 <div>
-                  <p className="text-2xl font-black text-white">Arraste o arquivo ou clique aqui</p>
-                  <p className="text-sm text-muted-foreground mt-3 max-w-md mx-auto leading-relaxed">
+                  <p className="text-2xl font-black text-foreground">
+                    Arraste o arquivo ou clique aqui
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-3 max-w-md mx-auto leading-relaxed font-medium">
                     A plataforma lerá os cabeçalhos e preencherá tudo automaticamente: engajamento,
                     cálculos de horas e as tabelas de histórico.
                   </p>
@@ -159,8 +163,10 @@ export default function Importar() {
                 <Loader2 className="absolute inset-0 m-auto w-10 h-10 text-primary opacity-50" />
               </div>
               <div className="space-y-3">
-                <p className="text-2xl font-black text-white">Mapeando Colunas e Extraindo Dados</p>
-                <p className="text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">
+                <p className="text-2xl font-black text-foreground">
+                  Mapeando Colunas e Extraindo Dados
+                </p>
+                <p className="text-base text-muted-foreground max-w-lg mx-auto leading-relaxed font-medium">
                   Buscando ocorrências, calculando tempo de dedicação, aplicando deduplicação e
                   populando o Dashboard BI.
                 </p>
@@ -170,13 +176,13 @@ export default function Importar() {
 
           {step === 3 && (
             <div className="text-center py-20 space-y-8 animate-in zoom-in-95 duration-700">
-              <div className="mx-auto w-28 h-28 bg-chart-3/10 border-2 border-chart-3/30 rounded-full flex items-center justify-center shadow-lg relative">
-                <div className="absolute inset-0 bg-chart-3/20 rounded-full animate-ping opacity-20" />
-                <CheckCircle2 className="w-14 h-14 text-chart-3" />
+              <div className="mx-auto w-28 h-28 bg-chart-5/10 border-2 border-chart-5/30 rounded-full flex items-center justify-center shadow-sm relative">
+                <div className="absolute inset-0 bg-chart-5/20 rounded-full animate-ping opacity-20" />
+                <CheckCircle2 className="w-14 h-14 text-chart-5" />
               </div>
               <div className="space-y-3">
-                <h3 className="text-3xl font-black text-white">Banco de Dados Atualizado!</h3>
-                <p className="text-muted-foreground text-base max-w-lg mx-auto">
+                <h3 className="text-3xl font-black text-foreground">Banco de Dados Atualizado!</h3>
+                <p className="text-muted-foreground text-base max-w-lg mx-auto font-medium">
                   Todos os registros foram importados sem necessidade de intervenção. Os painéis e o
                   módulo de histórico já refletem os novos números.
                 </p>
@@ -184,13 +190,13 @@ export default function Importar() {
               <div className="flex justify-center gap-5 mt-10">
                 <Button
                   variant="outline"
-                  className="h-12 px-8 font-bold border-border/40 hover:bg-muted/50 rounded-xl"
+                  className="h-12 px-8 font-bold border-border hover:bg-muted rounded-xl text-foreground"
                   onClick={() => setStep(1)}
                 >
                   Nova Migração
                 </Button>
                 <Button
-                  className="h-12 px-8 font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg rounded-xl"
+                  className="h-12 px-8 font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md rounded-xl"
                   onClick={() => (window.location.href = '/')}
                 >
                   Acessar Dashboard

@@ -52,17 +52,17 @@ export default function Profile() {
   return (
     <div className="max-w-4xl mx-auto space-y-8 py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-4xl font-black tracking-tight text-white mb-2">
+        <h1 className="text-4xl font-black tracking-tight text-foreground mb-2">
           Configurações da Conta
         </h1>
-        <p className="text-muted-foreground text-base">
+        <p className="text-muted-foreground text-base font-medium">
           Gerencie seus dados de acesso e a personalização do seu perfil.
         </p>
       </div>
 
-      <Card className="shadow-2xl border-border/20 bg-card rounded-2xl overflow-hidden">
-        <CardHeader className="bg-muted/10 border-b border-border/10 pb-6">
-          <CardTitle className="text-xl font-bold text-white">Fotografia de Perfil</CardTitle>
+      <Card className="shadow-sm border-border bg-card rounded-2xl overflow-hidden">
+        <CardHeader className="bg-muted/50 border-b border-border pb-6">
+          <CardTitle className="text-xl font-bold text-foreground">Fotografia de Perfil</CardTitle>
           <CardDescription className="text-sm font-medium">
             Personalize a imagem que aparece no canto superior do sistema.
           </CardDescription>
@@ -72,9 +72,9 @@ export default function Profile() {
             className="relative group cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Avatar className="h-32 w-32 border-4 border-background shadow-2xl transition-all duration-300 group-hover:opacity-80">
+            <Avatar className="h-32 w-32 border-4 border-background shadow-lg transition-all duration-300 group-hover:opacity-80">
               <AvatarImage src={previewUrl || ''} className="object-cover" />
-              <AvatarFallback className="bg-primary/20 text-primary font-bold text-3xl">
+              <AvatarFallback className="bg-secondary text-secondary-foreground font-bold text-3xl">
                 {user?.name?.charAt(0) || <User className="h-12 w-12" />}
               </AvatarFallback>
             </Avatar>
@@ -97,7 +97,7 @@ export default function Profile() {
                 onClick={() => fileInputRef.current?.click()}
                 className={`h-12 px-6 rounded-xl font-bold transition-all ${
                   hasAvatarChanges
-                    ? 'border-border/40 text-white hover:bg-muted/50'
+                    ? 'border-border text-foreground hover:bg-muted'
                     : 'bg-primary/10 text-primary hover:bg-primary/20'
                 }`}
               >
@@ -107,7 +107,7 @@ export default function Profile() {
                 <Button
                   onClick={handleSaveAvatar}
                   disabled={isSavingAvatar}
-                  className="h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(var(--primary),0.3)] transition-all"
+                  className="h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md transition-all"
                 >
                   {isSavingAvatar ? (
                     'Salvando...'
@@ -126,10 +126,10 @@ export default function Profile() {
         </CardContent>
       </Card>
 
-      <Card className="shadow-2xl border-border/20 bg-card rounded-2xl overflow-hidden relative">
-        <CardHeader className="bg-muted/10 border-b border-border/10 pb-6 flex flex-row items-center justify-between">
+      <Card className="shadow-sm border-border bg-card rounded-2xl overflow-hidden relative">
+        <CardHeader className="bg-muted/50 border-b border-border pb-6 flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-xl font-bold text-white">Dados Profissionais</CardTitle>
+            <CardTitle className="text-xl font-bold text-foreground">Dados Profissionais</CardTitle>
             <CardDescription className="text-sm font-medium">
               Informações de identificação institucional.
             </CardDescription>
@@ -138,7 +138,7 @@ export default function Profile() {
             <Button
               variant="outline"
               onClick={() => setIsEditing(true)}
-              className="h-11 px-5 rounded-xl border-primary/40 text-primary hover:bg-primary hover:text-primary-foreground font-bold transition-all"
+              className="h-11 px-5 rounded-xl border-border text-foreground hover:bg-accent hover:text-accent-foreground font-bold transition-all shadow-sm"
             >
               <Pencil className="h-4 w-4 mr-2" /> Editar Dados
             </Button>
@@ -158,10 +158,10 @@ export default function Profile() {
                 value={isEditing ? formData.name : user?.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 readOnly={!isEditing}
-                className={`h-12 rounded-xl text-white transition-all ${
+                className={`h-12 rounded-xl text-foreground transition-all ${
                   !isEditing
-                    ? 'bg-muted/20 border-transparent font-medium shadow-inner'
-                    : 'bg-background border-primary/50 focus-visible:ring-primary shadow-sm'
+                    ? 'bg-muted border-transparent font-medium shadow-inner'
+                    : 'bg-background border-primary/30 focus-visible:ring-primary shadow-sm'
                 }`}
               />
             </div>
@@ -178,10 +178,10 @@ export default function Profile() {
                 value={isEditing ? formData.email : user?.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 readOnly={!isEditing}
-                className={`h-12 rounded-xl text-white transition-all ${
+                className={`h-12 rounded-xl text-foreground transition-all ${
                   !isEditing
-                    ? 'bg-muted/20 border-transparent font-medium shadow-inner'
-                    : 'bg-background border-primary/50 focus-visible:ring-primary shadow-sm'
+                    ? 'bg-muted border-transparent font-medium shadow-inner'
+                    : 'bg-background border-primary/30 focus-visible:ring-primary shadow-sm'
                 }`}
               />
             </div>
@@ -197,17 +197,17 @@ export default function Profile() {
                 value={isEditing ? formData.role : user?.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
                 readOnly={!isEditing}
-                className={`h-12 rounded-xl text-white transition-all ${
+                className={`h-12 rounded-xl text-foreground transition-all ${
                   !isEditing
-                    ? 'bg-muted/20 border-transparent font-medium shadow-inner'
-                    : 'bg-background border-primary/50 focus-visible:ring-primary shadow-sm'
+                    ? 'bg-muted border-transparent font-medium shadow-inner'
+                    : 'bg-background border-primary/30 focus-visible:ring-primary shadow-sm'
                 }`}
               />
             </div>
           </div>
 
           {isEditing && (
-            <div className="flex justify-end gap-4 mt-8 pt-8 border-t border-border/20">
+            <div className="flex justify-end gap-4 mt-8 pt-8 border-t border-border">
               <Button
                 variant="ghost"
                 onClick={() => {
@@ -218,13 +218,13 @@ export default function Profile() {
                     role: user?.role || '',
                   })
                 }}
-                className="h-12 px-6 rounded-xl font-bold text-muted-foreground hover:text-white hover:bg-muted/50"
+                className="h-12 px-6 rounded-xl font-bold text-muted-foreground hover:text-foreground hover:bg-muted"
               >
                 <X className="h-5 w-5 mr-2" /> Cancelar
               </Button>
               <Button
                 onClick={handleSaveProfile}
-                className="h-12 px-8 rounded-xl font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(var(--primary),0.4)] transition-all"
+                className="h-12 px-8 rounded-xl font-black bg-primary text-primary-foreground hover:bg-primary/90 shadow-md transition-all"
               >
                 <Save className="h-5 w-5 mr-2" /> Efetivar Alterações
               </Button>

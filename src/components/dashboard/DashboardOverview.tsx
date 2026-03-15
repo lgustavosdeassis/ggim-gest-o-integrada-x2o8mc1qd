@@ -17,72 +17,72 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
     <div className="space-y-6 print-break-inside-avoid animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-3 mb-2">
         <div className="w-1.5 h-6 bg-primary rounded-full" />
-        <h3 className="text-xl font-bold text-white">Visão Geral</h3>
+        <h3 className="text-xl font-bold text-foreground">Visão Geral</h3>
       </div>
 
       <div className="grid gap-5 md:grid-cols-3 lg:grid-cols-5">
-        <Card className="border-border/20 shadow-lg bg-card hover:bg-muted/20 transition-all duration-300 rounded-2xl relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/5 rounded-full blur-2xl group-hover:bg-primary/10 transition-colors" />
+        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-1/10 rounded-full blur-2xl group-hover:bg-chart-1/20 transition-colors" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Ocorrências
             </CardTitle>
-            <Activity className="h-5 w-5 text-primary drop-shadow-md" />
+            <Activity className="h-5 w-5 text-chart-1" />
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-white">{data.totalEvents}</div>
+            <div className="text-4xl font-black text-foreground">{data.totalEvents}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/20 shadow-lg bg-card hover:bg-muted/20 transition-all duration-300 rounded-2xl relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-2/5 rounded-full blur-2xl group-hover:bg-chart-2/10 transition-colors" />
+        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-2/10 rounded-full blur-2xl group-hover:bg-chart-2/20 transition-colors" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Formais
             </CardTitle>
-            <CalendarDays className="h-5 w-5 text-chart-2 drop-shadow-md" />
+            <CalendarDays className="h-5 w-5 text-chart-2" />
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-white">{data.formalMeetings}</div>
+            <div className="text-4xl font-black text-foreground">{data.formalMeetings}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/20 shadow-lg bg-card hover:bg-muted/20 transition-all duration-300 rounded-2xl relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-3/5 rounded-full blur-2xl group-hover:bg-chart-3/10 transition-colors" />
+        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-3/10 rounded-full blur-2xl group-hover:bg-chart-3/20 transition-colors" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Institucionais
             </CardTitle>
-            <Landmark className="h-5 w-5 text-chart-3 drop-shadow-md" />
+            <Landmark className="h-5 w-5 text-chart-3" />
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-white">{data.institutionalEvents}</div>
+            <div className="text-4xl font-black text-foreground">{data.institutionalEvents}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/20 shadow-lg bg-card hover:bg-muted/20 transition-all duration-300 rounded-2xl relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-4/5 rounded-full blur-2xl group-hover:bg-chart-4/10 transition-colors" />
+        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-4/10 rounded-full blur-2xl group-hover:bg-chart-4/20 transition-colors" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Ações Geradas
             </CardTitle>
-            <CheckCircle2 className="h-5 w-5 text-chart-4 drop-shadow-md" />
+            <CheckCircle2 className="h-5 w-5 text-chart-4" />
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-white">{data.actionsGenerated}</div>
+            <div className="text-4xl font-black text-foreground">{data.actionsGenerated}</div>
           </CardContent>
         </Card>
 
-        <Card className="border-border/20 shadow-lg bg-card hover:bg-muted/20 transition-all duration-300 rounded-2xl relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-5/5 rounded-full blur-2xl group-hover:bg-chart-5/10 transition-colors" />
+        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-5/10 rounded-full blur-2xl group-hover:bg-chart-5/20 transition-colors" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
               Horas Dedicadas
             </CardTitle>
-            <Clock className="h-5 w-5 text-chart-5 drop-shadow-md" />
+            <Clock className="h-5 w-5 text-chart-5" />
           </CardHeader>
           <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-white">
+            <div className="text-4xl font-black text-foreground">
               {data.totalHours.toFixed(1)}
               <span className="text-xl text-muted-foreground ml-1">h</span>
             </div>
@@ -91,15 +91,15 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
-        <Card className="border-border/20 shadow-lg bg-card rounded-2xl">
-          <CardHeader className="border-b border-border/20 pb-4">
-            <CardTitle className="text-base font-bold text-white">Eventos por Tipo</CardTitle>
+        <Card className="border-border shadow-sm bg-card rounded-2xl">
+          <CardHeader className="border-b border-border pb-4">
+            <CardTitle className="text-base font-bold text-foreground">Eventos por Tipo</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="max-h-[280px] overflow-auto px-6 py-2">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-border/30 hover:bg-transparent">
+                  <TableRow className="border-border hover:bg-transparent">
                     <TableHead className="text-muted-foreground font-bold uppercase tracking-widest text-xs">
                       Tipo
                     </TableHead>
@@ -110,8 +110,10 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
                 </TableHeader>
                 <TableBody>
                   {data.eventsByType.map((t) => (
-                    <TableRow key={t.name} className="border-border/10 hover:bg-muted/30">
-                      <TableCell className="font-medium text-sm text-gray-200">{t.name}</TableCell>
+                    <TableRow key={t.name} className="border-border hover:bg-muted/50">
+                      <TableCell className="font-medium text-sm text-foreground">
+                        {t.name}
+                      </TableCell>
                       <TableCell className="text-right font-bold text-primary">{t.value}</TableCell>
                     </TableRow>
                   ))}
@@ -131,9 +133,9 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
           </CardContent>
         </Card>
 
-        <Card className="border-border/20 shadow-lg bg-card rounded-2xl">
-          <CardHeader className="border-b border-border/20 pb-4">
-            <CardTitle className="text-base font-bold text-white">
+        <Card className="border-border shadow-sm bg-card rounded-2xl">
+          <CardHeader className="border-b border-border pb-4">
+            <CardTitle className="text-base font-bold text-foreground">
               Distribuição por Modalidade
             </CardTitle>
           </CardHeader>
@@ -144,7 +146,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
                   <PieChart>
                     <Tooltip
                       content={
-                        <ChartTooltipContent className="bg-popover border-border shadow-2xl font-medium" />
+                        <ChartTooltipContent className="bg-popover border-border shadow-lg font-medium" />
                       }
                     />
                     <Legend

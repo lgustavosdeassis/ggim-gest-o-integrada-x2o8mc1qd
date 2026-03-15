@@ -5,51 +5,51 @@
 @layer base {
   :root,
   .dark {
-    /* Vitalis Inspired Dark Blue & Yellow Theme */
-    --background: 222 47% 8%; /* Deep dark blue background */
-    --foreground: 0 0% 100%; /* Bright white text */
+    /* Light Theme with GGIM Brand Colors */
+    --background: 0 0% 98%; /* Very light gray for better contrast */
+    --foreground: 222 47% 11%; /* Deep dark blue for text */
 
-    --card: 222 47% 11%; /* Distinct card background slightly lighter */
-    --card-foreground: 0 0% 100%;
+    --card: 0 0% 100%; /* Pure white for cards */
+    --card-foreground: 222 47% 11%;
 
-    --popover: 222 47% 11%;
-    --popover-foreground: 0 0% 100%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
 
-    --primary: 45 100% 50%; /* Vibrant, high-visibility Yellow */
-    --primary-foreground: 222 47% 8%; /* Dark text on yellow for contrast */
+    --primary: 222 47% 11%; /* Official Dark Blue */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 30% 16%; /* Lighter dark blue for secondary elements */
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 45 100% 50%; /* Official Yellow */
+    --secondary-foreground: 222 47% 11%; /* Dark text on yellow */
 
-    --muted: 215 30% 16%;
-    --muted-foreground: 215 20% 65%; /* Readable gray/blue for subdued text */
+    --muted: 210 40% 95%; /* Subtle gray for backgrounds */
+    --muted-foreground: 215 16% 40%; /* Readable gray for subdued text */
 
-    --accent: 45 100% 50%; /* Yellow accent matching primary */
-    --accent-foreground: 222 47% 8%;
+    --accent: 45 100% 50%; /* Yellow accent */
+    --accent-foreground: 222 47% 11%;
 
-    --destructive: 0 84% 60%; /* Bright visible red for errors */
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 215 30% 18%; /* Subtle visible borders */
-    --input: 215 30% 18%;
-    --ring: 45 100% 50%; /* Clear yellow focus rings */
+    --border: 214 32% 90%; /* Visible borders */
+    --input: 214 32% 90%;
+    --ring: 222 47% 11%; /* Focus rings using Dark Blue */
     --radius: 0.75rem;
 
-    /* Chart Colors - Vitalis High Contrast Palette */
-    --chart-1: 45 100% 50%; /* Primary Yellow */
-    --chart-2: 190 90% 50%; /* Bright Cyan */
-    --chart-3: 150 80% 50%; /* Bright Green */
-    --chart-4: 30 100% 60%; /* Bright Orange */
-    --chart-5: 280 80% 70%; /* Bright Purple */
+    /* Chart Colors - High Contrast for Light Mode */
+    --chart-1: 222 47% 11%; /* Dark Blue */
+    --chart-2: 45 100% 45%; /* Yellow slightly darker for contrast */
+    --chart-3: 190 90% 35%; /* Teal */
+    --chart-4: 30 100% 50%; /* Orange */
+    --chart-5: 150 80% 35%; /* Green */
 
-    /* Sidebar specific dark styling */
-    --sidebar-background: 222 47% 6%;
+    /* Sidebar specific styling (Dark Blue theme) */
+    --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 0 0% 100%;
     --sidebar-primary: 45 100% 50%;
-    --sidebar-primary-foreground: 222 47% 8%;
-    --sidebar-accent: 215 30% 14%;
-    --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 215 30% 14%;
+    --sidebar-primary-foreground: 222 47% 11%;
+    --sidebar-accent: 215 30% 16%;
+    --sidebar-accent-foreground: 45 100% 50%;
+    --sidebar-border: 215 30% 16%;
     --sidebar-ring: 45 100% 50%;
   }
 }

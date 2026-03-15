@@ -25,10 +25,10 @@ export function AppSidebar() {
   const location = useLocation()
 
   return (
-    <Sidebar className="border-r border-border/20 shadow-xl no-print bg-sidebar">
-      <SidebarHeader className="border-b border-border/10 py-6 px-6 bg-sidebar">
+    <Sidebar className="border-r border-sidebar-border shadow-xl no-print bg-sidebar">
+      <SidebarHeader className="border-b border-sidebar-border py-6 px-6 bg-sidebar">
         <div className="flex items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-primary/30 shadow-lg bg-white p-0.5">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-sidebar-primary/30 shadow-lg bg-white p-0.5">
             <img
               src={logoCmtecs}
               alt="CMTecs Logo"
@@ -36,13 +36,15 @@ export function AppSidebar() {
             />
           </div>
           <div className="flex flex-col flex-1 truncate">
-            <span className="truncate font-black text-xl tracking-tight text-white">CMTecs</span>
+            <span className="truncate font-black text-xl tracking-tight text-sidebar-foreground">
+              CMTecs
+            </span>
           </div>
         </div>
       </SidebarHeader>
       <SidebarContent className="px-4 pt-6">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[11px] uppercase tracking-widest text-muted-foreground mb-4 px-2 font-bold">
+          <SidebarGroupLabel className="text-[11px] uppercase tracking-widest text-sidebar-foreground/50 mb-4 px-2 font-bold">
             Menu Principal
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -56,13 +58,13 @@ export function AppSidebar() {
                       isActive={isActive}
                       className={`h-12 rounded-xl transition-all duration-200 ${
                         isActive
-                          ? 'bg-muted/60 text-primary font-bold shadow-sm'
-                          : 'text-muted-foreground hover:text-white hover:bg-muted/30 font-medium'
+                          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-sm'
+                          : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50 font-medium'
                       }`}
                     >
                       <Link to={item.url} className="flex items-center gap-3 px-2">
                         <item.icon
-                          className={`h-5 w-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`}
+                          className={`h-5 w-5 ${isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/50'}`}
                         />
                         <span className="text-sm">{item.title}</span>
                       </Link>
@@ -82,13 +84,13 @@ export function AppSidebar() {
               isActive={location.pathname === '/profile'}
               className={`h-12 rounded-xl transition-all duration-200 ${
                 location.pathname === '/profile'
-                  ? 'bg-muted/60 text-primary font-bold shadow-sm'
-                  : 'text-muted-foreground hover:text-white hover:bg-muted/30 font-medium'
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-sm'
+                  : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50 font-medium'
               }`}
             >
               <Link to="/profile" className="flex items-center gap-3 px-2">
                 <Settings
-                  className={`h-5 w-5 ${location.pathname === '/profile' ? 'text-primary' : 'text-muted-foreground'}`}
+                  className={`h-5 w-5 ${location.pathname === '/profile' ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/50'}`}
                 />
                 <span className="text-sm">Minha Conta</span>
               </Link>

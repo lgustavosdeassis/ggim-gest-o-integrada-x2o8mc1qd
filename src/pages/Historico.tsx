@@ -83,8 +83,10 @@ export default function Historico() {
     <div className="flex flex-col gap-8 max-w-[1600px] mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-white mb-2">Acervo Histórico</h1>
-          <p className="text-muted-foreground text-base">
+          <h1 className="text-4xl font-black tracking-tight text-foreground mb-2">
+            Acervo Histórico
+          </h1>
+          <p className="text-muted-foreground text-base font-medium">
             Visualize, filtre e gerencie detalhadamente os dados crus em tabela.
           </p>
         </div>
@@ -94,7 +96,7 @@ export default function Historico() {
             <Input
               type="search"
               placeholder="Pesquisa global..."
-              className="pl-11 bg-card border-border/30 h-12 rounded-xl text-white focus-visible:ring-primary/50"
+              className="pl-11 bg-card border-border h-12 rounded-xl text-foreground focus-visible:ring-primary/50 shadow-sm"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -103,7 +105,7 @@ export default function Historico() {
             <Button
               variant="destructive"
               onClick={handleBulkDelete}
-              className="h-12 px-5 rounded-xl font-bold shadow-lg"
+              className="h-12 px-5 rounded-xl font-bold shadow-sm"
             >
               <Trash className="h-4 w-4 mr-2" /> Excluir ({selectedIds.size})
             </Button>
@@ -111,17 +113,16 @@ export default function Historico() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border/20 bg-card shadow-xl overflow-hidden">
+      <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
         <Table>
-          <TableHeader className="bg-muted/30">
-            <TableRow className="border-border/20 hover:bg-transparent">
+          <TableHeader className="bg-muted/50">
+            <TableRow className="border-border hover:bg-transparent">
               <TableHead className="w-[60px] pl-6 py-5">
                 <Checkbox
                   checked={
                     selectedIds.size === filteredActivities.length && filteredActivities.length > 0
                   }
                   onCheckedChange={toggleSelectAll}
-                  className="border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                 />
               </TableHead>
               <TableHead className="text-xs font-bold uppercase tracking-widest text-muted-foreground py-5">
@@ -143,7 +144,7 @@ export default function Historico() {
           </TableHeader>
           <TableBody>
             {filteredActivities.length === 0 ? (
-              <TableRow className="border-border/10">
+              <TableRow className="border-border">
                 <TableCell
                   colSpan={6}
                   className="text-center py-16 text-muted-foreground font-medium text-base"
@@ -170,17 +171,16 @@ export default function Historico() {
                 return (
                   <TableRow
                     key={act.id}
-                    className="border-border/10 hover:bg-muted/20 transition-colors group"
+                    className="border-border hover:bg-muted/50 transition-colors group"
                   >
                     <TableCell className="pl-6 py-4">
                       <Checkbox
                         checked={selectedIds.has(act.id)}
                         onCheckedChange={() => toggleSelect(act.id)}
-                        className="border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                       />
                     </TableCell>
                     <TableCell className="py-4">
-                      <div className="font-bold text-white text-sm mb-1">{act.instance}</div>
+                      <div className="font-bold text-foreground text-sm mb-1">{act.instance}</div>
                       <div className="text-xs text-muted-foreground font-medium line-clamp-1">
                         <span className="text-primary font-semibold">
                           {formatDateTime(act.meetingStart).substring(0, 10)}
@@ -189,7 +189,7 @@ export default function Historico() {
                       </div>
                     </TableCell>
                     <TableCell className="py-4">
-                      <div className="inline-flex items-center rounded-md border border-border/40 px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest bg-background text-gray-300">
+                      <div className="inline-flex items-center rounded-md border border-border px-2 py-0.5 text-[11px] font-bold uppercase tracking-widest bg-background text-muted-foreground">
                         {act.eventType}
                       </div>
                       <div className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest mt-2">
@@ -200,12 +200,12 @@ export default function Historico() {
                       </div>
                     </TableCell>
                     <TableCell className="py-4">
-                      <div className="text-sm text-gray-300 font-medium">
-                        <span className="font-black text-white">
+                      <div className="text-sm text-muted-foreground font-medium">
+                        <span className="font-black text-foreground">
                           {parseSemicolonList(act.participantsPF).length}
                         </span>{' '}
                         PF •{' '}
-                        <span className="font-black text-white">
+                        <span className="font-black text-foreground">
                           {parseSemicolonList(act.participantsPJ).length}
                         </span>{' '}
                         PJ
@@ -221,7 +221,7 @@ export default function Historico() {
                           {act.documents.map((d, i) => (
                             <span
                               key={i}
-                              className="inline-flex items-center rounded border border-primary/30 px-2 py-0.5 text-[10px] font-bold bg-primary/10 text-primary uppercase tracking-widest truncate max-w-[80px]"
+                              className="inline-flex items-center rounded border border-primary/20 px-2 py-0.5 text-[10px] font-bold bg-primary/10 text-primary uppercase tracking-widest truncate max-w-[80px]"
                               title={d.name}
                             >
                               {d.type || 'S/TIPO'}
@@ -239,24 +239,24 @@ export default function Historico() {
                         <DropdownMenuTrigger asChild>
                           <Button
                             variant="ghost"
-                            className="h-9 w-9 p-0 rounded-xl hover:bg-muted/50 text-muted-foreground hover:text-white"
+                            className="h-9 w-9 p-0 rounded-xl hover:bg-muted text-muted-foreground hover:text-foreground"
                           >
                             <MoreHorizontal className="h-5 w-5" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
                           align="end"
-                          className="w-56 border-border/40 bg-card/95 backdrop-blur shadow-2xl rounded-xl"
+                          className="w-56 border-border bg-popover shadow-xl rounded-xl"
                         >
                           <DropdownMenuItem
                             onClick={() => setViewActivity(act)}
-                            className="cursor-pointer py-2.5 font-medium focus:bg-muted focus:text-white"
+                            className="cursor-pointer py-2.5 font-medium focus:bg-accent focus:text-accent-foreground"
                           >
                             <Eye className="mr-3 h-4 w-4 text-primary" /> Inspecionar Total
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => navigate(`/registrar?edit=${act.id}`)}
-                            className="cursor-pointer py-2.5 font-medium focus:bg-muted focus:text-white"
+                            className="cursor-pointer py-2.5 font-medium focus:bg-accent focus:text-accent-foreground"
                           >
                             <Pencil className="mr-3 h-4 w-4 text-chart-2" /> Editar Dados
                           </DropdownMenuItem>
@@ -278,9 +278,9 @@ export default function Historico() {
       </div>
 
       <Dialog open={!!viewActivity} onOpenChange={(open) => !open && setViewActivity(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-card border-border/20 shadow-2xl rounded-2xl p-0">
-          <DialogHeader className="p-6 border-b border-border/10 bg-muted/20 sticky top-0 z-10 backdrop-blur-xl">
-            <DialogTitle className="text-xl font-black text-white flex items-center gap-3">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-card border-border shadow-2xl rounded-2xl p-0">
+          <DialogHeader className="p-6 border-b border-border bg-muted/50 sticky top-0 z-10 backdrop-blur-xl">
+            <DialogTitle className="text-xl font-black text-foreground flex items-center gap-3">
               <div className="w-2 h-6 bg-primary rounded-full" />
               Espelho Completo do Registro
             </DialogTitle>
@@ -295,41 +295,41 @@ export default function Historico() {
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
                     Instância
                   </span>
-                  <p className="font-bold text-white">{viewActivity.instance}</p>
+                  <p className="font-bold text-foreground">{viewActivity.instance}</p>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
                     Tipologia
                   </span>
-                  <p className="font-bold text-white">{viewActivity.eventType}</p>
+                  <p className="font-bold text-foreground">{viewActivity.eventType}</p>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
                     Modalidade
                   </span>
-                  <p className="font-bold text-white">{viewActivity.modality}</p>
+                  <p className="font-bold text-foreground">{viewActivity.modality}</p>
                 </div>
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
                     Localização
                   </span>
-                  <p className="font-bold text-white">{viewActivity.location}</p>
+                  <p className="font-bold text-foreground">{viewActivity.location}</p>
                 </div>
               </div>
 
-              <div className="bg-background/50 p-5 rounded-2xl border border-border/20">
+              <div className="bg-muted/30 p-5 rounded-2xl border border-border">
                 <div className="flex justify-between items-center mb-4">
-                  <span className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                  <span className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-2">
                     <Clock className="w-4 h-4 text-primary" /> Tempo e Ações
                   </span>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex justify-between items-center pb-3 border-b border-border/20">
+                  <div className="flex justify-between items-center pb-3 border-b border-border">
                     <span className="text-sm font-medium text-muted-foreground">
                       Base ({formatDateTime(viewActivity.meetingStart)} a{' '}
                       {formatDateTime(viewActivity.meetingEnd)})
                     </span>
-                    <span className="font-mono font-bold text-white bg-muted px-2 py-1 rounded">
+                    <span className="font-mono font-bold text-foreground bg-muted px-2 py-1 rounded">
                       {calculateHoursDifference(
                         viewActivity.meetingStart,
                         viewActivity.meetingEnd,
@@ -343,7 +343,7 @@ export default function Historico() {
                       {viewActivity.actions.map((a, i) => (
                         <div
                           key={i}
-                          className="flex justify-between items-center text-sm bg-card p-3 rounded-xl border border-border/30"
+                          className="flex justify-between items-center text-sm bg-card p-3 rounded-xl border border-border"
                         >
                           <span className="font-medium text-muted-foreground">
                             Ação Extra #{i + 1} ({formatDateTime(a.start).substring(0, 5)} a{' '}
@@ -358,7 +358,7 @@ export default function Historico() {
                   )}
 
                   <div className="flex justify-between items-center pt-3 mt-1">
-                    <span className="font-black text-white uppercase tracking-widest text-sm">
+                    <span className="font-black text-foreground uppercase tracking-widest text-sm">
                       Horas Dedicadas (Soma):
                     </span>
                     <span className="text-xl font-black text-primary">
@@ -382,11 +382,11 @@ export default function Historico() {
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-between mb-2">
                     Nomes (PF){' '}
-                    <span className="bg-muted px-2 py-0.5 rounded text-white">
+                    <span className="bg-muted px-2 py-0.5 rounded text-foreground">
                       {parseSemicolonList(viewActivity.participantsPF).length}
                     </span>
                   </span>
-                  <div className="p-4 bg-muted/10 rounded-xl border border-border/20 text-sm text-gray-300 leading-relaxed max-h-40 overflow-y-auto font-medium">
+                  <div className="p-4 bg-muted/50 rounded-xl border border-border text-sm text-foreground leading-relaxed max-h-40 overflow-y-auto font-medium">
                     {viewActivity.participantsPF
                       ? parseSemicolonList(viewActivity.participantsPF).join(' • ')
                       : 'Sem dados.'}
@@ -395,11 +395,11 @@ export default function Historico() {
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-between mb-2">
                     Instituições (PJ){' '}
-                    <span className="bg-muted px-2 py-0.5 rounded text-white">
+                    <span className="bg-muted px-2 py-0.5 rounded text-foreground">
                       {parseSemicolonList(viewActivity.participantsPJ).length}
                     </span>
                   </span>
-                  <div className="p-4 bg-muted/10 rounded-xl border border-border/20 text-sm text-gray-300 leading-relaxed max-h-40 overflow-y-auto font-medium">
+                  <div className="p-4 bg-muted/50 rounded-xl border border-border text-sm text-foreground leading-relaxed max-h-40 overflow-y-auto font-medium">
                     {viewActivity.participantsPJ
                       ? parseSemicolonList(viewActivity.participantsPJ).join(' • ')
                       : 'Sem dados.'}
@@ -411,11 +411,11 @@ export default function Historico() {
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-between mb-2">
                     Deliberações Firmadas{' '}
-                    <span className="bg-muted px-2 py-0.5 rounded text-white">
+                    <span className="bg-muted px-2 py-0.5 rounded text-foreground">
                       {parseSemicolonList(viewActivity.deliberations).length}
                     </span>
                   </span>
-                  <div className="p-4 bg-muted/10 rounded-xl border border-border/20 text-sm text-white leading-relaxed max-h-40 overflow-y-auto font-medium">
+                  <div className="p-4 bg-muted/50 rounded-xl border border-border text-sm text-foreground leading-relaxed max-h-40 overflow-y-auto font-medium">
                     <ul className="list-disc pl-5 space-y-1">
                       {parseSemicolonList(viewActivity.deliberations).map((d, i) => (
                         <li key={i}>{d}</li>
@@ -429,7 +429,7 @@ export default function Historico() {
                 <div>
                   <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-between mb-3">
                     Acervo / Anexos{' '}
-                    <span className="bg-primary/20 text-primary px-2 py-0.5 rounded font-black">
+                    <span className="bg-primary/10 text-primary px-2 py-0.5 rounded font-black border border-primary/20">
                       {viewActivity.documents.length}
                     </span>
                   </span>
@@ -437,12 +437,12 @@ export default function Historico() {
                     {viewActivity.documents.map((doc, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center justify-between bg-card p-3 border border-border/30 rounded-xl"
+                        className="flex items-center justify-between bg-card p-3 border border-border rounded-xl shadow-sm"
                       >
-                        <span className="font-semibold text-sm text-white truncate pr-4">
+                        <span className="font-semibold text-sm text-foreground truncate pr-4">
                           {doc.name}
                         </span>
-                        <span className="text-[10px] font-black bg-muted px-2 py-1 rounded uppercase tracking-widest text-primary shrink-0">
+                        <span className="text-[10px] font-black bg-muted px-2 py-1 rounded uppercase tracking-widest text-primary shrink-0 border border-border">
                           {doc.type || 'S/TIPO'}
                         </span>
                       </div>
