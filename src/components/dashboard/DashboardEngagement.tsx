@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 export function DashboardEngagement({ stats }: { stats: any }) {
+  if (!stats || stats.totalEvents === 0) return null
+
   const { engagement } = stats
 
   return (
@@ -14,7 +16,6 @@ export function DashboardEngagement({ stats }: { stats: any }) {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 print-break-inside-avoid">
-        {/* Engagement Cards */}
         <Card className="shadow-subtle">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -29,7 +30,7 @@ export function DashboardEngagement({ stats }: { stats: any }) {
               </div>
               <div className="text-right">
                 <div className="text-xl font-semibold text-primary">{engagement.pfUnique}</div>
-                <p className="text-xs text-primary/80">Participantes Únicos</p>
+                <p className="text-xs text-primary/80">Únicos</p>
               </div>
             </div>
           </CardContent>
@@ -49,7 +50,7 @@ export function DashboardEngagement({ stats }: { stats: any }) {
               </div>
               <div className="text-right">
                 <div className="text-xl font-semibold text-secondary">{engagement.pjUnique}</div>
-                <p className="text-xs text-secondary/80">Instituições Únicas</p>
+                <p className="text-xs text-secondary/80">Únicas</p>
               </div>
             </div>
           </CardContent>
@@ -115,7 +116,6 @@ export function DashboardEngagement({ stats }: { stats: any }) {
 
 function RankingCard({ title, ranking, type }: { title: string; ranking: any; type: string }) {
   const badgeColor = type === 'pf' ? 'bg-primary' : 'bg-secondary text-white'
-
   return (
     <Card className="shadow-subtle bg-slate-50/50">
       <CardHeader className="pb-3">
@@ -139,7 +139,7 @@ function RankingCard({ title, ranking, type }: { title: string; ranking: any; ty
                     variant="secondary"
                     className={`${badgeColor} w-6 h-6 p-0 flex items-center justify-center rounded-full shrink-0`}
                   >
-                    {i + 1}
+                    1
                   </Badge>
                   <span className="truncate font-medium text-slate-700" title={name}>
                     {name}

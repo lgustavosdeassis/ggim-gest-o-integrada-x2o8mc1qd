@@ -1,13 +1,14 @@
 import { create } from 'zustand'
-import { Activity } from '@/lib/types'
+import { ActivityRecord } from '@/lib/types'
 import { mockActivities } from '@/lib/mock-data'
 
 interface AppState {
-  activities: Activity[]
-  addActivity: (activity: Omit<Activity, 'id' | 'createdAt'>) => void
-  updateActivity: (id: string, activity: Partial<Activity>) => void
+  activities: ActivityRecord[]
+  addActivity: (activity: Omit<ActivityRecord, 'id' | 'createdAt'>) => void
+  updateActivity: (id: string, activity: Partial<ActivityRecord>) => void
   deleteActivity: (id: string) => void
   bulkDeleteActivities: (ids: string[]) => void
+  importActivities: (activities: Omit<ActivityRecord, 'id' | 'createdAt'>[]) => void
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -19,7 +20,7 @@ export const useAppStore = create<AppState>((set) => ({
           ...activity,
           id: Math.random().toString(36).substr(2, 9),
           createdAt: new Date().toISOString(),
-        } as Activity,
+        } as ActivityRecord,
         ...state.activities,
       ],
     })),
@@ -34,5 +35,19 @@ export const useAppStore = create<AppState>((set) => ({
   bulkDeleteActivities: (ids) =>
     set((state) => ({
       activities: state.activities.filter((a) => !ids.includes(a.id)),
+    })),
+  importActivities: (newActivities) =>
+    set((state) => ({
+      activities: [
+        ...newActivities.map(
+          (a) =>
+            ({
+              ...a,
+              id: Math.random().toString(36).substr(2, 9),
+              createdAt: new Date().toISOString(),
+            }) as ActivityRecord,
+        ),
+        ...state.activities,
+      ],
     })),
 }))

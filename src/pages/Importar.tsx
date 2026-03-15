@@ -1,192 +1,204 @@
 import { useState, useRef } from 'react'
-import { UploadCloud, FileType, CheckCircle2, AlertCircle } from 'lucide-react'
+import { UploadCloud, FileType, CheckCircle2, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/progress'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useAppStore } from '@/stores/main'
+import { ActivityRecord } from '@/lib/types'
+
+const DB_FIELDS = [
+  { id: 'instance', label: 'Instância' },
+  { id: 'eventType', label: 'Tipo de Evento' },
+  { id: 'modality', label: 'Modalidade' },
+  { id: 'location', label: 'Local' },
+  { id: 'meetingStart', label: 'Início da Reunião (ISO)' },
+  { id: 'meetingEnd', label: 'Término da Reunião (ISO)' },
+  { id: 'participantsPF', label: 'Participantes PF' },
+  { id: 'participantsPJ', label: 'Participantes PJ' },
+  { id: 'deliberations', label: 'Deliberações' },
+]
 
 export default function Importar() {
-  const [isDragging, setIsDragging] = useState(false)
+  const [step, setStep] = useState(1)
   const [file, setFile] = useState<File | null>(null)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadComplete, setUploadComplete] = useState(false)
+  const [csvHeaders, setCsvHeaders] = useState<string[]>([])
+  const [csvData, setCsvData] = useState<any[]>([])
+  const [mapping, setMapping] = useState<Record<string, string>>({})
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+  const { importActivities } = useAppStore()
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(true)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0]
+    if (!selected) return
+    setFile(selected)
+
+    // Mock CSV parsing to avoid external dependencies, simulate delay for UI
+    setTimeout(() => {
+      setCsvHeaders([
+        'Instância',
+        'Evento',
+        'Modalidade',
+        'Data_Inicio',
+        'Local',
+        'Participantes',
+        'Instituicoes',
+        'Decisoes',
+      ])
+      setCsvData([
+        {
+          Instância: 'CMTEC-PVC',
+          Evento: 'Reunião Ordinária',
+          Modalidade: 'Presencial',
+          Data_Inicio: '2026-03-01T10:00:00Z',
+          Local: 'Sede GGIM',
+          Participantes: 'Ana; Carlos',
+          Instituicoes: 'PMFI',
+          Decisoes: 'Aprovação',
+        },
+        {
+          Instância: 'Eventos Institucionais',
+          Evento: 'Seminário',
+          Modalidade: 'Remota',
+          Data_Inicio: '2026-03-05T14:00:00Z',
+          Local: 'Zoom',
+          Participantes: 'Pedro; João',
+          Instituicoes: 'Bombeiros',
+          Decisoes: '',
+        },
+      ])
+      setStep(2)
+    }, 500)
   }
 
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(false)
+  const handleImport = () => {
+    const imported: Omit<ActivityRecord, 'id' | 'createdAt'>[] = csvData.map((row) => ({
+      instance: row[mapping['instance']] || 'Desconhecida',
+      eventType: row[mapping['eventType']] || 'Outro',
+      modality: row[mapping['modality']] || 'Presencial',
+      location: row[mapping['location']] || 'Não informado',
+      meetingStart: row[mapping['meetingStart']] || new Date().toISOString(),
+      meetingEnd: row[mapping['meetingEnd']] || new Date().toISOString(),
+      hasAction: false,
+      participantsPF: row[mapping['participantsPF']] || '',
+      participantsPJ: row[mapping['participantsPJ']] || '',
+      deliberations: row[mapping['deliberations']] || '',
+      documents: [],
+    }))
+    importActivities(imported)
+    toast({ title: 'Sucesso', description: `${imported.length} registros importados com sucesso.` })
+    setStep(3)
   }
 
-  const validateAndSetFile = (selectedFile: File) => {
-    const validTypes = [
-      'text/csv',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'application/vnd.ms-excel',
-    ]
-
-    if (!validTypes.includes(selectedFile.type) && !selectedFile.name.match(/\.(csv|xlsx)$/)) {
-      toast({
-        title: 'Arquivo inválido',
-        description: 'Por favor, envie apenas arquivos CSV ou XLSX.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    setFile(selectedFile)
-    setUploadComplete(false)
-    setUploadProgress(0)
-  }
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    setIsDragging(false)
-
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      validateAndSetFile(e.dataTransfer.files[0])
-    }
-  }
-
-  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      validateAndSetFile(e.target.files[0])
-    }
-  }
-
-  const handleUpload = () => {
-    if (!file) return
-
-    setIsUploading(true)
-    setUploadProgress(0)
-
-    // Mock upload process
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += 10
-
-      if (progress >= 100) {
-        clearInterval(interval)
-        setUploadProgress(100)
-        setIsUploading(false)
-        setUploadComplete(true)
-        toast({
-          title: 'Importação concluída',
-          description: `${file.name} foi importado com sucesso.`,
-        })
-      } else {
-        setUploadProgress(progress)
-      }
-    }, 200)
-  }
-
-  const resetUpload = () => {
+  const reset = () => {
+    setStep(1)
     setFile(null)
-    setUploadProgress(0)
-    setUploadComplete(false)
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
-    }
+    setMapping({})
+    setCsvHeaders([])
+    setCsvData([])
   }
 
   return (
     <div className="flex flex-col gap-6 max-w-3xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Importar Dados</h1>
-        <p className="text-muted-foreground">
-          Faça a migração do histórico de dados através de planilhas CSV ou XLSX.
-        </p>
+        <p className="text-muted-foreground">Faça a migração do histórico de dados (CSV/XLSX).</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Upload de Arquivo</CardTitle>
-          <CardDescription>
-            Arraste e solte o arquivo ou clique para procurar no seu computador.
-          </CardDescription>
+          <CardTitle>
+            {step === 1 ? '1. Upload' : step === 2 ? '2. Mapeamento' : '3. Concluído'}
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          {!file ? (
+          {step === 1 && (
             <div
-              className={cn(
-                'border-2 border-dashed rounded-lg p-12 text-center transition-colors duration-200 ease-in-out cursor-pointer hover:bg-slate-50',
-                isDragging ? 'border-primary bg-primary/5' : 'border-slate-200',
-              )}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
+              className="border-2 border-dashed rounded-lg p-12 text-center cursor-pointer hover:bg-slate-50 border-slate-200"
               onClick={() => fileInputRef.current?.click()}
             >
               <input
                 type="file"
                 ref={fileInputRef}
                 className="hidden"
-                accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
-                onChange={handleFileInput}
+                accept=".csv,.xlsx"
+                onChange={handleFileChange}
               />
               <div className="flex flex-col items-center gap-4">
                 <div className="p-4 bg-primary/10 rounded-full">
                   <UploadCloud className="w-8 h-8 text-primary" />
                 </div>
                 <div>
-                  <p className="text-lg font-medium">Arraste um arquivo CSV ou XLSX</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    ou clique para procurar arquivo
-                  </p>
-                </div>
-                <div className="flex gap-2 text-xs text-muted-foreground mt-4">
-                  <span className="flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" /> Tamanho máx: 10MB
-                  </span>
+                  <p className="text-lg font-medium">Selecione o arquivo CSV ou XLSX</p>
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="border rounded-lg p-6 space-y-6">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                  <FileType className="w-6 h-6" />
-                </div>
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-sm truncate max-w-[300px] sm:max-w-[400px]">
-                      {file.name}
-                    </p>
-                    {uploadComplete && <CheckCircle2 className="w-5 h-5 text-green-500" />}
-                  </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-lg border">
+                <FileType className="w-6 h-6 text-blue-500" />
+                <div>
+                  <p className="font-medium">{file?.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {(file.size / 1024 / 1024).toFixed(2)} MB
+                    {csvData.length} linhas encontradas
                   </p>
                 </div>
               </div>
-
-              {(isUploading || uploadComplete) && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{uploadComplete ? 'Concluído' : 'Enviando...'}</span>
-                    <span>{uploadProgress}%</span>
+              <div className="space-y-4">
+                <p className="text-sm font-medium">
+                  Mapeie as colunas do seu arquivo para os campos do sistema:
+                </p>
+                {DB_FIELDS.map((field) => (
+                  <div key={field.id} className="grid grid-cols-2 gap-4 items-center border-b pb-4">
+                    <div className="text-sm font-medium text-slate-700">{field.label}</div>
+                    <Select
+                      onValueChange={(val) => setMapping((prev) => ({ ...prev, [field.id]: val }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Ignorar" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {csvHeaders.map((h) => (
+                          <SelectItem key={h} value={h}>
+                            {h}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <Progress value={uploadProgress} className="h-2" />
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <Button variant="outline" onClick={resetUpload} disabled={isUploading}>
-                  {uploadComplete ? 'Importar outro' : 'Cancelar'}
-                </Button>
-                {!uploadComplete && (
-                  <Button onClick={handleUpload} disabled={isUploading}>
-                    {isUploading ? 'Processando...' : 'Confirmar Importação'}
-                  </Button>
-                )}
+                ))}
               </div>
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={reset}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleImport}>Confirmar Importação</Button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="text-center py-12 space-y-4">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-medium">Importação Finalizada</h3>
+              <p className="text-muted-foreground">
+                Os dados foram integrados ao histórico com sucesso.
+              </p>
+              <Button onClick={reset} className="mt-4">
+                Nova Importação
+              </Button>
             </div>
           )}
         </CardContent>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -22,37 +22,35 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent } from '@/components/ui/card'
 import { Trash } from 'lucide-react'
+import { calculateHoursDifference } from '@/lib/utils'
 
 const INSTANCIAS = [
   'Colegiado Pleno',
   'Eventos Institucionais',
-  'CMTEC AIFU',
-  'CMTEC PVC',
-  'CMTEC PVCCA/RP',
-  'CMTEC PVCM/CMDM',
-  'CMTEC TRAN/PVT',
-  'CMTEC MA',
-  'CMTEC AP/COMUD',
-  'CMTEC ETP',
+  'CMTEC-TRAN/PVT',
+  'CMTEC-PVCM/CMDM',
+  'CMTEC-PVCCA/RP',
+  'CMTEC-PVC',
+  'CMTEC-MA',
+  'CMTEC-ETP',
+  'CMTEC-AP/COMUD',
+  'CMTEC-AIFU',
 ]
-
 const EVENTOS_TIPO = [
   'Reunião Ordinária',
   'Reunião Extraordinária',
   'Reunião Institucional',
-  'Visita Técnica',
-  'Capacitação',
-  'Seminário',
   'Treinamento',
   'Curso',
-  'Congressos',
+  'Congresso',
   'Colóquio',
   'Fórum',
   'Webinário',
-  'Palestras',
+  'Palestra',
   'Apresentação',
   'Networking',
   'Convenção',
@@ -62,37 +60,57 @@ const EVENTOS_TIPO = [
   'Programa',
   'Feira',
   'Exposição',
-  'Mesa Redonda',
+  'Mesa redonda',
   'Painel',
   'Workshop',
   'Oficina',
-  'Roadshop',
+  'Roadshow',
   'Campanha',
   'Blitz',
   'Operação',
+  'Visita técnica',
+]
+const DOC_CATEGORIES = [
+  'Ofício',
+  'Ata',
+  'Relatório',
+  'Transcrição',
+  'E-mail',
+  'SID',
+  'Fotos',
+  'Áudio',
+  'Outros',
 ]
 
-const DOC_CATEGORIAS = ['Ofício', 'Ata', 'Relatório', 'Email', 'SID', 'Transcrição', 'Outros']
-
-const formSchema = z.object({
-  instance: z.string().min(1, 'Selecione uma instância'),
-  type: z.string().min(1, 'Selecione o tipo'),
-  modality: z.string().min(1, 'Selecione a modalidade'),
-  startDate: z.string().min(1, 'Data é obrigatória'),
-  location: z.string().min(1, 'Local é obrigatório'),
-  participantsPF: z.coerce.number().min(0),
-  participantsPJ: z.coerce.number().min(0),
-  description: z.string().optional(),
-  documents: z
-    .array(
-      z.object({
-        id: z.string().optional(),
-        category: z.string().min(1, 'Categoria é obrigatória'),
-        name: z.string().min(1, 'Nome é obrigatório'),
-      }),
-    )
-    .optional(),
-})
+const formSchema = z
+  .object({
+    instance: z.string().min(1, 'Selecione uma instância'),
+    eventType: z.string().min(1, 'Selecione o tipo'),
+    modality: z.string().min(1, 'Selecione a modalidade'),
+    location: z.string().min(1, 'Local é obrigatório'),
+    meetingStart: z.string().min(1, 'Obrigatório'),
+    meetingEnd: z.string().min(1, 'Obrigatório'),
+    hasAction: z.boolean().default(false),
+    actionStart: z.string().optional(),
+    actionEnd: z.string().optional(),
+    participantsPF: z.string().optional(),
+    participantsPJ: z.string().optional(),
+    deliberations: z.string().optional(),
+    description: z.string().optional(),
+    documents: z
+      .array(
+        z.object({
+          id: z.string().optional(),
+          name: z.string().min(1, 'Obrigatório'),
+          categories: z.array(z.string()).default([]),
+        }),
+      )
+      .optional(),
+  })
+  .refine((d) => !d.hasAction || (d.actionStart && d.actionEnd), {
+    message: 'Preencha datas da ação',
+    path: ['actionEnd'],
+  })
 
 type FormValues = z.infer<typeof formSchema>
 
@@ -102,18 +120,21 @@ export default function Registrar() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { activities, addActivity, updateActivity } = useAppStore()
+  const [mockFile, setMockFile] = useState<File | null>(null)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       instance: '',
-      type: '',
+      eventType: '',
       modality: '',
-      startDate: '',
       location: '',
-      participantsPF: 0,
-      participantsPJ: 0,
-      description: '',
+      meetingStart: '',
+      meetingEnd: '',
+      hasAction: false,
+      participantsPF: '',
+      participantsPJ: '',
+      deliberations: '',
       documents: [],
     },
   })
@@ -122,29 +143,12 @@ export default function Registrar() {
     fields: docsFields,
     append: appendDoc,
     remove: removeDoc,
-  } = useFieldArray({
-    control: form.control,
-    name: 'documents',
-  })
+  } = useFieldArray({ control: form.control, name: 'documents' })
 
   useEffect(() => {
     if (editId) {
       const activity = activities.find((a) => a.id === editId)
-      if (activity) {
-        form.reset({
-          instance: activity.instance,
-          type: activity.type,
-          modality: activity.modality,
-          startDate: activity.startDate
-            ? new Date(activity.startDate).toISOString().slice(0, 16)
-            : '',
-          location: activity.location,
-          participantsPF: activity.participantsPF,
-          participantsPJ: activity.participantsPJ,
-          description: activity.description || '',
-          documents: activity.documents || [],
-        })
-      }
+      if (activity) form.reset(activity)
     }
   }, [editId, activities, form])
 
@@ -155,261 +159,343 @@ export default function Registrar() {
         ...doc,
         id: doc.id || Math.random().toString(36).substr(2, 9),
       })),
-      startDate: new Date(data.startDate).toISOString(),
-    }
-
+    } as any
     if (editId) {
       updateActivity(editId, payload)
-      toast({ title: 'Sucesso', description: 'Atividade atualizada com sucesso.' })
+      toast({ title: 'Atividade atualizada.' })
     } else {
       addActivity(payload)
-      toast({ title: 'Sucesso', description: 'Atividade registrada com sucesso.' })
+      toast({ title: 'Atividade registrada.' })
     }
     navigate('/historico')
   }
 
+  const wMeetingStart = form.watch('meetingStart')
+  const wMeetingEnd = form.watch('meetingEnd')
+  const wHasAction = form.watch('hasAction')
+  const wActionStart = form.watch('actionStart')
+  const wActionEnd = form.watch('actionEnd')
+  const tMeeting = calculateHoursDifference(wMeetingStart, wMeetingEnd)
+  const tAction =
+    wHasAction && wActionStart && wActionEnd
+      ? calculateHoursDifference(wActionStart, wActionEnd)
+      : 0
+
   return (
-    <div className="flex flex-col gap-6 max-w-3xl mx-auto">
+    <div className="flex flex-col gap-6 max-w-4xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
           {editId ? 'Editar Atividade' : 'Registrar Atividade'}
         </h1>
-        <p className="text-muted-foreground">
-          {editId
-            ? 'Altere as informações do registro existente.'
-            : 'Preencha o formulário para adicionar uma nova atividade.'}
-        </p>
+        <p className="text-muted-foreground">Preencha as informações detalhadas da atividade.</p>
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="instance"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Instância</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {INSTANCIAS.map((i) => (
-                            <SelectItem key={i} value={i}>
-                              {i}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Evento</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {EVENTOS_TIPO.map((i) => (
-                            <SelectItem key={i} value={i}>
-                              {i}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="modality"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Modalidade</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Presencial">Presencial</SelectItem>
-                          <SelectItem value="Remota">Remota</SelectItem>
-                          <SelectItem value="Híbrida">Híbrida</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="startDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Data e Hora</FormLabel>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <Card>
+            <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="instance"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Instância</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Input type="datetime-local" {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="location"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Local</FormLabel>
+                      <SelectContent>
+                        {INSTANCIAS.map((i) => (
+                          <SelectItem key={i} value={i}>
+                            {i}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="eventType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Evento</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <Input placeholder="Onde ocorreu o evento?" {...field} />
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
                       </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                      <SelectContent>
+                        {EVENTOS_TIPO.map((i) => (
+                          <SelectItem key={i} value={i}>
+                            {i}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="modality"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Modalidade</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Presencial">Presencial</SelectItem>
+                        <SelectItem value="Remota">Remota</SelectItem>
+                        <SelectItem value="Híbrida">Híbrida</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="location"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Local</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Onde ocorreu?" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="participantsPF"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Pessoas Físicas (PF)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="participantsPJ"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Pessoas Jurídicas (PJ)</FormLabel>
-                        <FormControl>
-                          <Input type="number" min="0" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+          <Card>
+            <CardContent className="pt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="col-span-1 md:col-span-2 flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Tempos e Duração</h3>
+                <div className="text-sm font-semibold bg-slate-100 px-3 py-1 rounded-md">
+                  Total Dedicado: {(tMeeting + tAction).toFixed(1)}h
                 </div>
               </div>
+              <FormField
+                control={form.control}
+                name="meetingStart"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Início da Reunião</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="meetingEnd"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Término da Reunião</FormLabel>
+                    <FormControl>
+                      <Input type="datetime-local" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="hasAction"
+                render={({ field }) => (
+                  <FormItem className="col-span-1 md:col-span-2 flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                    <FormControl>
+                      <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                    </FormControl>
+                    <div className="space-y-1 leading-none">
+                      <FormLabel>Ação Gerada a Partir da Reunião?</FormLabel>
+                    </div>
+                  </FormItem>
+                )}
+              />
+              {wHasAction && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="actionStart"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Início da Ação</FormLabel>
+                        <FormControl>
+                          <Input type="datetime-local" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="actionEnd"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Término da Ação</FormLabel>
+                        <FormControl>
+                          <Input type="datetime-local" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </>
+              )}
+            </CardContent>
+          </Card>
 
-              <div className="space-y-4 pt-4 border-t">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
-                    Documentos Gerados
-                  </h3>
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <h3 className="text-lg font-semibold">Engajamento</h3>
+              <FormField
+                control={form.control}
+                name="participantsPF"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pessoas Físicas (separadas por ponto e vírgula)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Ex: João Silva; Maria Oliveira" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="participantsPJ"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pessoas Jurídicas (separadas por ponto e vírgula)</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Ex: Prefeitura; Polícia Militar" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Documentos e Deliberações</h3>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="file"
+                    className="w-[200px]"
+                    onChange={(e) => setMockFile(e.target.files?.[0] || null)}
+                  />
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => appendDoc({ category: '', name: '' })}
+                    onClick={() => {
+                      if (mockFile) {
+                        appendDoc({ name: mockFile.name, categories: [] })
+                        setMockFile(null)
+                      } else appendDoc({ name: 'Novo Documento', categories: [] })
+                    }}
                   >
-                    Adicionar Documento
+                    Add Doc
                   </Button>
                 </div>
+              </div>
 
-                {docsFields.map((field, index) => (
-                  <div
-                    key={field.id}
-                    className="flex items-start gap-4 p-4 border rounded-lg bg-slate-50/50"
-                  >
-                    <FormField
-                      control={form.control}
-                      name={`documents.${index}.category`}
-                      render={({ field: catField }) => (
-                        <FormItem className="flex-1">
-                          <FormLabel>Categoria</FormLabel>
-                          <Select onValueChange={catField.onChange} value={catField.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Selecione..." />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {DOC_CATEGORIAS.map((i) => (
-                                <SelectItem key={i} value={i}>
-                                  {i}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+              {docsFields.map((field, index) => (
+                <div key={field.id} className="p-4 border rounded-lg bg-slate-50 space-y-4">
+                  <div className="flex items-start gap-4">
                     <FormField
                       control={form.control}
                       name={`documents.${index}.name`}
                       render={({ field: nameField }) => (
-                        <FormItem className="flex-[2]">
-                          <FormLabel>Nome do Arquivo</FormLabel>
+                        <FormItem className="flex-1">
+                          <FormLabel>Arquivo</FormLabel>
                           <FormControl>
-                            <Input placeholder="Ex: Ata de Reunião 123" {...nameField} />
+                            <Input {...nameField} />
                           </FormControl>
-                          <FormMessage />
                         </FormItem>
                       )}
                     />
                     <Button
                       type="button"
                       variant="ghost"
-                      className="mt-8 text-red-500 hover:text-red-700 hover:bg-red-50"
+                      className="mt-8 text-red-500"
                       onClick={() => removeDoc(index)}
                     >
                       <Trash className="w-4 h-4" />
                     </Button>
                   </div>
-                ))}
-              </div>
+                  <FormField
+                    control={form.control}
+                    name={`documents.${index}.categories`}
+                    render={({ field: catField }) => (
+                      <FormItem>
+                        <FormLabel>Categorias</FormLabel>
+                        <div className="flex flex-wrap gap-4">
+                          {DOC_CATEGORIES.map((cat) => (
+                            <label key={cat} className="flex items-center gap-2 text-sm">
+                              <Checkbox
+                                checked={catField.value?.includes(cat)}
+                                onCheckedChange={(checked) => {
+                                  checked
+                                    ? catField.onChange([...(catField.value || []), cat])
+                                    : catField.onChange(
+                                        (catField.value || []).filter((v: string) => v !== cat),
+                                      )
+                                }}
+                              />{' '}
+                              {cat}
+                            </label>
+                          ))}
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              ))}
 
               <FormField
                 control={form.control}
-                name="description"
+                name="deliberations"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Descrição (Opcional)</FormLabel>
+                  <FormItem className="pt-4 border-t">
+                    <FormLabel>Deliberações (separadas por ponto e vírgula)</FormLabel>
                     <FormControl>
-                      <Textarea placeholder="Detalhes adicionais..." {...field} />
+                      <Textarea placeholder="Ex: Aprovada pauta 1; Marcada nova data" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            </CardContent>
+          </Card>
 
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => navigate('/historico')}>
-                  Cancelar
-                </Button>
-                <Button type="submit">{editId ? 'Salvar Alterações' : 'Salvar Atividade'}</Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" type="button" onClick={() => navigate('/historico')}>
+              Cancelar
+            </Button>
+            <Button type="submit">{editId ? 'Salvar Alterações' : 'Salvar Atividade'}</Button>
+          </div>
+        </form>
+      </Form>
     </div>
   )
 }

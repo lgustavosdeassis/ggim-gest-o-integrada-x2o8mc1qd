@@ -4,11 +4,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 import { FileText, Files } from 'lucide-react'
 
 export function DashboardProductivity({ stats }: { stats: any }) {
-  const { productivity } = stats
+  if (!stats || stats.totalEvents === 0) return null
 
-  const barConfig = {
-    value: { label: 'Arquivos', color: 'hsl(var(--chart-5))' },
-  }
+  const { productivity } = stats
+  const barConfig = { value: { label: 'Arquivos', color: 'hsl(var(--chart-5))' } }
 
   return (
     <div className="space-y-6 mt-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
@@ -28,7 +27,7 @@ export function DashboardProductivity({ stats }: { stats: any }) {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{productivity.deliberations}</div>
-              <p className="text-xs text-muted-foreground mt-1">Registradas em atas/ofícios</p>
+              <p className="text-xs text-muted-foreground mt-1">Registradas no sistema</p>
             </CardContent>
           </Card>
 
@@ -49,29 +48,35 @@ export function DashboardProductivity({ stats }: { stats: any }) {
             <CardTitle>Tipos de Arquivos Gerados</CardTitle>
           </CardHeader>
           <CardContent className="h-[200px]">
-            <ChartContainer config={barConfig} className="h-full w-full">
-              <BarChart
-                data={productivity.docsData}
-                margin={{ top: 10, right: 0, bottom: 20, left: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tickLine={false}
-                  axisLine={false}
-                  tick={{ fontSize: 11 }}
-                  dy={10}
-                />
-                <YAxis hide />
-                <ChartTooltip content={<ChartTooltipContent hideIndicator />} />
-                <Bar
-                  dataKey="value"
-                  fill="var(--color-value)"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={50}
-                />
-              </BarChart>
-            </ChartContainer>
+            {productivity.docsData.length > 0 ? (
+              <ChartContainer config={barConfig} className="h-full w-full">
+                <BarChart
+                  data={productivity.docsData}
+                  margin={{ top: 10, right: 0, bottom: 20, left: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 11 }}
+                    dy={10}
+                  />
+                  <YAxis hide />
+                  <ChartTooltip content={<ChartTooltipContent hideIndicator />} />
+                  <Bar
+                    dataKey="value"
+                    fill="var(--color-value)"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={50}
+                  />
+                </BarChart>
+              </ChartContainer>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                Sem documentos
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

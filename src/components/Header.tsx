@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import ggimLogo from '../assets/logo-ggim-texto-preto-sem-fundo-a89c1.jpeg'
+import ggimLogo from '@/assets/logo-ggim-texto-preto-sem-fundo-a89c1.jpeg'
 
 export function Header() {
   return (
@@ -43,20 +43,15 @@ export function Header() {
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notificações</span>
-          <span className="absolute right-1 top-1 flex h-2 w-2 rounded-full bg-destructive"></span>
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="secondary" size="icon" className="rounded-full">
               <User className="h-5 w-5" />
-              <span className="sr-only">Menu do usuário</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Configurações</DropdownMenuItem>
-            <DropdownMenuItem>Suporte</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Sair</DropdownMenuItem>
           </DropdownMenuContent>

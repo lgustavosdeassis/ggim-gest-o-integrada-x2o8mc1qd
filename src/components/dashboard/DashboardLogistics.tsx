@@ -2,6 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 export function DashboardLogistics({ stats }: { stats: any }) {
+  if (!stats || stats.totalEvents === 0) return null
+
   const { locations } = stats
 
   return (
@@ -58,7 +60,7 @@ export function DashboardLogistics({ stats }: { stats: any }) {
                         variant="secondary"
                         className="bg-slate-700 text-white w-6 h-6 p-0 flex items-center justify-center rounded-full shrink-0"
                       >
-                        {i + 1}
+                        {1}
                       </Badge>
                       <span className="truncate font-medium text-slate-700" title={name}>
                         {name}

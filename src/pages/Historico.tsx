@@ -26,38 +26,33 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { format } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { Activity } from '@/lib/types'
+import { formatDateTime, parseSemicolonList } from '@/lib/utils'
+import { ActivityRecord } from '@/lib/types'
 
 export default function Historico() {
   const navigate = useNavigate()
   const { activities, deleteActivity, bulkDeleteActivities } = useAppStore()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-  const [viewActivity, setViewActivity] = useState<Activity | null>(null)
+  const [viewActivity, setViewActivity] = useState<ActivityRecord | null>(null)
 
   const filteredActivities = activities.filter(
     (act) =>
       act.instance.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      act.type.toLowerCase().includes(searchTerm.toLowerCase()),
+      act.eventType.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === filteredActivities.length) {
-      setSelectedIds(new Set())
-    } else {
-      setSelectedIds(new Set(filteredActivities.map((a) => a.id)))
-    }
+    setSelectedIds(
+      selectedIds.size === filteredActivities.length
+        ? new Set()
+        : new Set(filteredActivities.map((a) => a.id)),
+    )
   }
 
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds)
-    if (newSelected.has(id)) {
-      newSelected.delete(id)
-    } else {
-      newSelected.add(id)
-    }
+    newSelected.has(id) ? newSelected.delete(id) : newSelected.add(id)
     setSelectedIds(newSelected)
   }
 
@@ -116,11 +111,10 @@ export default function Historico() {
                     selectedIds.size === filteredActivities.length && filteredActivities.length > 0
                   }
                   onCheckedChange={toggleSelectAll}
-                  aria-label="Selecionar todos"
                 />
               </TableHead>
               <TableHead>Data Inicial</TableHead>
-              <TableHead>Instância</TableHead>
+              <TableHead>Instância / Local</TableHead>
               <TableHead>Tipo / Modalidade</TableHead>
               <TableHead>Participantes</TableHead>
               <TableHead className="text-right">Ações</TableHead>
@@ -140,36 +134,40 @@ export default function Historico() {
                     <Checkbox
                       checked={selectedIds.has(act.id)}
                       onCheckedChange={() => toggleSelect(act.id)}
-                      aria-label={`Selecionar registro ${act.id}`}
                     />
                   </TableCell>
-                  <TableCell>
-                    {format(new Date(act.startDate), 'dd/MM/yyyy, HH:mm', { locale: ptBR })}
-                  </TableCell>
+                  <TableCell>{formatDateTime(act.meetingStart)}</TableCell>
                   <TableCell>
                     <div className="font-medium">{act.instance}</div>
                     <div className="text-xs text-muted-foreground">{act.location}</div>
                   </TableCell>
                   <TableCell>
                     <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold">
-                      {act.type}
+                      {act.eventType}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">{act.modality}</div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {act.modality} {act.hasAction ? '• Com Ação' : ''}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      <span className="font-medium">{act.participantsPF}</span> PF •{' '}
-                      <span className="font-medium">{act.participantsPJ}</span> PJ
+                      <span className="font-medium">
+                        {parseSemicolonList(act.participantsPF).length}
+                      </span>{' '}
+                      PF •{' '}
+                      <span className="font-medium">
+                        {parseSemicolonList(act.participantsPJ).length}
+                      </span>{' '}
+                      PJ
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {act.documents.length} Docs Anexos
+                      {act.documents?.length || 0} Docs
                     </div>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Abrir menu</span>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -183,7 +181,7 @@ export default function Historico() {
                           Editar
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="text-red-600 focus:bg-red-50 focus:text-red-600"
+                          className="text-red-600 focus:bg-red-50"
                           onClick={() => handleDelete(act.id)}
                         >
                           <Trash className="mr-2 h-4 w-4" />
@@ -204,7 +202,7 @@ export default function Historico() {
           <DialogHeader>
             <DialogTitle>Detalhes da Atividade</DialogTitle>
             <DialogDescription className="sr-only">
-              Informações completas do registro de atividade selecionado.
+              Informações completas do registro.
             </DialogDescription>
           </DialogHeader>
           {viewActivity && (
@@ -216,29 +214,41 @@ export default function Historico() {
                 </div>
                 <div>
                   <span className="font-semibold text-muted-foreground">Tipo de Evento</span>
-                  <p>{viewActivity.type}</p>
+                  <p>{viewActivity.eventType}</p>
                 </div>
                 <div>
-                  <span className="font-semibold text-muted-foreground">Data e Hora</span>
-                  <p>{format(new Date(viewActivity.startDate), 'dd/MM/yyyy HH:mm')}</p>
+                  <span className="font-semibold text-muted-foreground">Reunião</span>
+                  <p>
+                    {formatDateTime(viewActivity.meetingStart)} a{' '}
+                    {formatDateTime(viewActivity.meetingEnd)}
+                  </p>
                 </div>
                 <div>
                   <span className="font-semibold text-muted-foreground">Local</span>
                   <p>{viewActivity.location}</p>
                 </div>
-                <div>
-                  <span className="font-semibold text-muted-foreground">Participantes PF</span>
-                  <p>{viewActivity.participantsPF}</p>
-                </div>
-                <div>
-                  <span className="font-semibold text-muted-foreground">Participantes PJ</span>
-                  <p>{viewActivity.participantsPJ}</p>
-                </div>
+                {viewActivity.hasAction && (
+                  <div className="col-span-2">
+                    <span className="font-semibold text-muted-foreground">Ação Gerada</span>
+                    <p>
+                      {formatDateTime(viewActivity.actionStart || '')} a{' '}
+                      {formatDateTime(viewActivity.actionEnd || '')}
+                    </p>
+                  </div>
+                )}
               </div>
-              {viewActivity.description && (
+              <div>
+                <span className="font-semibold text-muted-foreground">Participantes PF</span>
+                <p className="mt-1">{viewActivity.participantsPF}</p>
+              </div>
+              <div>
+                <span className="font-semibold text-muted-foreground">Participantes PJ</span>
+                <p className="mt-1">{viewActivity.participantsPJ}</p>
+              </div>
+              {viewActivity.deliberations && (
                 <div>
-                  <span className="font-semibold text-muted-foreground">Descrição</span>
-                  <p className="mt-1">{viewActivity.description}</p>
+                  <span className="font-semibold text-muted-foreground">Deliberações</span>
+                  <p className="mt-1">{viewActivity.deliberations}</p>
                 </div>
               )}
             </div>

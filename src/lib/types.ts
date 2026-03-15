@@ -1,21 +1,24 @@
 export interface Document {
   id: string
-  category: string
   name: string
-  url?: string
+  categories: string[]
 }
 
-export interface Activity {
+export interface ActivityRecord {
   id: string
-  startDate: string
-  endDate?: string
   instance: string
-  type: string
+  eventType: string
   modality: string
   location: string
-  participantsPF: number
-  participantsPJ: number
+  meetingStart: string
+  meetingEnd: string
+  hasAction: boolean
+  actionStart?: string
+  actionEnd?: string
+  participantsPF: string
+  participantsPJ: string
   documents: Document[]
+  deliberations: string
   description?: string
   createdAt: string
 }
