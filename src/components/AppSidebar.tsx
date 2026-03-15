@@ -28,11 +28,11 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border shadow-xl no-print bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border py-6 px-6 bg-sidebar">
         <div className="flex items-center gap-4">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-sidebar-primary/30 shadow-lg bg-white p-0.5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-sidebar-primary/30 shadow-lg bg-white">
             <img
               src={logoCmtecs}
               alt="CMTecs Logo"
-              className="h-full w-full object-cover rounded-full"
+              className="h-full w-full object-cover scale-110"
             />
           </div>
           <div className="flex flex-col flex-1 truncate">
