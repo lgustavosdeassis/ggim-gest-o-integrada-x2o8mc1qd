@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/stores/main'
 import {
@@ -16,46 +16,63 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
-import { MoreHorizontal, Search, Trash, Eye, Pencil, Clock, FileText } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
+import { MoreHorizontal, Trash, Eye, Pencil, Clock, FileText } from 'lucide-react'
 import { formatDateTime, parseSemicolonList, calculateHoursDifference } from '@/lib/utils'
 import { ActivityRecord } from '@/lib/types'
+import { FilterSection } from '@/components/historico/FilterSection'
+import { ViewDialog } from '@/components/historico/ViewDialog'
 
 export default function Historico() {
   const navigate = useNavigate()
   const { activities, deleteActivity, bulkDeleteActivities } = useAppStore()
   const [searchTerm, setSearchTerm] = useState('')
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined)
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [viewActivity, setViewActivity] = useState<ActivityRecord | null>(null)
 
-  const filteredActivities = activities.filter(
-    (act) =>
-      act.instance.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      act.eventType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      act.location.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  useEffect(() => {
+    if (startDate && endDate && endDate < startDate) {
+      setEndDate(undefined)
+    }
+  }, [startDate, endDate])
+
+  const filteredActivities = activities.filter((act) => {
+    const s = searchTerm.toLowerCase()
+    const matchesSearch =
+      !s ||
+      act.instance.toLowerCase().includes(s) ||
+      act.eventType.toLowerCase().includes(s) ||
+      act.location.toLowerCase().includes(s)
+
+    let matchesDate = true
+    if (startDate || endDate) {
+      const actDate = new Date(act.meetingStart)
+      if (startDate) {
+        const start = new Date(startDate)
+        start.setHours(0, 0, 0, 0)
+        if (actDate < start) matchesDate = false
+      }
+      if (endDate) {
+        const end = new Date(endDate)
+        end.setHours(23, 59, 59, 999)
+        if (actDate > end) matchesDate = false
+      }
+    }
+    return matchesSearch && matchesDate
+  })
 
   const toggleSelectAll = () =>
     setSelectedIds(
-      selectedIds.size === filteredActivities.length
+      selectedIds.size === filteredActivities.length && filteredActivities.length > 0
         ? new Set()
         : new Set(filteredActivities.map((a) => a.id)),
     )
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds)
-    if (newSelected.has(id)) {
-      newSelected.delete(id)
-    } else {
-      newSelected.add(id)
-    }
+    if (newSelected.has(id)) newSelected.delete(id)
+    else newSelected.add(id)
     setSelectedIds(newSelected)
   }
 
@@ -91,16 +108,6 @@ export default function Historico() {
           </p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative w-full sm:w-80">
-            <Search className="absolute left-4 top-3.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Pesquisa global..."
-              className="pl-11 bg-card border-border h-12 rounded-xl text-foreground focus-visible:ring-primary/50 shadow-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
           {selectedIds.size > 0 && (
             <Button
               variant="destructive"
@@ -112,6 +119,15 @@ export default function Historico() {
           )}
         </div>
       </div>
+
+      <FilterSection
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        startDate={startDate}
+        setStartDate={setStartDate}
+        endDate={endDate}
+        setEndDate={setEndDate}
+      />
 
       <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
         <Table>
@@ -150,7 +166,7 @@ export default function Historico() {
                   className="text-center py-16 text-muted-foreground font-medium text-base"
                 >
                   <FileText className="h-10 w-10 mx-auto mb-4 opacity-20" />
-                  Nenhum registro encontrado correspondente à pesquisa.
+                  Nenhum registro encontrado correspondente à pesquisa e período.
                 </TableCell>
               </TableRow>
             ) : (
@@ -277,183 +293,7 @@ export default function Historico() {
         </Table>
       </div>
 
-      <Dialog open={!!viewActivity} onOpenChange={(open) => !open && setViewActivity(null)}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto bg-card border-border shadow-2xl rounded-2xl p-0">
-          <DialogHeader className="p-6 border-b border-border bg-muted/50 sticky top-0 z-10 backdrop-blur-xl">
-            <DialogTitle className="text-xl font-black text-foreground flex items-center gap-3">
-              <div className="w-2 h-6 bg-primary rounded-full" />
-              Espelho Completo do Registro
-            </DialogTitle>
-            <DialogDescription className="sr-only">
-              Informações completas do registro.
-            </DialogDescription>
-          </DialogHeader>
-          {viewActivity && (
-            <div className="p-6 space-y-8">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-6 gap-x-6">
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
-                    Instância
-                  </span>
-                  <p className="font-bold text-foreground">{viewActivity.instance}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
-                    Tipologia
-                  </span>
-                  <p className="font-bold text-foreground">{viewActivity.eventType}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
-                    Modalidade
-                  </span>
-                  <p className="font-bold text-foreground">{viewActivity.modality}</p>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
-                    Localização
-                  </span>
-                  <p className="font-bold text-foreground">{viewActivity.location}</p>
-                </div>
-              </div>
-
-              <div className="bg-muted/30 p-5 rounded-2xl border border-border">
-                <div className="flex justify-between items-center mb-4">
-                  <span className="text-xs font-bold text-foreground uppercase tracking-widest flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary" /> Tempo e Ações
-                  </span>
-                </div>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center pb-3 border-b border-border">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      Base ({formatDateTime(viewActivity.meetingStart)} a{' '}
-                      {formatDateTime(viewActivity.meetingEnd)})
-                    </span>
-                    <span className="font-mono font-bold text-foreground bg-muted px-2 py-1 rounded">
-                      {calculateHoursDifference(
-                        viewActivity.meetingStart,
-                        viewActivity.meetingEnd,
-                      ).toFixed(1)}
-                      h
-                    </span>
-                  </div>
-
-                  {viewActivity.actions && viewActivity.actions.length > 0 && (
-                    <div className="pt-2 space-y-2">
-                      {viewActivity.actions.map((a, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-between items-center text-sm bg-card p-3 rounded-xl border border-border"
-                        >
-                          <span className="font-medium text-muted-foreground">
-                            Ação Extra #{i + 1} ({formatDateTime(a.start).substring(0, 5)} a{' '}
-                            {formatDateTime(a.end).substring(0, 5)})
-                          </span>
-                          <span className="font-mono font-bold text-primary">
-                            +{calculateHoursDifference(a.start, a.end).toFixed(1)}h
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center pt-3 mt-1">
-                    <span className="font-black text-foreground uppercase tracking-widest text-sm">
-                      Horas Dedicadas (Soma):
-                    </span>
-                    <span className="text-xl font-black text-primary">
-                      {(
-                        calculateHoursDifference(
-                          viewActivity.meetingStart,
-                          viewActivity.meetingEnd,
-                        ) +
-                        (viewActivity.actions || []).reduce(
-                          (acc, a) => acc + calculateHoursDifference(a.start, a.end),
-                          0,
-                        )
-                      ).toFixed(1)}
-                      h
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-between mb-2">
-                    Nomes (PF){' '}
-                    <span className="bg-muted px-2 py-0.5 rounded text-foreground">
-                      {parseSemicolonList(viewActivity.participantsPF).length}
-                    </span>
-                  </span>
-                  <div className="p-4 bg-muted/50 rounded-xl border border-border text-sm text-foreground leading-relaxed max-h-40 overflow-y-auto font-medium">
-                    {viewActivity.participantsPF
-                      ? parseSemicolonList(viewActivity.participantsPF).join(' • ')
-                      : 'Sem dados.'}
-                  </div>
-                </div>
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-between mb-2">
-                    Instituições (PJ){' '}
-                    <span className="bg-muted px-2 py-0.5 rounded text-foreground">
-                      {parseSemicolonList(viewActivity.participantsPJ).length}
-                    </span>
-                  </span>
-                  <div className="p-4 bg-muted/50 rounded-xl border border-border text-sm text-foreground leading-relaxed max-h-40 overflow-y-auto font-medium">
-                    {viewActivity.participantsPJ
-                      ? parseSemicolonList(viewActivity.participantsPJ).join(' • ')
-                      : 'Sem dados.'}
-                  </div>
-                </div>
-              </div>
-
-              {viewActivity.deliberations && (
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-between mb-2">
-                    Deliberações Firmadas{' '}
-                    <span className="bg-muted px-2 py-0.5 rounded text-foreground">
-                      {parseSemicolonList(viewActivity.deliberations).length}
-                    </span>
-                  </span>
-                  <div className="p-4 bg-muted/50 rounded-xl border border-border text-sm text-foreground leading-relaxed max-h-40 overflow-y-auto font-medium">
-                    <ul className="list-disc pl-5 space-y-1">
-                      {parseSemicolonList(viewActivity.deliberations).map((d, i) => (
-                        <li key={i}>{d}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              {viewActivity.documents && viewActivity.documents.length > 0 && (
-                <div>
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center justify-between mb-3">
-                    Acervo / Anexos{' '}
-                    <span className="bg-primary/10 text-primary px-2 py-0.5 rounded font-black border border-primary/20">
-                      {viewActivity.documents.length}
-                    </span>
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {viewActivity.documents.map((doc, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between bg-card p-3 border border-border rounded-xl shadow-sm"
-                      >
-                        <span className="font-semibold text-sm text-foreground truncate pr-4">
-                          {doc.name}
-                        </span>
-                        <span className="text-[10px] font-black bg-muted px-2 py-1 rounded uppercase tracking-widest text-primary shrink-0 border border-border">
-                          {doc.type || 'S/TIPO'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      <ViewDialog viewActivity={viewActivity} setViewActivity={setViewActivity} />
     </div>
   )
 }
