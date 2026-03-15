@@ -52,7 +52,11 @@ export default function Historico() {
 
   const toggleSelect = (id: string) => {
     const newSelected = new Set(selectedIds)
-    newSelected.has(id) ? newSelected.delete(id) : newSelected.add(id)
+    if (newSelected.has(id)) {
+      newSelected.delete(id)
+    } else {
+      newSelected.add(id)
+    }
     setSelectedIds(newSelected)
   }
 

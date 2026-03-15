@@ -455,11 +455,13 @@ export default function Registrar() {
                               <Checkbox
                                 checked={catField.value?.includes(cat)}
                                 onCheckedChange={(checked) => {
-                                  checked
-                                    ? catField.onChange([...(catField.value || []), cat])
-                                    : catField.onChange(
-                                        (catField.value || []).filter((v: string) => v !== cat),
-                                      )
+                                  if (checked) {
+                                    catField.onChange([...(catField.value || []), cat])
+                                  } else {
+                                    catField.onChange(
+                                      (catField.value || []).filter((v: string) => v !== cat),
+                                    )
+                                  }
                                 }}
                               />{' '}
                               {cat}
