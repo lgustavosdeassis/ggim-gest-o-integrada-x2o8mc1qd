@@ -25,8 +25,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent } from '@/components/ui/card'
-import { Trash } from 'lucide-react'
-import { calculateHoursDifference } from '@/lib/utils'
+import { Trash, FileUp } from 'lucide-react'
+import { calculateHoursDifference, parseSemicolonList } from '@/lib/utils'
 
 const INSTANCIAS = [
   'Colegiado Pleno',
@@ -83,25 +83,24 @@ const DOC_CATEGORIES = [
 ]
 
 const formSchema = z.object({
-  instance: z.string().min(1, 'Selecione uma instância'),
-  eventType: z.string().min(1, 'Selecione o tipo'),
-  modality: z.string().min(1, 'Selecione a modalidade'),
-  location: z.string().min(1, 'Local é obrigatório'),
+  instance: z.string().min(1, 'Obrigatório'),
+  eventType: z.string().min(1, 'Obrigatório'),
+  modality: z.string().min(1, 'Obrigatório'),
+  location: z.string().min(1, 'Obrigatório'),
   meetingStart: z.string().min(1, 'Obrigatório'),
   meetingEnd: z.string().min(1, 'Obrigatório'),
   actions: z
     .array(
       z.object({
         id: z.string().optional(),
-        start: z.string().min(1, 'Início é obrigatório'),
-        end: z.string().min(1, 'Término é obrigatório'),
+        start: z.string().min(1, 'Obrigatório'),
+        end: z.string().min(1, 'Obrigatório'),
       }),
     )
     .default([]),
   participantsPF: z.string().optional(),
   participantsPJ: z.string().optional(),
   deliberations: z.string().optional(),
-  description: z.string().optional(),
   documents: z
     .array(
       z.object({
@@ -121,7 +120,6 @@ export default function Registrar() {
   const navigate = useNavigate()
   const { toast } = useToast()
   const { activities, addActivity, updateActivity } = useAppStore()
-  const [mockFile, setMockFile] = useState<File | null>(null)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -145,7 +143,6 @@ export default function Registrar() {
     append: appendDoc,
     remove: removeDoc,
   } = useFieldArray({ control: form.control, name: 'documents' })
-
   const {
     fields: actionsFields,
     append: appendAction,
@@ -185,7 +182,6 @@ export default function Registrar() {
         id: doc.id || Math.random().toString(36).substr(2, 9),
       })),
     } as any
-
     if (editId) {
       updateActivity(editId, payload)
       toast({ title: 'Atividade atualizada.' })
@@ -203,12 +199,14 @@ export default function Registrar() {
   const tAction = wActions.reduce((acc, a) => acc + calculateHoursDifference(a.start, a.end), 0)
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto">
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">
           {editId ? 'Editar Atividade' : 'Registrar Atividade'}
         </h1>
-        <p className="text-muted-foreground">Preencha as informações detalhadas da atividade.</p>
+        <p className="text-muted-foreground">
+          Preencha as informações detalhadas da atividade com cálculos automáticos.
+        </p>
       </div>
 
       <Form {...form}>
@@ -290,7 +288,7 @@ export default function Registrar() {
                 name="location"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Local</FormLabel>
+                    <FormLabel>Local do Evento</FormLabel>
                     <FormControl>
                       <Input placeholder="Onde ocorreu?" {...field} />
                     </FormControl>
@@ -302,20 +300,26 @@ export default function Registrar() {
           </Card>
 
           <Card>
-            <CardContent className="pt-6 grid grid-cols-1 gap-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Tempos e Duração</h3>
-                <div className="text-sm font-semibold bg-primary/10 text-primary px-3 py-1 rounded-md uppercase tracking-wider">
-                  Total Dedicado: {(tMeeting + tAction).toFixed(1)}h
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Logística e Duração</h3>
+                <div className="text-sm font-bold bg-primary/20 text-primary px-3 py-1 rounded-md uppercase">
+                  TOTAL DE HORAS DEDICADAS: {(tMeeting + tAction).toFixed(1)}h
                 </div>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border p-4 rounded-lg mb-4">
+                <div className="col-span-1 md:col-span-2 flex justify-between">
+                  <h4 className="font-medium text-sm">Tempo de Reunião</h4>
+                  <span className="text-xs text-muted-foreground font-medium">
+                    Duração: {tMeeting.toFixed(1)}h
+                  </span>
+                </div>
                 <FormField
                   control={form.control}
                   name="meetingStart"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Início da Reunião</FormLabel>
+                      <FormLabel>Início</FormLabel>
                       <FormControl>
                         <Input type="datetime-local" {...field} />
                       </FormControl>
@@ -328,7 +332,7 @@ export default function Registrar() {
                   name="meetingEnd"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Término da Reunião</FormLabel>
+                      <FormLabel>Término</FormLabel>
                       <FormControl>
                         <Input type="datetime-local" {...field} />
                       </FormControl>
@@ -338,48 +342,50 @@ export default function Registrar() {
                 />
               </div>
 
-              <div className="mt-4 border-t pt-4">
+              <div className="border-t pt-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-md font-medium text-slate-700">Ações Vinculadas</h4>
+                  <h4 className="font-medium text-sm">Ações Vinculadas Geradas</h4>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => appendAction({ start: '', end: '' })}
                   >
-                    + Adicionar Ação
+                    + Nova Ação
                   </Button>
                 </div>
-
                 {actionsFields.map((field, index) => {
-                  const start = form.watch(`actions.${index}.start`)
-                  const end = form.watch(`actions.${index}.end`)
-                  const duration = calculateHoursDifference(start, end)
+                  const duration = calculateHoursDifference(
+                    form.watch(`actions.${index}.start`),
+                    form.watch(`actions.${index}.end`),
+                  )
                   return (
-                    <div
-                      key={field.id}
-                      className="p-4 border rounded-lg bg-slate-50 space-y-4 mb-4 relative"
-                    >
+                    <div key={field.id} className="p-4 border rounded-lg bg-muted/20 relative mb-4">
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="absolute right-2 top-2 text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                        className="absolute right-2 top-2 text-red-500 h-8 w-8"
                         onClick={() => removeAction(index)}
                       >
                         <Trash className="w-4 h-4" />
                       </Button>
+                      <div className="col-span-1 md:col-span-2 flex justify-between mr-10 mb-2">
+                        <h5 className="font-medium text-xs">Ação {index + 1}</h5>
+                        <span className="text-xs text-muted-foreground font-medium">
+                          Duração: {duration.toFixed(1)}h
+                        </span>
+                      </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mr-8">
                         <FormField
                           control={form.control}
                           name={`actions.${index}.start`}
                           render={({ field: startField }) => (
                             <FormItem>
-                              <FormLabel>Início da Ação Vinculada</FormLabel>
+                              <FormLabel className="text-xs">Início da Ação</FormLabel>
                               <FormControl>
                                 <Input type="datetime-local" {...startField} />
                               </FormControl>
-                              <FormMessage />
                             </FormItem>
                           )}
                         />
@@ -388,43 +394,43 @@ export default function Registrar() {
                           name={`actions.${index}.end`}
                           render={({ field: endField }) => (
                             <FormItem>
-                              <FormLabel>Término da Ação Vinculada</FormLabel>
+                              <FormLabel className="text-xs">Término da Ação</FormLabel>
                               <FormControl>
                                 <Input type="datetime-local" {...endField} />
                               </FormControl>
-                              <FormMessage />
                             </FormItem>
                           )}
                         />
                       </div>
-                      {duration > 0 && (
-                        <p className="text-xs text-muted-foreground text-right mr-8 font-medium">
-                          Duração da Ação: {duration.toFixed(1)}h
-                        </p>
-                      )}
                     </div>
                   )
                 })}
-                {actionsFields.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4 bg-slate-50 rounded-lg border border-dashed">
-                    Nenhuma ação vinculada registrada.
-                  </p>
-                )}
               </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardContent className="pt-6 space-y-4">
+            <CardContent className="pt-6 space-y-6">
               <h3 className="text-lg font-semibold">Engajamento</h3>
               <FormField
                 control={form.control}
                 name="participantsPF"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pessoas Físicas (separadas por ponto e vírgula)</FormLabel>
+                    <div className="flex justify-between items-end">
+                      <FormLabel>
+                        Nomes dos Participantes - PF (separados por ponto e vírgula)
+                      </FormLabel>
+                      <span className="text-xs font-semibold bg-secondary px-2 py-0.5 rounded text-secondary-foreground">
+                        Total: {parseSemicolonList(field.value || '').length}
+                      </span>
+                    </div>
                     <FormControl>
-                      <Textarea placeholder="Ex: João Silva; Maria Oliveira" {...field} />
+                      <Textarea
+                        className="min-h-[100px]"
+                        placeholder="Ex: João Silva; Maria Oliveira"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -435,9 +441,20 @@ export default function Registrar() {
                 name="participantsPJ"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Pessoas Jurídicas (separadas por ponto e vírgula)</FormLabel>
+                    <div className="flex justify-between items-end">
+                      <FormLabel>
+                        Nomes das Instituições - PJ (separadas por ponto e vírgula)
+                      </FormLabel>
+                      <span className="text-xs font-semibold bg-secondary px-2 py-0.5 rounded text-secondary-foreground">
+                        Total: {parseSemicolonList(field.value || '').length}
+                      </span>
+                    </div>
                     <FormControl>
-                      <Textarea placeholder="Ex: Prefeitura; Polícia Militar" {...field} />
+                      <Textarea
+                        className="min-h-[80px]"
+                        placeholder="Ex: Prefeitura Municipal; Corpo de Bombeiros"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -447,107 +464,138 @@ export default function Registrar() {
           </Card>
 
           <Card>
-            <CardContent className="pt-6 space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Documentos e Deliberações</h3>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="file"
-                    className="w-[200px]"
-                    onChange={(e) => setMockFile(e.target.files?.[0] || null)}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (mockFile) {
-                        appendDoc({ name: mockFile.name, categories: [] })
-                        setMockFile(null)
-                      } else appendDoc({ name: 'Novo Documento', categories: [] })
-                    }}
-                  >
-                    Add Doc
-                  </Button>
-                </div>
-              </div>
-
-              {docsFields.map((field, index) => (
-                <div key={field.id} className="p-4 border rounded-lg bg-slate-50 space-y-4">
-                  <div className="flex items-start gap-4">
-                    <FormField
-                      control={form.control}
-                      name={`documents.${index}.name`}
-                      render={({ field: nameField }) => (
-                        <FormItem className="flex-1">
-                          <FormLabel>Arquivo</FormLabel>
-                          <FormControl>
-                            <Input {...nameField} />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="mt-8 text-red-500"
-                      onClick={() => removeDoc(index)}
-                    >
-                      <Trash className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name={`documents.${index}.categories`}
-                    render={({ field: catField }) => (
-                      <FormItem>
-                        <FormLabel>Categorias</FormLabel>
-                        <div className="flex flex-wrap gap-4">
-                          {DOC_CATEGORIES.map((cat) => (
-                            <label key={cat} className="flex items-center gap-2 text-sm">
-                              <Checkbox
-                                checked={catField.value?.includes(cat)}
-                                onCheckedChange={(checked) => {
-                                  if (checked) {
-                                    catField.onChange([...(catField.value || []), cat])
-                                  } else {
-                                    catField.onChange(
-                                      (catField.value || []).filter((v: string) => v !== cat),
-                                    )
-                                  }
-                                }}
-                              />{' '}
-                              {cat}
-                            </label>
-                          ))}
-                        </div>
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              ))}
-
+            <CardContent className="pt-6 space-y-6">
+              <h3 className="text-lg font-semibold">Produtividade e Documentos</h3>
               <FormField
                 control={form.control}
                 name="deliberations"
                 render={({ field }) => (
-                  <FormItem className="pt-4 border-t">
-                    <FormLabel>Deliberações (separadas por ponto e vírgula)</FormLabel>
+                  <FormItem>
+                    <div className="flex justify-between items-end">
+                      <FormLabel>
+                        Descritivo das Deliberações (separadas por ponto e vírgula)
+                      </FormLabel>
+                      <span className="text-xs font-semibold bg-secondary px-2 py-0.5 rounded text-secondary-foreground">
+                        Total: {parseSemicolonList(field.value || '').length}
+                      </span>
+                    </div>
                     <FormControl>
-                      <Textarea placeholder="Ex: Aprovada pauta 1; Marcada nova data" {...field} />
+                      <Textarea
+                        className="min-h-[100px]"
+                        placeholder="Ex: Aprovada pauta principal; Definida data da próxima reunião"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <div className="border-t pt-6 space-y-4">
+                <div className="flex justify-between items-center bg-muted/30 p-4 rounded-lg border border-dashed">
+                  <div>
+                    <h4 className="font-medium">Arquivos Anexos</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Adicione PDFs, DOCX, TXT, Imagens ou Áudios.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm font-semibold bg-chart-5/20 text-chart-5 px-3 py-1 rounded-md">
+                      Total Geral de Documentos: {docsFields.length}
+                    </div>
+                    <Input
+                      type="file"
+                      className="hidden"
+                      id="file-upload"
+                      accept=".pdf,.docx,.txt,.jpg,.png,.jpeg,.mp3,.wav"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          appendDoc({ name: file.name, categories: [] })
+                          e.target.value = ''
+                        }
+                      }}
+                    />
+                    <Label
+                      htmlFor="file-upload"
+                      className="cursor-pointer inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-10 px-4 py-2"
+                    >
+                      <FileUp className="w-4 h-4" /> Anexar Arquivo
+                    </Label>
+                  </div>
+                </div>
+
+                {docsFields.map((field, index) => (
+                  <div key={field.id} className="p-4 border rounded-lg bg-card space-y-4">
+                    <div className="flex items-start gap-4">
+                      <FormField
+                        control={form.control}
+                        name={`documents.${index}.name`}
+                        render={({ field: nameField }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel className="text-xs">Nome do Arquivo</FormLabel>
+                            <FormControl>
+                              <Input {...nameField} readOnly className="bg-muted/50" />
+                            </FormControl>
+                          </FormItem>
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="mt-6 text-destructive hover:bg-destructive/10 h-10 w-10 p-0"
+                        onClick={() => removeDoc(index)}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <FormField
+                      control={form.control}
+                      name={`documents.${index}.categories`}
+                      render={({ field: catField }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">Categorização dos Documentos</FormLabel>
+                          <div className="flex flex-wrap gap-3 pt-1">
+                            {DOC_CATEGORIES.map((cat) => (
+                              <label
+                                key={cat}
+                                className="flex items-center gap-2 text-sm border px-3 py-1.5 rounded-full cursor-pointer hover:bg-muted/50 transition-colors"
+                              >
+                                <Checkbox
+                                  checked={catField.value?.includes(cat)}
+                                  onCheckedChange={(checked) =>
+                                    checked
+                                      ? catField.onChange([...(catField.value || []), cat])
+                                      : catField.onChange(
+                                          (catField.value || []).filter((v: string) => v !== cat),
+                                        )
+                                  }
+                                />
+                                {cat}
+                              </label>
+                            ))}
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
 
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" type="button" onClick={() => navigate('/historico')}>
+          <div className="flex justify-end gap-3 sticky bottom-4 bg-background/80 backdrop-blur-sm p-4 border rounded-xl shadow-lg">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => navigate('/historico')}
+              className="w-32"
+            >
               Cancelar
             </Button>
-            <Button type="submit">{editId ? 'Salvar Alterações' : 'Salvar Atividade'}</Button>
+            <Button type="submit" className="w-48 font-bold">
+              {editId ? 'Salvar Alterações' : 'Salvar Registro'}
+            </Button>
           </div>
         </form>
       </Form>

@@ -1,37 +1,48 @@
 import { ActivityRecord } from '@/lib/types'
 import { calculateHoursDifference, parseSemicolonList } from '@/lib/utils'
 
-export function calculateDashboardStats(records: ActivityRecord[]) {
-  if (!records || records.length === 0) {
-    return {
-      totalEvents: 0,
-      totalHours: 0,
-      totalReunioes: 0,
-      totalInstitucionais: 0,
-      totalAcoesGeradas: 0,
-      modalityData: [],
-      eventTypeData: [],
-      locations: { total: 0, unique: 0, ranking: { max: 0, names: [] } },
-      engagement: {
-        pfTotal: 0,
-        pfUnique: 0,
-        pjTotal: 0,
-        pjUnique: 0,
-        pfRanking: { max: 0, names: [] },
-        pjRanking: { max: 0, names: [] },
-        pfStats: { mean: 0, median: 0, mode: [] as number[] },
-      },
-      productivity: { deliberations: 0, totalDocs: 0, docsData: [] },
-    }
+export interface DashboardStats {
+  overview: {
+    totalEvents: number
+    formalMeetings: number
+    institutionalEvents: number
+    actionsGenerated: number
+    totalHours: number
+    eventsByType: { name: string; value: number }[]
+    modalityData: { name: string; value: number; fill: string }[]
   }
+  logistics: {
+    totalUsages: number
+    uniqueLocations: number
+    topLocation: { names: string[]; count: number }
+  }
+  engagement: {
+    pfTotal: number
+    pfUnique: number
+    pjTotal: number
+    pjUnique: number
+    topPf: { names: string[]; count: number }
+    topPj: { names: string[]; count: number }
+    pfStats: { mean: number; median: number; mode: number[] }
+  }
+  productivity: {
+    totalDeliberations: number
+    totalDocs: number
+    docsData: { name: string; value: number; fill: string }[]
+  }
+}
 
+export function calculateDashboardStats(records: ActivityRecord[]): DashboardStats {
   let totalHours = 0
-  let totalReunioes = 0
-  let totalInstitucionais = 0
-  let totalAcoesGeradas = 0
+  let formalMeetings = 0
+  let institutionalEvents = 0
+  let actionsGenerated = 0
   let totalDeliberations = 0
-  const modalityCount = { Presencial: 0, Remota: 0, Híbrida: 0 } as Record<string, number>
+
+  const modalityCount: Record<string, number> = { Presencial: 0, Remota: 0, Híbrida: 0 }
+  const eventTypeCount: Record<string, number> = {}
   const locationCount: Record<string, number> = {}
+
   const allPf: string[] = []
   const allPj: string[] = []
   const allDocs: string[] = []
@@ -43,17 +54,20 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
     if (r.actions && r.actions.length > 0) {
       r.actions.forEach((a) => {
         totalHours += calculateHoursDifference(a.start, a.end)
-        totalAcoesGeradas++
+        actionsGenerated++
       })
     } else if (r.hasAction && r.actionStart && r.actionEnd) {
       totalHours += calculateHoursDifference(r.actionStart, r.actionEnd)
-      totalAcoesGeradas++
+      actionsGenerated++
     }
 
     if (r.eventType.includes('Reunião Ordinária') || r.eventType.includes('Reunião Extraordinária'))
-      totalReunioes++
-    if (r.instance === 'Eventos Institucionais') totalInstitucionais++
+      formalMeetings++
+    if (r.instance === 'Eventos Institucionais') institutionalEvents++
+
     if (modalityCount[r.modality] !== undefined) modalityCount[r.modality]++
+    eventTypeCount[r.eventType] = (eventTypeCount[r.eventType] || 0) + 1
+
     if (r.location) locationCount[r.location] = (locationCount[r.location] || 0) + 1
 
     const pfs = parseSemicolonList(r.participantsPF)
@@ -85,21 +99,44 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
       .map(Number)
   }
 
+  const eventsByType = Object.entries(eventTypeCount)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value)
+
+  const docsData = Object.entries(
+    allDocs.reduce(
+      (acc, doc) => {
+        acc[doc] = (acc[doc] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>,
+    ),
+  )
+    .map(([name, value], i) => ({
+      name,
+      value,
+      fill: `hsl(var(--chart-${(i % 5) + 1}))`,
+    }))
+    .sort((a, b) => b.value - a.value)
+
   return {
-    totalEvents: records.length,
-    totalHours,
-    totalReunioes,
-    totalInstitucionais,
-    totalAcoesGeradas,
-    modalityData: [
-      { name: 'Presencial', value: modalityCount.Presencial || 0, fill: 'hsl(var(--chart-1))' },
-      { name: 'Remota', value: modalityCount.Remota || 0, fill: 'hsl(var(--chart-2))' },
-      { name: 'Híbrida', value: modalityCount.Híbrida || 0, fill: 'hsl(var(--chart-3))' },
-    ].filter((d) => d.value > 0),
-    locations: {
-      total: Object.values(locationCount).reduce((a, b) => a + b, 0),
-      unique: Object.keys(locationCount).length,
-      ranking: getRanking(
+    overview: {
+      totalEvents: records.length,
+      formalMeetings,
+      institutionalEvents,
+      actionsGenerated,
+      totalHours,
+      eventsByType,
+      modalityData: [
+        { name: 'Presencial', value: modalityCount.Presencial || 0, fill: 'hsl(var(--chart-1))' },
+        { name: 'Remota', value: modalityCount.Remota || 0, fill: 'hsl(var(--chart-2))' },
+        { name: 'Híbrida', value: modalityCount.Híbrida || 0, fill: 'hsl(var(--chart-3))' },
+      ].filter((d) => d.value > 0),
+    },
+    logistics: {
+      totalUsages: Object.values(locationCount).reduce((a, b) => a + b, 0),
+      uniqueLocations: Object.keys(locationCount).length,
+      topLocation: getRanking(
         Object.keys(locationCount).flatMap((k) =>
           Array(locationCount[k]).fill(k.trim().toUpperCase()),
         ),
@@ -110,24 +147,14 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
       pfUnique: new Set(allPf.map((n) => n.toLowerCase())).size,
       pjTotal: allPj.length,
       pjUnique: new Set(allPj.map((n) => n.toLowerCase())).size,
-      pfRanking: getRanking(allPf.map((n) => n.trim().toUpperCase())),
-      pjRanking: getRanking(allPj.map((n) => n.trim().toUpperCase())),
+      topPf: getRanking(allPf.map((n) => n.trim().toUpperCase())),
+      topPj: getRanking(allPj.map((n) => n.trim().toUpperCase())),
       pfStats,
     },
     productivity: {
-      deliberations: totalDeliberations,
+      totalDeliberations,
       totalDocs: allDocs.length,
-      docsData: Object.entries(
-        allDocs.reduce(
-          (acc, doc) => {
-            acc[doc] = (acc[doc] || 0) + 1
-            return acc
-          },
-          {} as Record<string, number>,
-        ),
-      )
-        .map(([name, value]) => ({ name, value }))
-        .sort((a, b) => b.value - a.value),
+      docsData,
     },
   }
 }
@@ -135,10 +162,10 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
 function getRanking(items: string[]) {
   const counts: Record<string, number> = {}
   items.forEach((i) => (counts[i] = (counts[i] || 0) + 1))
-  if (Object.keys(counts).length === 0) return { max: 0, names: [] }
+  if (Object.keys(counts).length === 0) return { count: 0, names: [] }
   const max = Math.max(...Object.values(counts))
   const names = Object.keys(counts)
     .filter((k) => counts[k] === max)
     .sort()
-  return { max, names }
+  return { count: max, names }
 }

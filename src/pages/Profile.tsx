@@ -29,7 +29,6 @@ export default function Profile() {
   const handleSave = () => {
     if (previewUrl) {
       setIsSaving(true)
-      // Simulate saving delay
       setTimeout(() => {
         updateAvatar(previewUrl)
         toast.success('Foto de perfil atualizada com sucesso!')
@@ -49,17 +48,17 @@ export default function Profile() {
         </p>
       </div>
 
-      <Card>
+      <Card className="shadow-sm border-muted/60">
         <CardHeader>
           <CardTitle>Foto do Perfil</CardTitle>
           <CardDescription>
-            Atualize sua foto de perfil. Esta imagem será exibida em todo o sistema.
+            Atualize sua foto de perfil. Esta imagem será exibida na barra superior.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row gap-8 items-start sm:items-center">
-          <Avatar className="h-28 w-28 border-4 border-background shadow-sm">
+          <Avatar className="h-28 w-28 border-4 border-background shadow-md">
             <AvatarImage src={previewUrl || ''} className="object-cover" />
-            <AvatarFallback className="bg-[#b68d40] text-white">
+            <AvatarFallback className="bg-primary/20 text-primary">
               <User className="h-12 w-12" />
             </AvatarFallback>
           </Avatar>
@@ -76,12 +75,17 @@ export default function Profile() {
               <Button
                 variant={hasChanges ? 'outline' : 'default'}
                 onClick={() => fileInputRef.current?.click()}
+                className={hasChanges ? '' : 'font-semibold'}
               >
                 <Upload className="mr-2 h-4 w-4" />
                 Escolher nova imagem
               </Button>
               {hasChanges && (
-                <Button onClick={handleSave} disabled={isSaving} className="min-w-[120px]">
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="min-w-[120px] font-bold"
+                >
                   {isSaving ? (
                     <span className="flex items-center">Salvando...</span>
                   ) : (
@@ -99,7 +103,7 @@ export default function Profile() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="shadow-sm border-muted/60">
         <CardHeader>
           <CardTitle>Informações Pessoais</CardTitle>
           <CardDescription>Seus dados cadastrais básicos no sistema GGIM.</CardDescription>
@@ -108,20 +112,30 @@ export default function Profile() {
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Nome completo</Label>
-              <Input id="name" defaultValue={user?.name} readOnly className="bg-muted/50" />
+              <Input
+                id="name"
+                defaultValue={user?.name}
+                readOnly
+                className="bg-muted/30 font-medium"
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" defaultValue={user?.email} readOnly className="bg-muted/50" />
+              <Label htmlFor="email">E-mail Institucional</Label>
+              <Input
+                id="email"
+                defaultValue={user?.email}
+                readOnly
+                className="bg-muted/30 font-medium"
+              />
             </div>
           </div>
           <div className="space-y-2">
             <Label htmlFor="role">Cargo / Função</Label>
             <Input
               id="role"
-              defaultValue="Administrador do Sistema"
+              defaultValue="Gestor Administrativo"
               readOnly
-              className="bg-muted/50"
+              className="bg-muted/30 font-medium"
             />
           </div>
         </CardContent>

@@ -15,10 +15,10 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  isAuthenticated: true, // Set to true by default for easier preview access
+  isAuthenticated: true,
   user: {
-    name: 'Administrador',
-    email: 'admin@ggim.foz.br',
+    name: 'Gestor GGIM',
+    email: 'gestor@ggim.foz.br',
     avatarUrl: null,
   },
   login: () => set({ isAuthenticated: true }),
