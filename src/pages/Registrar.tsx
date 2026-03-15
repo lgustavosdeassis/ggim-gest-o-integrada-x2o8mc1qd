@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-form'
 import { useToast } from '@/hooks/use-toast'
 import useDataStore from '@/stores/main'
 import { INSTANCES, EVENT_TYPES, DOCUMENT_CATEGORIES, ActivityRecord } from '@/lib/types'
@@ -104,8 +103,10 @@ export default function Registrar() {
   const actionHours = formData.hasAction
     ? calculateHoursDifference(formData.actionStart || '', formData.actionEnd || '')
     : 0
+
   const pfCount = parseSemicolonList(formData.participantsPF || '').length
   const pjCount = parseSemicolonList(formData.participantsPJ || '').length
+  const deliberationsCount = parseSemicolonList(formData.deliberations || '').length
 
   return (
     <div className="max-w-4xl mx-auto pb-12 animate-fade-in">
@@ -120,7 +121,7 @@ export default function Registrar() {
         {/* Step 1 */}
         <Card className="shadow-subtle">
           <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-lg">1. Identificação</CardTitle>
+            <CardTitle className="text-lg">1. Logística e Identificação</CardTitle>
             <CardDescription>Classificação primária do evento.</CardDescription>
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-6 pt-6">
@@ -175,7 +176,7 @@ export default function Registrar() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Local / Plataforma</Label>
+              <Label>Local do Evento / Plataforma</Label>
               <Input
                 placeholder="Ex: Paço Municipal"
                 value={formData.location}
@@ -188,9 +189,9 @@ export default function Registrar() {
         {/* Step 2 */}
         <Card className="shadow-subtle">
           <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-lg">2. Cronologia</CardTitle>
+            <CardTitle className="text-lg">2. Métricas de Tempo</CardTitle>
             <CardDescription>
-              Defina os horários para cálculo automático de dedicação.
+              Defina os horários para cálculo automático de dedicação (suporta múltiplos dias).
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-6 space-y-6">
@@ -207,7 +208,7 @@ export default function Registrar() {
               </div>
               <div className="space-y-2">
                 <Label>
-                  Fim da Reunião <span className="text-destructive">*</span>
+                  Término da Reunião <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   type="datetime-local"
@@ -243,7 +244,7 @@ export default function Registrar() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Fim da Ação</Label>
+                  <Label>Término da Ação</Label>
                   <Input
                     type="datetime-local"
                     value={formData.actionEnd}
@@ -259,8 +260,10 @@ export default function Registrar() {
 
             <div className="flex justify-end pt-2">
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Carga Horária Total</p>
-                <p className="text-2xl font-bold text-primary">
+                <p className="text-sm text-muted-foreground uppercase font-bold tracking-wider">
+                  Total de Horas Dedicadas
+                </p>
+                <p className="text-3xl font-bold text-primary">
                   {(meetingHours + actionHours).toFixed(1)}h
                 </p>
               </div>
@@ -271,15 +274,15 @@ export default function Registrar() {
         {/* Step 3 */}
         <Card className="shadow-subtle">
           <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-lg">3. Participantes</CardTitle>
+            <CardTitle className="text-lg">3. Engajamento</CardTitle>
             <CardDescription>Separe os nomes por ponto e vírgula (;)</CardDescription>
           </CardHeader>
           <CardContent className="grid md:grid-cols-2 gap-6 pt-6">
             <div className="space-y-2">
               <div className="flex justify-between">
-                <Label>Pessoas Físicas (Nomes)</Label>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {pfCount} detectados
+                <Label>Participantes PF (Nomes)</Label>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
+                  {pfCount} participações detectadas
                 </span>
               </div>
               <Textarea
@@ -291,9 +294,9 @@ export default function Registrar() {
             </div>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <Label>Pessoas Jurídicas (Instituições)</Label>
-                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                  {pjCount} detectados
+                <Label>Instituições PJ</Label>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full font-medium">
+                  {pjCount} instituições detectadas
                 </span>
               </div>
               <Textarea
@@ -309,11 +312,16 @@ export default function Registrar() {
         {/* Step 4 */}
         <Card className="shadow-subtle">
           <CardHeader className="bg-slate-50/50 border-b">
-            <CardTitle className="text-lg">4. Documentação e Evidências</CardTitle>
+            <CardTitle className="text-lg">4. Produtividade e Evidências</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 pt-6">
             <div className="space-y-2">
-              <Label>Principais Deliberações (separe por ;)</Label>
+              <div className="flex justify-between items-end">
+                <Label>Deliberações (separe por ;)</Label>
+                <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                  Quantidade: {deliberationsCount}
+                </span>
+              </div>
               <Textarea
                 placeholder="Aprovado projeto X; Encaminhado para comissão Y;"
                 value={formData.deliberations}
@@ -322,7 +330,7 @@ export default function Registrar() {
             </div>
 
             <div className="space-y-3">
-              <Label>Categorização dos Documentos</Label>
+              <Label>Categorização dos Documentos Gerados</Label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 {DOCUMENT_CATEGORIES.map((cat) => (
                   <div key={cat} className="flex items-center space-x-2">
@@ -348,15 +356,16 @@ export default function Registrar() {
                 <Input
                   type="file"
                   multiple
+                  accept=".pdf,.docx,.txt,.jpg,.png,.mp3,.wav"
                   onChange={handleFileChange}
                   className="cursor-pointer file:cursor-pointer"
                 />
                 <p className="text-xs text-muted-foreground">
-                  PDF, DOCX, JPG, PNG, MP3 permitidos.
+                  PDF, DOCX, TXT, JPG, PNG, MP3, WAV permitidos.
                 </p>
               </div>
               <div className="space-y-2">
-                <Label>Arquivos Anexados ({formData.files?.length || 0})</Label>
+                <Label>Total Geral de Documentos ({formData.files?.length || 0})</Label>
                 <div className="bg-muted min-h-[40px] rounded-md p-2 text-sm max-h-[100px] overflow-y-auto">
                   {formData.files?.length ? (
                     formData.files.map((f, i) => (
@@ -366,10 +375,20 @@ export default function Registrar() {
                       </div>
                     ))
                   ) : (
-                    <span className="text-muted-foreground italic">Nenhum arquivo</span>
+                    <span className="text-muted-foreground italic">Nenhum arquivo anexado</span>
                   )}
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Detalhamento Adicional</Label>
+              <Textarea
+                placeholder="Observações extras sobre a documentação."
+                className="min-h-[80px]"
+                value={formData.documentDetails}
+                onChange={(e) => handleChange('documentDetails', e.target.value)}
+              />
             </div>
           </CardContent>
         </Card>

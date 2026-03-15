@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode, useMemo } from 'react'
+import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react'
 import { ActivityRecord, DashboardFilters } from '@/lib/types'
 import { mockRecords } from '@/lib/mock-data'
 
@@ -48,31 +48,21 @@ export function DataStoreProvider({ children }: { children: ReactNode }) {
     })
   }, [records, filters])
 
-  return createContext({
-    records,
-    addRecord,
-    updateRecord,
-    deleteRecord,
-    filters,
-    setFilters,
-    filteredRecords,
-  })
-    ? React.createElement(
-        DataStoreContext.Provider,
-        {
-          value: {
-            records,
-            addRecord,
-            updateRecord,
-            deleteRecord,
-            filters,
-            setFilters,
-            filteredRecords,
-          },
-        },
-        children,
-      )
-    : null
+  return React.createElement(
+    DataStoreContext.Provider,
+    {
+      value: {
+        records,
+        addRecord,
+        updateRecord,
+        deleteRecord,
+        filters,
+        setFilters,
+        filteredRecords,
+      },
+    },
+    children,
+  )
 }
 
 export default function useDataStore() {

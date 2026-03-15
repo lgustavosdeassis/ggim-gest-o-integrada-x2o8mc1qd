@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import useDataStore from '@/stores/main'
 import { DashboardFilters } from '@/components/dashboard/DashboardFilters'
 import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
+import { DashboardLogistics } from '@/components/dashboard/DashboardLogistics'
 import { DashboardEngagement } from '@/components/dashboard/DashboardEngagement'
 import { DashboardProductivity } from '@/components/dashboard/DashboardProductivity'
 import { calculateDashboardStats } from '@/components/dashboard/StatsUtils'
@@ -20,17 +21,32 @@ export default function Index() {
         </p>
       </div>
 
-      <div className="hidden print:block mb-8 text-center">
-        <h1 className="text-2xl font-bold">Relatório Gerencial GGIM</h1>
-        <p className="text-sm text-gray-500">
-          Período de referência - Dados extraídos em {new Date().toLocaleDateString('pt-BR')}
-        </p>
+      <div className="hidden print:flex mb-8 items-center justify-between border-b pb-4">
+        <div className="flex items-center gap-4">
+          <img
+            src="https://img.usecurling.com/i?q=shield&color=blue&shape=fill"
+            alt="GGIM Logo"
+            className="w-16 h-16 object-contain"
+          />
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">
+              Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
+            </h1>
+            <h2 className="text-lg text-slate-600 font-medium">
+              Relatório Gerencial - Painel de BI
+            </h2>
+          </div>
+        </div>
+        <div className="text-right text-sm text-slate-500 font-medium">
+          <p>Período de Referência</p>
+          <p>Extraído em: {new Date().toLocaleDateString('pt-BR')}</p>
+        </div>
       </div>
 
       <DashboardFilters />
 
       {filteredRecords.length === 0 ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center border rounded-xl bg-card border-dashed">
+        <div className="flex flex-col items-center justify-center p-12 text-center border rounded-xl bg-card border-dashed print-hidden">
           <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center mb-4">
             <span className="text-xl">📊</span>
           </div>
@@ -42,6 +58,7 @@ export default function Index() {
       ) : (
         <div className="space-y-4">
           <DashboardOverview stats={stats} />
+          <DashboardLogistics stats={stats} />
           <DashboardEngagement stats={stats} />
           <DashboardProductivity stats={stats} />
         </div>

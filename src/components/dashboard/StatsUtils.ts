@@ -12,9 +12,10 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
   const locationCount: Record<string, number> = {}
   const eventTypeCount: Record<string, number> = {}
 
-  const allPf = []
-  const allPj = []
-  const allDocs = []
+  const allPf: string[] = []
+  const allPj: string[] = []
+  const allDocs: string[] = []
+  const pfCountsPerEvent: number[] = []
 
   let totalDeliberations = 0
 
@@ -40,6 +41,7 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
     const pjs = parseSemicolonList(r.participantsPJ)
     allPf.push(...pfs)
     allPj.push(...pjs)
+    pfCountsPerEvent.push(pfs.length)
 
     // Docs
     allDocs.push(...r.documentCategories)
@@ -54,6 +56,29 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
   const locRanking = getRanking(
     Object.keys(locationCount).flatMap((k) => Array(locationCount[k]).fill(k)),
   )
+
+  // Calculate PF Stats (Mean, Median, Mode)
+  const pfStats = { mean: 0, median: 0, mode: [] as number[] }
+  if (pfCountsPerEvent.length > 0) {
+    pfStats.mean = pfCountsPerEvent.reduce((a, b) => a + b, 0) / pfCountsPerEvent.length
+
+    const sorted = [...pfCountsPerEvent].sort((a, b) => a - b)
+    const mid = Math.floor(sorted.length / 2)
+    pfStats.median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+
+    const countsMap = sorted.reduce(
+      (acc, val) => {
+        acc[val] = (acc[val] || 0) + 1
+        return acc
+      },
+      {} as Record<number, number>,
+    )
+
+    const maxCount = Math.max(...Object.values(countsMap))
+    pfStats.mode = Object.keys(countsMap)
+      .filter((k) => countsMap[Number(k)] === maxCount)
+      .map(Number)
+  }
 
   return {
     totalEvents: records.length,
@@ -79,6 +104,7 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
       pjUnique: uniquePj.size,
       pfRanking,
       pjRanking,
+      pfStats,
     },
     productivity: {
       deliberations: totalDeliberations,
@@ -103,7 +129,9 @@ function getRanking(items: string[]) {
   if (Object.keys(counts).length === 0) return { max: 0, names: [] }
 
   const max = Math.max(...Object.values(counts))
-  const names = Object.keys(counts).filter((k) => counts[k] === max)
+  const names = Object.keys(counts)
+    .filter((k) => counts[k] === max)
+    .sort()
 
   return { max, names }
 }
