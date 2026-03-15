@@ -1,6 +1,42 @@
 import { ActivityRecord } from '@/lib/types'
 import { calculateHoursDifference, parseSemicolonList } from '@/lib/utils'
 
+const pluralizeEventType = (type: string) => {
+  const map: Record<string, string> = {
+    'Reunião Ordinária': 'Reuniões',
+    'Reunião Extraordinária': 'Reuniões',
+    'Reunião Institucional': 'Reuniões',
+    'Visita Técnica': 'Visitas Técnicas',
+    Capacitação: 'Capacitações',
+    Seminário: 'Seminários',
+    Treinamento: 'Treinamentos',
+    Curso: 'Cursos',
+    Congressos: 'Congressos',
+    Colóquio: 'Colóquios',
+    Fórum: 'Fóruns',
+    Webinário: 'Webinários',
+    Palestras: 'Palestras',
+    Apresentação: 'Apresentações',
+    Networking: 'Networkings',
+    Convenção: 'Convenções',
+    Conferência: 'Conferências',
+    Confraternização: 'Confraternizações',
+    Projeto: 'Projetos',
+    Programa: 'Programas',
+    Feira: 'Feiras',
+    Exposição: 'Exposições',
+    'Mesa Redonda': 'Mesas Redondas',
+    Painel: 'Painéis',
+    Workshop: 'Workshops',
+    Oficina: 'Oficinas',
+    Roadshop: 'Roadshops',
+    Campanha: 'Campanhas',
+    Blitz: 'Blitzes',
+    Operação: 'Operações',
+  }
+  return map[type] || type
+}
+
 export function calculateDashboardStats(records: ActivityRecord[]) {
   let totalMeetingHours = 0
   let totalActionHours = 0
@@ -28,9 +64,10 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
     }
 
     // Types
-    if (r.eventType.includes('Reunião')) totalReunioes++
+    const pluralType = pluralizeEventType(r.eventType)
+    if (pluralType === 'Reuniões') totalReunioes++
     if (r.instance === 'Eventos Institucionais') totalInstitucionais++
-    eventTypeCount[r.eventType] = (eventTypeCount[r.eventType] || 0) + 1
+    eventTypeCount[pluralType] = (eventTypeCount[pluralType] || 0) + 1
 
     // Modality & Location
     modalityCount[r.modality]++
@@ -91,7 +128,9 @@ export function calculateDashboardStats(records: ActivityRecord[]) {
       { name: 'Remota', value: modalityCount.Remota, fill: 'var(--color-remota)' },
       { name: 'Híbrida', value: modalityCount.Híbrida, fill: 'var(--color-hibrida)' },
     ],
-    eventTypeData: Object.entries(eventTypeCount).map(([name, value]) => ({ name, value })),
+    eventTypeData: Object.entries(eventTypeCount)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value),
     locations: {
       total: Object.values(locationCount).reduce((a, b) => a + b, 0),
       unique: Object.keys(locationCount).length,

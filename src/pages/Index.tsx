@@ -16,18 +16,12 @@ export default function Index() {
     <div className="max-w-7xl mx-auto pb-10">
       <div className="mb-6 print-hidden">
         <h1 className="text-3xl font-bold tracking-tight text-primary">Dashboard de Desempenho</h1>
-        <p className="text-muted-foreground mt-1">
-          Visão analítica das atividades do Gabinete de Gestão Integrada.
-        </p>
+        <p className="text-muted-foreground mt-1">Visão analítica das atividades do GGIM.</p>
       </div>
 
       <div className="hidden print:flex mb-8 items-center justify-between border-b pb-4">
         <div className="flex items-center gap-4">
-          <img
-            src="https://img.usecurling.com/i?q=shield&color=blue&shape=fill"
-            alt="GGIM Logo"
-            className="w-16 h-16 object-contain"
-          />
+          <img src="/logo.png" alt="GGIM Logo" className="w-16 h-16 object-contain" />
           <div>
             <h1 className="text-2xl font-bold text-slate-900">
               Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
