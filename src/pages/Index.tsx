@@ -11,12 +11,10 @@ import ggimLogo from '@/assets/logo-ggim-texto-preto-sem-fundo-a89c1.jpeg'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
 
 const INSTANCIAS = [
   'Colegiado Pleno',
@@ -104,11 +102,11 @@ export default function Index() {
         <CardContent className="p-4 grid gap-4 grid-cols-1 md:grid-cols-3">
           <div className="flex flex-col gap-2">
             <Label>Instâncias (Múltipla Seleção)</Label>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+            <Popover>
+              <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className="w-full justify-between font-normal"
+                  className="w-full justify-between font-normal bg-background"
                   role="combobox"
                 >
                   <span className="truncate">
@@ -118,26 +116,48 @@ export default function Index() {
                   </span>
                   <ChevronDown className="h-4 w-4 opacity-50" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-64" align="start">
-                <DropdownMenuCheckboxItem
-                  checked={selectedInstances.size === INSTANCIAS.length}
-                  onCheckedChange={toggleAllInstances}
-                  className="font-bold"
-                >
-                  Selecionar Todas
-                </DropdownMenuCheckboxItem>
-                {INSTANCIAS.map((instance) => (
-                  <DropdownMenuCheckboxItem
-                    key={instance}
-                    checked={selectedInstances.has(instance)}
-                    onCheckedChange={() => toggleInstance(instance)}
-                  >
-                    {instance}
-                  </DropdownMenuCheckboxItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </PopoverTrigger>
+              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                <div className="p-2">
+                  <div className="flex items-center space-x-2 px-2 py-2">
+                    <Checkbox
+                      id="select-all"
+                      checked={selectedInstances.size === INSTANCIAS.length}
+                      onCheckedChange={toggleAllInstances}
+                    />
+                    <label
+                      htmlFor="select-all"
+                      className="text-sm font-semibold leading-none cursor-pointer w-full"
+                    >
+                      Selecionar Todas
+                    </label>
+                  </div>
+                  <Separator className="my-1" />
+                  <ScrollArea className="h-48">
+                    <div className="flex flex-col gap-1 p-1">
+                      {INSTANCIAS.map((instance) => (
+                        <div
+                          key={instance}
+                          className="flex items-center space-x-2 rounded hover:bg-accent px-2 py-1.5"
+                        >
+                          <Checkbox
+                            id={instance}
+                            checked={selectedInstances.has(instance)}
+                            onCheckedChange={() => toggleInstance(instance)}
+                          />
+                          <label
+                            htmlFor={instance}
+                            className="text-sm leading-none cursor-pointer flex-1"
+                          >
+                            {instance}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
           <div className="flex flex-col gap-2">
             <Label>Data Inicial</Label>

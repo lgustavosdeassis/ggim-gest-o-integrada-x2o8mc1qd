@@ -1,31 +1,18 @@
 import { Outlet } from 'react-router-dom'
-import { AppSidebar } from './AppSidebar'
-import { Header } from './Header'
-import { SidebarProvider } from '@/components/ui/sidebar'
-import { Toaster } from '@/components/ui/toaster'
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar'
+import { AppSidebar } from '@/components/AppSidebar'
+import { Header } from '@/components/Header'
 
 export default function Layout() {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-background text-foreground">
-        <div className="print:hidden flex h-full">
-          <AppSidebar />
-        </div>
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <div className="print:hidden">
-            <Header />
-          </div>
-          <main className="flex-1 overflow-auto bg-slate-50/50 p-4 md:p-6 lg:p-8 print:bg-white print:p-0 print:overflow-visible">
-            <div className="mx-auto max-w-7xl print:max-w-none print:w-full">
-              <Outlet />
-            </div>
-          </main>
-          <footer className="border-t py-4 text-center text-sm text-muted-foreground bg-background print:hidden">
-            Foz do Iguaçu - Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM) © 2026
-          </footer>
-        </div>
-      </div>
-      <Toaster />
+      <AppSidebar />
+      <SidebarInset className="flex flex-col min-h-screen w-full">
+        <Header />
+        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6">
+          <Outlet />
+        </main>
+      </SidebarInset>
     </SidebarProvider>
   )
 }

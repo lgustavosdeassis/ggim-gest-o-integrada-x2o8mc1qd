@@ -1,6 +1,5 @@
-import { Bell, Search, User } from 'lucide-react'
+import { Bell, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,16 +29,6 @@ export function Header() {
       </div>
 
       <div className="flex items-center gap-2">
-        <form className="hidden sm:block">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Buscar..."
-              className="w-full appearance-none bg-background pl-8 shadow-none sm:w-64 md:w-80"
-            />
-          </div>
-        </form>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           <span className="sr-only">Notificações</span>
