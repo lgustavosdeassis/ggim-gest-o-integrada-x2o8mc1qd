@@ -35,7 +35,9 @@ export function Header() {
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border overflow-hidden">
               <img src={logoCmtecs} alt="CMTecs Logo" className="h-full w-full object-cover" />
             </div>
-            <span className="font-bold text-base hidden sm:block">GGIM</span>
+            <span className="font-bold text-base hidden sm:block text-foreground">
+              CMTecs / GGIM
+            </span>
           </div>
           {/* Main header title area */}
           <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-border">

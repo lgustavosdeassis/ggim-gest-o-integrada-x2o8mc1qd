@@ -16,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import logoGgim from '@/assets/logo-ggim-texto-preto-sem-fundo-4ad89.jpeg'
+import { formatDateTime } from '@/lib/utils'
 
 const INSTANCIAS = [
   'Colegiado Pleno',
@@ -40,7 +41,7 @@ export default function Index() {
     return activities.filter((a) => {
       let pass = true
       if (selectedInstances.length > 0 && !selectedInstances.includes(a.instance)) pass = false
-      if (startDate && new Date(a.meetingStart) < new Date(startDate)) pass = false
+      if (startDate && new Date(a.meetingStart) < new Date(startDate + 'T00:00:00')) pass = false
       if (endDate && new Date(a.meetingStart) > new Date(endDate + 'T23:59:59')) pass = false
       return pass
     })
@@ -53,13 +54,22 @@ export default function Index() {
   return (
     <div className="flex-1 space-y-8 p-6 sm:p-8 pt-6 bg-background min-h-screen">
       {/* Print Header */}
-      <div className="hidden print:flex items-center gap-4 mb-8 border-b pb-4">
+      <div className="hidden print:flex items-center gap-4 mb-8 border-b border-gray-300 pb-4">
         <img src={logoGgim} alt="Logo GGIM" className="h-16 object-contain" />
         <div>
-          <h1 className="text-2xl font-bold">Relatório Gerencial - GGIM Foz do Iguaçu</h1>
-          <p className="text-sm text-gray-600">
-            Filtros: Instâncias: {selectedInstances.length ? selectedInstances.join(', ') : 'Todas'}{' '}
-            | Período: {startDate || 'Início'} a {endDate || 'Hoje'}
+          <h1 className="text-2xl font-bold text-black">
+            Relatório Gerencial - GGIM Foz do Iguaçu
+          </h1>
+          <p className="text-sm text-gray-800 font-medium mt-1">
+            Filtros:{' '}
+            <span className="font-bold">
+              {selectedInstances.length ? selectedInstances.join(', ') : 'Todas as Instâncias'}
+            </span>{' '}
+            | Período:{' '}
+            <span className="font-bold">
+              {startDate ? formatDateTime(startDate + 'T00:00:00').substring(0, 10) : 'Início'} a{' '}
+              {endDate ? formatDateTime(endDate + 'T00:00:00').substring(0, 10) : 'Hoje'}
+            </span>
           </p>
         </div>
       </div>
