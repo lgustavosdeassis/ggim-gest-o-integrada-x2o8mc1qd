@@ -1,56 +1,69 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Activity, AlertTriangle, CheckCircle2, Clock, ShieldAlert } from 'lucide-react'
+import { Activity as ActivityIcon, Users, FileText, Building } from 'lucide-react'
 import { Bar, BarChart, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { mockActivities } from '@/lib/mock-data'
 
-// Mock data structure
 type DashboardData =
   | {
       totalEvents: number
-      activeIncidents: number
-      resolvedToday: number
-      pendingAnalysis: number
-      eventsByMonth: Array<{ name: string; total: number }>
+      totalReunioes: number
+      totalInstitucionais: number
+      totalDocs: number
+      eventTypeData: Array<{ name: string; value: number }>
+      docsData: Array<{ name: string; value: number }>
     }
   | null
   | undefined
-
-const mockData: DashboardData = {
-  totalEvents: 1248,
-  activeIncidents: 42,
-  resolvedToday: 18,
-  pendingAnalysis: 7,
-  eventsByMonth: [
-    { name: 'Jan', total: 120 },
-    { name: 'Fev', total: 150 },
-    { name: 'Mar', total: 180 },
-    { name: 'Abr', total: 220 },
-    { name: 'Mai', total: 190 },
-    { name: 'Jun', total: 240 },
-  ],
-}
 
 export function DashboardOverview() {
   const [data, setData] = useState<DashboardData>(undefined)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // Simulate API fetch delay
     const timer = setTimeout(() => {
-      setData(mockData)
+      let totalReunioes = 0
+      let totalInstitucionais = 0
+      let totalDocs = 0
+      const evtCount: Record<string, number> = {}
+      const docCount: Record<string, number> = {}
+
+      mockActivities.forEach((r) => {
+        evtCount[r.type] = (evtCount[r.type] || 0) + 1
+        if (r.type.toLowerCase().includes('reunião')) totalReunioes++
+        if (r.instance === 'Eventos Institucionais') totalInstitucionais++
+        r.documents?.forEach((d) => {
+          docCount[d.category] = (docCount[d.category] || 0) + 1
+          totalDocs++
+        })
+      })
+
+      setData({
+        totalEvents: mockActivities.length || 0,
+        totalReunioes,
+        totalInstitucionais,
+        totalDocs,
+        eventTypeData: Object.entries(evtCount)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value),
+        docsData: Object.entries(docCount)
+          .map(([name, value]) => ({ name, value }))
+          .sort((a, b) => b.value - a.value),
+      })
       setIsLoading(false)
     }, 1000)
     return () => clearTimeout(timer)
   }, [])
 
-  // Safely access data properties with a fallback object.
+  // Safely access data properties with a fallback object to prevent TypeError
   const safeData = data || {
     totalEvents: 0,
-    activeIncidents: 0,
-    resolvedToday: 0,
-    pendingAnalysis: 0,
-    eventsByMonth: [],
+    totalReunioes: 0,
+    totalInstitucionais: 0,
+    totalDocs: 0,
+    eventTypeData: [],
+    docsData: [],
   }
 
   return (
@@ -58,67 +71,92 @@ export function DashboardOverview() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Eventos Totais</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Atividades Totais</CardTitle>
+            <ActivityIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{isLoading ? '...' : safeData.totalEvents}</div>
-            <p className="text-xs text-muted-foreground">+20.1% em relação ao mês anterior</p>
+            <p className="text-xs text-muted-foreground">Registros na plataforma</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ocorrências Ativas</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <CardTitle className="text-sm font-medium">Reuniões</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">
-              {isLoading ? '...' : safeData.activeIncidents}
+            <div className="text-2xl font-bold">{isLoading ? '...' : safeData.totalReunioes}</div>
+            <p className="text-xs text-muted-foreground">Encontros de comitês</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Eventos Institucionais</CardTitle>
+            <Building className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {isLoading ? '...' : safeData.totalInstitucionais}
             </div>
-            <p className="text-xs text-muted-foreground">Requerem atenção imediata</p>
+            <p className="text-xs text-muted-foreground">Representações oficiais</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Resolvidos Hoje</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <CardTitle className="text-sm font-medium">Documentos</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? '...' : safeData.resolvedToday}</div>
-            <p className="text-xs text-muted-foreground">+12 incidentes desde ontem</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Em Análise</CardTitle>
-            <Clock className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{isLoading ? '...' : safeData.pendingAnalysis}</div>
-            <p className="text-xs text-muted-foreground">Aguardando verificação</p>
+            <div className="text-2xl font-bold">{isLoading ? '...' : safeData.totalDocs}</div>
+            <p className="text-xs text-muted-foreground">Anexados aos eventos</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+        <Card>
           <CardHeader>
-            <CardTitle>Visão Geral de Eventos</CardTitle>
-            <CardDescription>
-              Comparativo de eventos registrados nos últimos 6 meses.
-            </CardDescription>
+            <CardTitle>Eventos por Tipo</CardTitle>
+            <CardDescription>Distribuição das atividades por categoria.</CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
             <ChartContainer
-              config={{
-                total: {
-                  label: 'Total de Eventos',
-                  color: 'hsl(var(--primary))',
-                },
-              }}
+              config={{ value: { label: 'Quantidade', color: 'hsl(var(--primary))' } }}
               className="h-[300px] w-full"
             >
-              <BarChart data={safeData.eventsByMonth}>
+              <BarChart data={safeData.eventTypeData} layout="vertical" margin={{ left: 30 }}>
+                <XAxis
+                  type="number"
+                  stroke="#888888"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  dataKey="name"
+                  type="category"
+                  stroke="#888888"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="value" fill="var(--color-value)" radius={[0, 4, 4, 0]} barSize={24} />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Documentos por Categoria</CardTitle>
+            <CardDescription>Volume de documentação gerada por tipo.</CardDescription>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ChartContainer
+              config={{ value: { label: 'Quantidade', color: 'hsl(var(--primary))' } }}
+              className="h-[300px] w-full"
+            >
+              <BarChart data={safeData.docsData}>
                 <XAxis
                   dataKey="name"
                   stroke="#888888"
@@ -127,67 +165,16 @@ export function DashboardOverview() {
                   axisLine={false}
                 />
                 <YAxis
+                  type="number"
                   stroke="#888888"
                   fontSize={12}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(value) => `${value}`}
                 />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill="var(--color-value)" radius={[4, 4, 0, 0]} barSize={32} />
               </BarChart>
             </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Ocorrências Recentes</CardTitle>
-            <CardDescription>Últimos incidentes reportados na central.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-8">
-              {[
-                {
-                  title: 'Acidente de Trânsito',
-                  time: 'Há 10 min',
-                  status: 'Crítico',
-                  icon: AlertTriangle,
-                  color: 'text-red-500',
-                },
-                {
-                  title: 'Aglomeração Suspeita',
-                  time: 'Há 35 min',
-                  status: 'Atenção',
-                  icon: ShieldAlert,
-                  color: 'text-yellow-500',
-                },
-                {
-                  title: 'Queda de Árvore',
-                  time: 'Há 2 horas',
-                  status: 'Resolvido',
-                  icon: CheckCircle2,
-                  color: 'text-emerald-500',
-                },
-                {
-                  title: 'Semáforo Inoperante',
-                  time: 'Há 3 horas',
-                  status: 'Em andamento',
-                  icon: Clock,
-                  color: 'text-blue-500',
-                },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center">
-                  <div className={`mr-4 rounded-full p-2 bg-muted/50 ${item.color}`}>
-                    <item.icon className="h-4 w-4" />
-                  </div>
-                  <div className="space-y-1 flex-1">
-                    <p className="text-sm font-medium leading-none">{item.title}</p>
-                    <p className="text-sm text-muted-foreground">{item.status}</p>
-                  </div>
-                  <div className="font-medium text-xs text-muted-foreground">{item.time}</div>
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
       </div>
