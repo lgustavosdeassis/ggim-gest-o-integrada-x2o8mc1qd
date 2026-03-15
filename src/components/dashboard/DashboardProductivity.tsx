@@ -1,85 +1,88 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
-import { FileText, Files } from 'lucide-react'
+import {
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from 'recharts'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 
-export function DashboardProductivity({ stats }: { stats: any }) {
-  if (!stats || stats.totalEvents === 0) return null
+const data = [
+  { name: 'Seg', valor: 420 },
+  { name: 'Ter', valor: 380 },
+  { name: 'Qua', valor: 550 },
+  { name: 'Qui', valor: 490 },
+  { name: 'Sex', valor: 680 },
+  { name: 'Sáb', valor: 250 },
+  { name: 'Dom', valor: 180 },
+]
 
-  const { productivity } = stats
-  const barConfig = { value: { label: 'Arquivos', color: 'hsl(var(--chart-5))' } }
-
+export function DashboardProductivity() {
   return (
-    <div className="space-y-6 mt-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-      <div className="flex items-center gap-2 mb-4 print-hidden">
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">
-          Produtividade e Evidências
-        </h2>
-        <div className="h-px flex-1 bg-border ml-4"></div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 print-break-inside-avoid">
-        <div className="flex flex-col gap-4">
-          <Card className="shadow-subtle flex-1">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total de Deliberações</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{productivity.deliberations}</div>
-              <p className="text-xs text-muted-foreground mt-1">Registradas no sistema</p>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-subtle flex-1 bg-primary/5 border-primary/20">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-primary">Total Geral Docs.</CardTitle>
-              <Files className="h-4 w-4 text-primary" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">{productivity.totalDocs}</div>
-              <p className="text-xs text-primary/70 mt-1">Arquivos anexados ao sistema</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="shadow-subtle col-span-1 md:col-span-1 lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Tipos de Arquivos Gerados</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[200px]">
-            {productivity.docsData.length > 0 ? (
-              <ChartContainer config={barConfig} className="h-full w-full">
-                <BarChart
-                  data={productivity.docsData}
-                  margin={{ top: 10, right: 0, bottom: 20, left: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis
-                    dataKey="name"
-                    tickLine={false}
-                    axisLine={false}
-                    tick={{ fontSize: 11 }}
-                    dy={10}
-                  />
-                  <YAxis hide />
-                  <ChartTooltip content={<ChartTooltipContent hideIndicator />} />
-                  <Bar
-                    dataKey="value"
-                    fill="var(--color-value)"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={50}
-                  />
-                </BarChart>
-              </ChartContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                Sem documentos
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <Card className="col-span-1 lg:col-span-4 border-muted/60 bg-card shadow-sm transition-all hover:border-primary/20">
+      <CardHeader>
+        <CardTitle className="text-xl text-primary font-bold">Produtividade Semanal</CardTitle>
+        <CardDescription className="text-muted-foreground font-medium text-sm">
+          Acompanhamento de tarefas, despachos e ações concluídas por dia.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer
+          config={{
+            valor: {
+              label: 'Ações Concluídas',
+              color: 'hsl(var(--chart-2))',
+            },
+          }}
+          className="h-[300px] w-full"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={data} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="hsl(var(--muted-foreground)/0.2)"
+              />
+              <XAxis
+                dataKey="name"
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={10}
+                fontWeight={600}
+              />
+              <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}`}
+                fontWeight={600}
+              />
+              <Tooltip
+                content={<ChartTooltipContent className="bg-popover border-border shadow-lg" />}
+              />
+              <Line
+                type="monotone"
+                dataKey="valor"
+                strokeWidth={4}
+                stroke="var(--color-valor)"
+                dot={{
+                  fill: 'var(--color-valor)',
+                  r: 5,
+                  strokeWidth: 2,
+                  stroke: 'hsl(var(--background))',
+                }}
+                activeDot={{ r: 8, strokeWidth: 0 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </CardContent>
+    </Card>
   )
 }

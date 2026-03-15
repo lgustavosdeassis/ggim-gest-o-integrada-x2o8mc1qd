@@ -1,108 +1,79 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ActivityIcon, Users, Building, Clock, CheckSquare } from 'lucide-react'
-import { PieChart, Pie, Cell, Legend } from 'recharts'
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 
-export function DashboardOverview({ stats }: { stats: any }) {
-  if (!stats || stats.totalEvents === 0) {
-    return (
-      <Card className="w-full mt-4 print-break-inside-avoid">
-        <CardContent className="flex items-center justify-center p-12 text-muted-foreground">
-          Nenhum dado encontrado para os filtros selecionados.
-        </CardContent>
-      </Card>
-    )
-  }
+const data = [
+  { name: 'Jan', total: 1200 },
+  { name: 'Fev', total: 1900 },
+  { name: 'Mar', total: 1500 },
+  { name: 'Abr', total: 2200 },
+  { name: 'Mai', total: 2800 },
+  { name: 'Jun', total: 2400 },
+  { name: 'Jul', total: 3100 },
+  { name: 'Ago', total: 2900 },
+  { name: 'Set', total: 3400 },
+  { name: 'Out', total: 3800 },
+  { name: 'Nov', total: 3200 },
+  { name: 'Dez', total: 4100 },
+]
 
-  const chartConfig = {
-    value: { label: 'Eventos' },
-  }
-
+export function DashboardOverview() {
   return (
-    <div className="flex flex-col gap-6 mt-4">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 print-break-inside-avoid">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Eventos</CardTitle>
-            <ActivityIcon className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalEvents}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Reuniões Formais</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalReunioes}</div>
-            <p className="text-xs text-muted-foreground">Ordinária/Extraord.</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Eventos Institucionais</CardTitle>
-            <Building className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalInstitucionais}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ações Geradas</CardTitle>
-            <CheckSquare className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalAcoesGeradas}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total de Horas</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalHours.toFixed(1)}h</div>
-            <p className="text-xs text-muted-foreground">Dedicadas</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 print-break-inside-avoid">
-        <Card className="col-span-1 lg:col-span-1">
-          <CardHeader>
-            <CardTitle className="text-sm font-medium">Modalidade</CardTitle>
-          </CardHeader>
-          <CardContent className="h-[250px]">
-            {stats.modalityData.length > 0 ? (
-              <ChartContainer config={chartConfig} className="w-full h-full">
-                <PieChart>
-                  <Pie
-                    data={stats.modalityData}
-                    dataKey="value"
-                    nameKey="name"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                  >
-                    {stats.modalityData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                  <Legend verticalAlign="bottom" height={36} />
-                </PieChart>
-              </ChartContainer>
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                Sem dados
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <Card className="col-span-1 lg:col-span-4 border-muted/60 bg-card shadow-sm transition-all hover:border-primary/20">
+      <CardHeader>
+        <CardTitle className="text-xl text-primary font-bold">Visão Geral Anual</CardTitle>
+        <CardDescription className="text-muted-foreground font-medium text-sm">
+          Consolidação de ocorrências e atividades registradas ao longo do ano.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pl-2">
+        <ChartContainer
+          config={{
+            total: {
+              label: 'Ocorrências',
+              color: 'hsl(var(--chart-1))',
+            },
+          }}
+          className="h-[350px] w-full"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={data} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="hsl(var(--muted-foreground)/0.2)"
+              />
+              <XAxis
+                dataKey="name"
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={10}
+                fontWeight={600}
+              />
+              <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}`}
+                fontWeight={600}
+              />
+              <Tooltip
+                cursor={{ fill: 'hsl(var(--muted)/0.5)' }}
+                content={<ChartTooltipContent className="bg-popover border-border shadow-lg" />}
+              />
+              <Bar
+                dataKey="total"
+                fill="var(--color-total)"
+                radius={[4, 4, 0, 0]}
+                className="transition-all duration-300 hover:opacity-80"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </CardContent>
+    </Card>
   )
 }

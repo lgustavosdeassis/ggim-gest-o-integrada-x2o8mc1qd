@@ -1,80 +1,87 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import {
+  Area,
+  AreaChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from 'recharts'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 
-export function DashboardLogistics({ stats }: { stats: any }) {
-  if (!stats || stats.totalEvents === 0) return null
+const data = [
+  { name: 'Sem 1', frota: 82 },
+  { name: 'Sem 2', frota: 88 },
+  { name: 'Sem 3', frota: 94 },
+  { name: 'Sem 4', frota: 79 },
+  { name: 'Sem 5', frota: 96 },
+]
 
-  const { locations } = stats
-
+export function DashboardLogistics() {
   return (
-    <div className="space-y-6 mt-8 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-      <div className="flex items-center gap-2 mb-4 print-hidden">
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">
-          Logística de Locais
-        </h2>
-        <div className="h-px flex-1 bg-border ml-4"></div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3 print-break-inside-avoid">
-        <Card className="shadow-subtle">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Uso de Locais
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end justify-between">
-              <div>
-                <div className="text-3xl font-bold">{locations.total}</div>
-                <p className="text-xs text-muted-foreground mt-1">Ocupações Totais</p>
-              </div>
-              <div className="text-right">
-                <div className="text-xl font-semibold text-slate-700">{locations.unique}</div>
-                <p className="text-xs text-slate-500">Locais Distintos</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-subtle col-span-1 md:col-span-2 bg-slate-50/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-semibold text-muted-foreground">
-              Locais Mais Utilizados (Top 1)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {locations.ranking.names.length > 0 ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                    Frequência Máxima: {locations.ranking.max}x
-                  </span>
-                </div>
-                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[120px] overflow-y-auto">
-                  {locations.ranking.names.map((name: string, i: number) => (
-                    <li
-                      key={i}
-                      className="flex items-center gap-2 text-sm bg-white p-1.5 rounded-md border shadow-sm"
-                    >
-                      <Badge
-                        variant="secondary"
-                        className="bg-slate-700 text-white w-6 h-6 p-0 flex items-center justify-center rounded-full shrink-0"
-                      >
-                        {1}
-                      </Badge>
-                      <span className="truncate font-medium text-slate-700" title={name}>
-                        {name}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">Sem dados</div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <Card className="col-span-1 lg:col-span-2 border-muted/60 bg-card shadow-sm transition-all hover:border-primary/20">
+      <CardHeader>
+        <CardTitle className="text-xl text-primary font-bold">Logística e Frota</CardTitle>
+        <CardDescription className="text-muted-foreground font-medium text-sm">
+          Disponibilidade percentual de viaturas por semana.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer
+          config={{
+            frota: {
+              label: 'Disponibilidade (%)',
+              color: 'hsl(var(--chart-3))',
+            },
+          }}
+          className="h-[300px] w-full"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 20, right: 20, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="colorFrota" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="var(--color-frota)" stopOpacity={0.4} />
+                  <stop offset="95%" stopColor="var(--color-frota)" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                strokeDasharray="3 3"
+                vertical={false}
+                stroke="hsl(var(--muted-foreground)/0.2)"
+              />
+              <XAxis
+                dataKey="name"
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={10}
+                fontWeight={600}
+              />
+              <YAxis
+                stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(value) => `${value}%`}
+                fontWeight={600}
+              />
+              <Tooltip
+                content={<ChartTooltipContent className="bg-popover border-border shadow-lg" />}
+              />
+              <Area
+                type="monotone"
+                dataKey="frota"
+                stroke="var(--color-frota)"
+                fillOpacity={1}
+                fill="url(#colorFrota)"
+                strokeWidth={3}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </ChartContainer>
+      </CardContent>
+    </Card>
   )
 }
