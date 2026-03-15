@@ -112,6 +112,12 @@ export default function Index() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-64 max-h-64 overflow-y-auto" align="start">
+              <DropdownMenuCheckboxItem
+                checked={selectedInstances.length === 0}
+                onCheckedChange={() => setSelectedInstances([])}
+              >
+                Todas as Instâncias
+              </DropdownMenuCheckboxItem>
               {INSTANCIAS.map((i) => (
                 <DropdownMenuCheckboxItem
                   key={i}

@@ -1,9 +1,8 @@
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import logoGgim from '@/assets/logo-ggim-texto-preto-sem-fundo-4ad89.jpeg'
 import logoCmtecs from '@/assets/logo-cmtecs-a4c2e.jpeg'
-import { Bell, Search, User, LogOut, Settings } from 'lucide-react'
+import { Bell, User, LogOut, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -27,40 +26,29 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b bg-background px-4 sm:px-6 no-print">
-      <div className="flex items-center gap-4">
+      {/* Left section: Sidebar trigger + CMTecs Logo */}
+      <div className="flex items-center gap-4 w-1/3">
         <SidebarTrigger className="-ml-2" />
-        <div className="flex items-center gap-3">
-          {/* Top-left corner brand */}
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border overflow-hidden">
-              <img src={logoCmtecs} alt="CMTecs Logo" className="h-full w-full object-cover" />
-            </div>
-            <span className="font-bold text-base hidden sm:block text-foreground">
-              CMTecs / GGIM
-            </span>
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border overflow-hidden">
+            <img src={logoCmtecs} alt="CMTecs Logo" className="h-full w-full object-cover" />
           </div>
-          {/* Main header title area */}
-          <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-border">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white p-0.5 shadow-sm border">
-              <img src={logoGgim} alt="GGIM Logo" className="h-full w-full object-contain" />
-            </div>
-            <h1 className="text-sm font-bold tracking-tight text-foreground xl:text-base">
-              Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
-            </h1>
-          </div>
+          <span className="font-bold text-base hidden sm:block text-foreground">CMTecs</span>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4">
-        <div className="relative hidden sm:block">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Buscar..."
-            className="w-64 rounded-full bg-muted/50 pl-8 focus-visible:ring-primary"
-          />
+      {/* Center section: GGIM Logo and Title */}
+      <div className="hidden lg:flex flex-1 items-center justify-center gap-3">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white p-0.5 shadow-sm border">
+          <img src={logoGgim} alt="GGIM Logo" className="h-full w-full object-contain" />
         </div>
+        <h1 className="text-sm font-bold tracking-tight text-foreground xl:text-base text-center">
+          Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
+        </h1>
+      </div>
 
+      {/* Right section: Notifications + User */}
+      <div className="flex items-center justify-end gap-2 sm:gap-4 w-1/3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
