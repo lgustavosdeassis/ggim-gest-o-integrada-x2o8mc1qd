@@ -68,20 +68,22 @@ export default function Importar() {
     setUploadProgress(0)
 
     // Mock upload process
+    let progress = 0
     const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setIsUploading(false)
-          setUploadComplete(true)
-          toast({
-            title: 'Importação concluída',
-            description: `${file.name} foi importado com sucesso.`,
-          })
-          return 100
-        }
-        return prev + 10
-      })
+      progress += 10
+
+      if (progress >= 100) {
+        clearInterval(interval)
+        setUploadProgress(100)
+        setIsUploading(false)
+        setUploadComplete(true)
+        toast({
+          title: 'Importação concluída',
+          description: `${file.name} foi importado com sucesso.`,
+        })
+      } else {
+        setUploadProgress(progress)
+      }
     }, 200)
   }
 

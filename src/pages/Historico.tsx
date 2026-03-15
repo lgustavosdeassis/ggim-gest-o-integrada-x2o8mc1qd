@@ -19,7 +19,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MoreHorizontal, Search, Trash, Eye, Pencil } from 'lucide-react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Activity } from '@/lib/types'
@@ -197,6 +203,9 @@ export default function Historico() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Detalhes da Atividade</DialogTitle>
+            <DialogDescription className="sr-only">
+              Informações completas do registro de atividade selecionado.
+            </DialogDescription>
           </DialogHeader>
           {viewActivity && (
             <div className="space-y-4 text-sm">

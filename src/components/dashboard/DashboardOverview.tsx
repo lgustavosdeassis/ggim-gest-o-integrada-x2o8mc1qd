@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Activity, AlertTriangle, CheckCircle2, Clock, ShieldAlert } from 'lucide-react'
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, XAxis, YAxis } from 'recharts'
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 
 // Mock data structure
@@ -44,9 +44,7 @@ export function DashboardOverview() {
     return () => clearTimeout(timer)
   }, [])
 
-  // BUG FIX: Safely access data properties with a fallback object.
-  // This prevents "Cannot read properties of undefined (reading 'totalEvents')"
-  // when the component renders before data is fully loaded or if the API returns null/undefined.
+  // Safely access data properties with a fallback object.
   const safeData = data || {
     totalEvents: 0,
     activeIncidents: 0,
@@ -120,26 +118,24 @@ export function DashboardOverview() {
               }}
               className="h-[300px] w-full"
             >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={safeData.eventsByMonth}>
-                  <XAxis
-                    dataKey="name"
-                    stroke="#888888"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    stroke="#888888"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `${value}`}
-                  />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              <BarChart data={safeData.eventsByMonth}>
+                <XAxis
+                  dataKey="name"
+                  stroke="#888888"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  stroke="#888888"
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `${value}`}
+                />
+                <ChartTooltip content={<ChartTooltipContent />} />
+                <Bar dataKey="total" fill="var(--color-total)" radius={[4, 4, 0, 0]} />
+              </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
