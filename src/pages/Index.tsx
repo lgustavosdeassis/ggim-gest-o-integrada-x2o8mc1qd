@@ -8,18 +8,16 @@ import { DashboardProductivity } from '@/components/dashboard/DashboardProductiv
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { FileDown, Filter } from 'lucide-react'
+import { FileDown, Filter, X } from 'lucide-react'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import logoGgim from '@/assets/logo-ggim-texto-preto-sem-fundo-4ad89.jpeg'
 
 const INSTANCIAS = [
-  'Todas',
   'Colegiado Pleno',
   'Eventos Institucionais',
   'CMTEC-TRAN/PVT',
@@ -36,17 +34,17 @@ export default function Index() {
   const { activities } = useAppStore()
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [instanceFilter, setInstanceFilter] = useState('Todas')
+  const [selectedInstances, setSelectedInstances] = useState<string[]>([])
 
   const filteredData = useMemo(() => {
     return activities.filter((a) => {
       let pass = true
-      if (instanceFilter !== 'Todas' && a.instance !== instanceFilter) pass = false
+      if (selectedInstances.length > 0 && !selectedInstances.includes(a.instance)) pass = false
       if (startDate && new Date(a.meetingStart) < new Date(startDate)) pass = false
       if (endDate && new Date(a.meetingStart) > new Date(endDate + 'T23:59:59')) pass = false
       return pass
     })
-  }, [activities, startDate, endDate, instanceFilter])
+  }, [activities, startDate, endDate, selectedInstances])
 
   const stats = useMemo(() => calculateDashboardStats(filteredData), [filteredData])
 
@@ -60,8 +58,8 @@ export default function Index() {
         <div>
           <h1 className="text-2xl font-bold">Relatório Gerencial - GGIM Foz do Iguaçu</h1>
           <p className="text-sm text-gray-600">
-            Filtros: Instância: {instanceFilter} | Período: {startDate || 'Início'} a{' '}
-            {endDate || 'Hoje'}
+            Filtros: Instâncias: {selectedInstances.length ? selectedInstances.join(', ') : 'Todas'}{' '}
+            | Período: {startDate || 'Início'} a {endDate || 'Hoje'}
           </p>
         </div>
       </div>
@@ -86,22 +84,38 @@ export default function Index() {
 
       {/* Filters */}
       <div className="bg-card border rounded-lg p-4 flex flex-col md:flex-row gap-4 items-end no-print shadow-sm">
-        <div className="w-full md:w-1/4 space-y-1.5">
+        <div className="w-full md:w-1/3 space-y-1.5">
           <Label className="text-xs font-semibold text-muted-foreground flex items-center gap-1">
-            <Filter className="w-3 h-3" /> Filtrar Instância
+            <Filter className="w-3 h-3" /> Instâncias
           </Label>
-          <Select value={instanceFilter} onValueChange={setInstanceFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione..." />
-            </SelectTrigger>
-            <SelectContent>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full justify-between text-left font-normal bg-background"
+              >
+                <span className="truncate">
+                  {selectedInstances.length === 0
+                    ? 'Todas as Instâncias'
+                    : `${selectedInstances.length} selecionada(s)`}
+                </span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-64 max-h-64 overflow-y-auto" align="start">
               {INSTANCIAS.map((i) => (
-                <SelectItem key={i} value={i}>
+                <DropdownMenuCheckboxItem
+                  key={i}
+                  checked={selectedInstances.includes(i)}
+                  onCheckedChange={(checked) => {
+                    if (checked) setSelectedInstances([...selectedInstances, i])
+                    else setSelectedInstances(selectedInstances.filter((x) => x !== i))
+                  }}
+                >
                   {i}
-                </SelectItem>
+                </DropdownMenuCheckboxItem>
               ))}
-            </SelectContent>
-          </Select>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <div className="w-full md:w-1/4 space-y-1.5">
           <Label className="text-xs font-semibold text-muted-foreground">Data Inicial</Label>
@@ -113,14 +127,15 @@ export default function Index() {
         </div>
         <div className="w-full md:w-auto">
           <Button
-            variant="outline"
+            variant="ghost"
+            className="text-muted-foreground hover:text-foreground"
             onClick={() => {
               setStartDate('')
               setEndDate('')
-              setInstanceFilter('Todas')
+              setSelectedInstances([])
             }}
           >
-            Limpar
+            <X className="w-4 h-4 mr-1" /> Limpar
           </Button>
         </div>
       </div>

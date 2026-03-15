@@ -30,21 +30,22 @@ export function Header() {
       <div className="flex items-center gap-4">
         <SidebarTrigger className="-ml-2" />
         <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center gap-2">
+          {/* Top-left corner brand */}
+          <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white shadow-sm border overflow-hidden">
               <img src={logoCmtecs} alt="CMTecs Logo" className="h-full w-full object-cover" />
             </div>
-            <span className="font-bold text-base hidden lg:block border-r border-border pr-3 mr-1">
-              CMTecs
-            </span>
+            <span className="font-bold text-base hidden sm:block">GGIM</span>
           </div>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white p-0.5 shadow-sm border">
-            <img src={logoGgim} alt="GGIM Logo" className="h-full w-full object-contain" />
+          {/* Main header title area */}
+          <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-border">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white p-0.5 shadow-sm border">
+              <img src={logoGgim} alt="GGIM Logo" className="h-full w-full object-contain" />
+            </div>
+            <h1 className="text-sm font-bold tracking-tight text-foreground xl:text-base">
+              Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
+            </h1>
           </div>
-          <h1 className="hidden text-sm font-bold tracking-tight text-foreground lg:block xl:text-base">
-            Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
-          </h1>
-          <h1 className="text-base font-bold tracking-tight text-foreground lg:hidden">GGIM</h1>
         </div>
       </div>
 

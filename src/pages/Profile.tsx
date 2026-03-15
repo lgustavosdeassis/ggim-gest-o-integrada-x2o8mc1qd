@@ -5,39 +5,49 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuthStore } from '@/stores/auth'
-import { User, Upload, Check } from 'lucide-react'
+import { User, Upload, Check, Pencil, Save, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Profile() {
-  const { user, updateAvatar } = useAuthStore()
+  const { user, updateAvatar, updateProfile } = useAuthStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(user?.avatarUrl || null)
-  const [isSaving, setIsSaving] = useState(false)
+  const [isSavingAvatar, setIsSavingAvatar] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+
+  const [formData, setFormData] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    role: user?.role || 'Gestor Administrativo',
+  })
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       const reader = new FileReader()
-      reader.onloadend = () => {
-        const result = reader.result as string
-        setPreviewUrl(result)
-      }
+      reader.onloadend = () => setPreviewUrl(reader.result as string)
       reader.readAsDataURL(file)
     }
   }
 
-  const handleSave = () => {
+  const handleSaveAvatar = () => {
     if (previewUrl) {
-      setIsSaving(true)
+      setIsSavingAvatar(true)
       setTimeout(() => {
         updateAvatar(previewUrl)
         toast.success('Foto de perfil atualizada com sucesso!')
-        setIsSaving(false)
+        setIsSavingAvatar(false)
       }, 600)
     }
   }
 
-  const hasChanges = previewUrl !== user?.avatarUrl && previewUrl !== null
+  const handleSaveProfile = () => {
+    updateProfile({ name: formData.name, email: formData.email, role: formData.role })
+    setIsEditing(false)
+    toast.success('Informações atualizadas com sucesso!')
+  }
+
+  const hasAvatarChanges = previewUrl !== user?.avatarUrl && previewUrl !== null
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -73,25 +83,20 @@ export default function Profile() {
             />
             <div className="flex flex-wrap gap-3">
               <Button
-                variant={hasChanges ? 'outline' : 'default'}
+                variant={hasAvatarChanges ? 'outline' : 'default'}
                 onClick={() => fileInputRef.current?.click()}
-                className={hasChanges ? '' : 'font-semibold'}
+                className={hasAvatarChanges ? '' : 'font-semibold'}
               >
-                <Upload className="mr-2 h-4 w-4" />
-                Escolher nova imagem
+                <Upload className="mr-2 h-4 w-4" /> Escolher nova imagem
               </Button>
-              {hasChanges && (
-                <Button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="min-w-[120px] font-bold"
-                >
-                  {isSaving ? (
-                    <span className="flex items-center">Salvando...</span>
+              {hasAvatarChanges && (
+                <Button onClick={handleSaveAvatar} disabled={isSavingAvatar} className="font-bold">
+                  {isSavingAvatar ? (
+                    'Salvando...'
                   ) : (
-                    <span className="flex items-center">
+                    <>
                       <Check className="mr-2 h-4 w-4" /> Salvar foto
-                    </span>
+                    </>
                   )}
                 </Button>
               )}
@@ -104,40 +109,72 @@ export default function Profile() {
       </Card>
 
       <Card className="shadow-sm border-muted/60">
-        <CardHeader>
-          <CardTitle>Informações Pessoais</CardTitle>
-          <CardDescription>Seus dados cadastrais básicos no sistema GGIM.</CardDescription>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle>Informações Pessoais</CardTitle>
+            <CardDescription>Seus dados cadastrais básicos no sistema GGIM.</CardDescription>
+          </div>
+          {!isEditing && (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              <Pencil className="h-4 w-4 mr-2" /> Editar
+            </Button>
+          )}
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent>
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Nome completo</Label>
               <Input
                 id="name"
-                defaultValue={user?.name}
-                readOnly
-                className="bg-muted/30 font-medium"
+                value={isEditing ? formData.name : user?.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                readOnly={!isEditing}
+                className={!isEditing ? 'bg-muted/30 font-medium' : ''}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">E-mail Institucional</Label>
               <Input
                 id="email"
-                defaultValue={user?.email}
-                readOnly
-                className="bg-muted/30 font-medium"
+                type="email"
+                value={isEditing ? formData.email : user?.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                readOnly={!isEditing}
+                className={!isEditing ? 'bg-muted/30 font-medium' : ''}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="role">Cargo / Função</Label>
+              <Input
+                id="role"
+                value={isEditing ? formData.role : user?.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                readOnly={!isEditing}
+                className={!isEditing ? 'bg-muted/30 font-medium' : ''}
               />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="role">Cargo / Função</Label>
-            <Input
-              id="role"
-              defaultValue="Gestor Administrativo"
-              readOnly
-              className="bg-muted/30 font-medium"
-            />
-          </div>
+
+          {isEditing && (
+            <div className="flex justify-end gap-3 mt-6 pt-6 border-t">
+              <Button
+                variant="ghost"
+                onClick={() => {
+                  setIsEditing(false)
+                  setFormData({
+                    name: user?.name || '',
+                    email: user?.email || '',
+                    role: user?.role || '',
+                  })
+                }}
+              >
+                <X className="h-4 w-4 mr-2" /> Cancelar
+              </Button>
+              <Button onClick={handleSaveProfile} className="font-bold">
+                <Save className="h-4 w-4 mr-2" /> Salvar Alterações
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
