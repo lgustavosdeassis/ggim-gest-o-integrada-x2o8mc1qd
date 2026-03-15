@@ -8,13 +8,9 @@ import { DashboardProductivity } from '@/components/dashboard/DashboardProductiv
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { FileDown, Filter, X } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import logoGgim from '@/assets/logo-ggim-texto-preto-sem-fundo-4ad89.jpeg'
 import { formatDateTime } from '@/lib/utils'
 
@@ -98,8 +94,8 @@ export default function Index() {
           <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1.5">
             <Filter className="w-3.5 h-3.5" /> Instâncias
           </Label>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+          <Popover>
+            <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 className="w-full justify-between text-left font-medium bg-background border-border/30 hover:bg-muted/50 hover:text-white h-11 rounded-xl"
@@ -110,34 +106,52 @@ export default function Index() {
                     : `${selectedInstances.length} instância(s) selecionada(s)`}
                 </span>
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              className="w-72 max-h-80 overflow-y-auto border-border/40 bg-card/95 backdrop-blur shadow-2xl rounded-xl"
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-72 max-h-80 overflow-y-auto border-border/40 bg-card/95 backdrop-blur shadow-2xl rounded-xl p-4"
               align="start"
             >
-              <DropdownMenuCheckboxItem
-                checked={selectedInstances.length === 0}
-                onCheckedChange={() => setSelectedInstances([])}
-                className="font-bold cursor-pointer"
-              >
-                Todas as Instâncias
-              </DropdownMenuCheckboxItem>
-              <div className="h-px bg-border/40 my-1" />
-              {INSTANCIAS.map((i) => (
-                <DropdownMenuCheckboxItem
-                  key={i}
-                  checked={selectedInstances.includes(i)}
-                  onCheckedChange={(checked) => {
-                    if (checked) setSelectedInstances([...selectedInstances, i])
-                    else setSelectedInstances(selectedInstances.filter((x) => x !== i))
-                  }}
-                  className="cursor-pointer"
-                >
-                  {i}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-3 p-1 rounded-md hover:bg-white/5 transition-colors">
+                  <Checkbox
+                    id="all-instances"
+                    checked={selectedInstances.length === 0}
+                    onCheckedChange={() => setSelectedInstances([])}
+                    className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                  />
+                  <Label
+                    htmlFor="all-instances"
+                    className="font-bold text-white cursor-pointer leading-none flex-1 py-1"
+                  >
+                    Todas as Instâncias
+                  </Label>
+                </div>
+                <div className="h-px bg-border/40 my-2" />
+                {INSTANCIAS.map((i) => (
+                  <div
+                    key={i}
+                    className="flex items-center space-x-3 p-1 rounded-md hover:bg-white/5 transition-colors"
+                  >
+                    <Checkbox
+                      id={`inst-${i}`}
+                      checked={selectedInstances.includes(i)}
+                      onCheckedChange={(checked) => {
+                        if (checked) setSelectedInstances([...selectedInstances, i])
+                        else setSelectedInstances(selectedInstances.filter((x) => x !== i))
+                      }}
+                      className="border-primary/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    />
+                    <Label
+                      htmlFor={`inst-${i}`}
+                      className="font-medium text-gray-200 cursor-pointer leading-none flex-1 py-1"
+                    >
+                      {i}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="w-full md:w-1/4 space-y-2">
           <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
