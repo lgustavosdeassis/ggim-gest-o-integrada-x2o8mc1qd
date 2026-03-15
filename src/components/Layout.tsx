@@ -14,8 +14,7 @@ export default function Layout() {
             <Outlet />
           </main>
           <footer className="py-4 px-6 text-center text-sm text-muted-foreground border-t bg-background print-hidden">
-            Foz do Iguaçu - Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM) ©{' '}
-            {new Date().getFullYear()}
+            Foz do Iguaçu - Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM) © 2026
           </footer>
         </div>
       </div>

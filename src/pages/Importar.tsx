@@ -23,6 +23,12 @@ export default function Importar() {
     }
   }
 
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }
+
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
@@ -39,8 +45,19 @@ export default function Importar() {
     e.preventDefault()
     e.stopPropagation()
     setIsDragging(false)
+
+    let file: File | null = null
+
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      const file = e.dataTransfer.files[0]
+      file = e.dataTransfer.files[0]
+    } else if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      const item = e.dataTransfer.items[0]
+      if (item.kind === 'file') {
+        file = item.getAsFile()
+      }
+    }
+
+    if (file) {
       if (file.name.endsWith('.csv') || file.name.endsWith('.xlsx')) {
         processFile()
       } else {
@@ -83,6 +100,7 @@ export default function Importar() {
               'shadow-subtle border-dashed border-2 transition-colors duration-200',
               isDragging ? 'border-primary bg-primary/5' : 'border-primary/20',
             )}
+            onDragEnter={handleDragEnter}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -103,9 +121,13 @@ export default function Importar() {
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   accept=".csv, .xlsx"
-                  className="hidden"
+                  className="sr-only"
                 />
-                <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <FileSpreadsheet className="mr-2 h-4 w-4" />
                   Procurar Arquivo
                 </Button>

@@ -7,7 +7,11 @@ export function Header() {
     <header className="flex h-16 shrink-0 items-center justify-between border-b bg-background px-4 md:px-6 print-hidden">
       <div className="flex items-center gap-4">
         <SidebarTrigger className="-ml-2" />
-        <img src="/logo.png" alt="GGIM Logo" className="w-10 h-10 object-contain" />
+        <img
+          src="https://img.usecurling.com/i?q=shield&color=blue&shape=fill"
+          alt="GGIM Logo"
+          className="w-10 h-10 object-contain"
+        />
         <h1 className="font-semibold text-lg hidden sm:block text-foreground">
           Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
         </h1>

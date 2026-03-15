@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Search, MoreHorizontal, Pencil, Trash2, Eye } from 'lucide-react'
+import { Search, MoreHorizontal, Pencil, Trash2, Eye, ChevronDown } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import {
@@ -55,17 +55,6 @@ export default function Historico() {
     setSelectedIds(next)
   }
 
-  const handleBulkDelete = () => {
-    if (confirm(`Tem certeza que deseja excluir ${selectedIds.size} registros?`)) {
-      selectedIds.forEach((id) => deleteRecord(id))
-      setSelectedIds(new Set())
-      toast({
-        title: 'Registros excluídos',
-        description: 'Os registros selecionados foram removidos.',
-      })
-    }
-  }
-
   return (
     <div className="max-w-7xl mx-auto pb-12 animate-fade-in">
       <div className="mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
@@ -87,10 +76,32 @@ export default function Historico() {
             />
           </div>
           {selectedIds.size > 0 && (
-            <Button variant="destructive" onClick={handleBulkDelete}>
-              <Trash2 className="h-4 w-4 mr-2" />
-              Excluir ({selectedIds.size})
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="destructive" className="whitespace-nowrap">
+                  Ações ({selectedIds.size}) <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive cursor-pointer"
+                  onSelect={(e) => {
+                    if (window.confirm(`Excluir ${selectedIds.size} registros selecionados?`)) {
+                      selectedIds.forEach((id) => deleteRecord(id))
+                      setSelectedIds(new Set())
+                      toast({
+                        title: 'Registros excluídos',
+                        description: 'Os registros selecionados foram removidos com sucesso.',
+                      })
+                    } else {
+                      e.preventDefault()
+                    }
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" /> Excluir Selecionados
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
@@ -167,20 +178,24 @@ export default function Historico() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             className="cursor-pointer"
-                            onClick={() => setViewRecord(r)}
+                            onSelect={() => setViewRecord(r)}
                           >
                             <Eye className="mr-2 h-4 w-4" /> Visualizar
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="cursor-pointer"
-                            onClick={() => setEditRecord(r)}
+                            onSelect={() => setEditRecord(r)}
                           >
                             <Pencil className="mr-2 h-4 w-4" /> Editar
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="cursor-pointer text-destructive focus:text-destructive"
-                            onClick={() => {
-                              if (confirm('Excluir registro?')) deleteRecord(r.id)
+                            onSelect={(e) => {
+                              if (window.confirm('Excluir registro?')) {
+                                deleteRecord(r.id)
+                              } else {
+                                e.preventDefault()
+                              }
                             }}
                           >
                             <Trash2 className="mr-2 h-4 w-4" /> Excluir

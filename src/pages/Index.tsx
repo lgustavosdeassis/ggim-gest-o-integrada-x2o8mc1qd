@@ -21,7 +21,11 @@ export default function Index() {
 
       <div className="hidden print:flex mb-8 items-center justify-between border-b pb-4">
         <div className="flex items-center gap-4">
-          <img src="/logo.png" alt="GGIM Logo" className="w-16 h-16 object-contain" />
+          <img
+            src="https://img.usecurling.com/i?q=shield&color=blue&shape=fill"
+            alt="GGIM Logo"
+            className="w-16 h-16 object-contain"
+          />
           <div>
             <h1 className="text-2xl font-bold text-slate-900">
               Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
