@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { FileText, FileUp, Trash, Eye, Download } from 'lucide-react'
-import { parseSemicolonList, cn, getDocumentBlob } from '@/lib/utils'
+import { parseSemicolonList, cn, openDocumentViewer, downloadDocument } from '@/lib/utils'
 import { DOC_TYPES, FormValues } from './schema'
 
 export function ProdutividadeCard() {
@@ -74,61 +74,6 @@ export function ProdutividadeCard() {
     }
   }
 
-  const handleViewFile = async (doc: any) => {
-    if (!doc) return
-    const win = window.open('', '_blank')
-    if (!win) {
-      alert('Por favor, permita pop-ups no seu navegador para visualizar o documento.')
-      return
-    }
-
-    win.document.title = doc.name || 'Processando Documento...'
-    win.document.body.innerHTML = `
-      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;background-color:#f8fafc;margin:0;">
-        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite; margin-bottom: 16px; opacity: 0.5;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-        <h2 style="margin:0;font-weight:600;font-size:1.25rem;">Preparando visualização...</h2>
-        <p style="margin-top:8px;color:#64748b;font-size:0.875rem;">O arquivo será exibido nesta guia em instantes.</p>
-        <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
-      </div>
-    `
-
-    try {
-      const blob = await getDocumentBlob(doc)
-      if (blob) {
-        win.location.replace(URL.createObjectURL(blob))
-      } else if (doc.url) {
-        win.location.replace(doc.url)
-      } else {
-        win.close()
-        alert('Documento indisponível.')
-      }
-    } catch (err) {
-      win.close()
-      console.error(err)
-      alert('Erro ao visualizar o arquivo.')
-    }
-  }
-
-  const handleDownloadFile = async (doc: any) => {
-    if (!doc) return
-    try {
-      const blob = await getDocumentBlob(doc)
-      const url = blob ? URL.createObjectURL(blob) : doc.url
-      if (url) {
-        const a = document.createElement('a')
-        a.href = url
-        a.download = doc.name || 'documento'
-        document.body.appendChild(a)
-        a.click()
-        document.body.removeChild(a)
-        if (blob) setTimeout(() => URL.revokeObjectURL(url), 1000)
-      }
-    } catch (err) {
-      console.error(err)
-      alert('Erro ao baixar o arquivo.')
-    }
-  }
-
   return (
     <Card className="border-2 border-[#0f172a]/10 shadow-sm bg-white rounded-2xl overflow-hidden">
       <div className="bg-slate-50 px-6 py-4 border-b border-[#0f172a]/10 flex items-center gap-3">
@@ -143,7 +88,7 @@ export function ProdutividadeCard() {
             <FormItem>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-1">
                 <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                  Registro de Deliberações (separadas por ponto e vírgula)
+                  REGISTRO DE DELIBERAÇÕES (SEPARADAS POR PONTO E VÍRGULA)
                 </FormLabel>
                 <span className="text-[10px] font-black bg-[#eab308]/20 text-[#0f172a] px-3 py-1 rounded-full uppercase tracking-widest border border-[#eab308]/50 w-fit">
                   Total Deliberações: {parseSemicolonList(field.value || '').length}
@@ -245,7 +190,7 @@ export function ProdutividadeCard() {
                   render={({ field: nameField }) => (
                     <FormItem className="flex-1 mt-1">
                       <FormLabel className="text-[10px] font-black text-[#0f172a]/60 uppercase tracking-widest">
-                        Arquivo Recebido
+                        ARQUIVO RECEBIDO
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -264,7 +209,7 @@ export function ProdutividadeCard() {
                   render={({ field: typeField }) => (
                     <FormItem className="mt-1">
                       <FormLabel className="text-[10px] font-black text-[#0f172a] uppercase tracking-widest">
-                        Categoria Obrigatória *
+                        CATEGORIA OBRIGATÓRIA *
                       </FormLabel>
                       <Select
                         onValueChange={typeField.onChange}
@@ -296,7 +241,7 @@ export function ProdutividadeCard() {
                     type="button"
                     variant="outline"
                     className="h-11 px-3 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all flex items-center gap-1.5"
-                    onClick={() => handleViewFile(watchedDocs[index])}
+                    onClick={() => openDocumentViewer(watchedDocs[index])}
                     title="Visualizar anexo em nova guia"
                   >
                     <Eye className="w-4 h-4" />
@@ -306,7 +251,7 @@ export function ProdutividadeCard() {
                     type="button"
                     variant="outline"
                     className="h-11 px-3 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all flex items-center gap-1.5"
-                    onClick={() => handleDownloadFile(watchedDocs[index])}
+                    onClick={() => downloadDocument(watchedDocs[index])}
                     title="Baixar arquivo original"
                   >
                     <Download className="w-4 h-4" />

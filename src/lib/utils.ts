@@ -81,7 +81,6 @@ export async function getDocumentBlob(
     }
   }
 
-  // Fallbacks strictly for mocked data that has no actual url attached.
   const lowerName = (name || '').toLowerCase()
   const isPdf = lowerName.endsWith('.pdf')
   const isImg = lowerName.match(/\.(jpg|jpeg|png|gif|webp)$/)
@@ -183,4 +182,112 @@ export async function getDocumentBlob(
 
   const textContent = `Registro de Atividade - GGIM\n\nInstancia: ${fallbackInst}\nTipologia: ${fallbackType}\nLocal: ${fallbackLoc}\nData: ${fallbackDate}\n\n(Documento Gerado Dinamicamente)`
   return new Blob([textContent], { type: 'text/plain' })
+}
+
+export async function openDocumentViewer(doc: ActivityDocument, activity?: ActivityRecord) {
+  const win = window.open('', '_blank')
+  if (!win) {
+    alert('Por favor, permita pop-ups no seu navegador para visualizar o documento.')
+    return
+  }
+
+  win.document.title = doc.name || 'Visualizador de Documento'
+  win.document.write(`
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${doc.name || 'Visualizador de Documento'}</title>
+      <style>
+        body, html { margin: 0; padding: 0; height: 100%; background-color: #0f172a; display: flex; align-items: center; justify-content: center; color: white; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        #loader { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-left-color: #eab308; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        iframe { width: 100%; height: 100%; border: none; display: none; background: white; }
+        img { max-width: 100%; max-height: 100%; object-fit: contain; display: none; }
+      </style>
+    </head>
+    <body>
+      <div id="loader">
+        <div class="spinner"></div>
+        <div style="font-weight: 500;">Preparando visualização segura...</div>
+      </div>
+      <iframe id="viewer"></iframe>
+      <img id="img-viewer" alt="Visualização do Documento" />
+    </body>
+    </html>
+  `)
+  win.document.close()
+
+  try {
+    const blob = await getDocumentBlob(doc, activity)
+    const loader = win.document.getElementById('loader')
+    const iframe = win.document.getElementById('viewer') as HTMLIFrameElement
+    const img = win.document.getElementById('img-viewer') as HTMLImageElement
+
+    if (loader) loader.style.display = 'none'
+
+    if (blob) {
+      const blobUrl = URL.createObjectURL(blob)
+      win.document.title = doc.name || 'Documento Visualizado'
+
+      if (blob.type.startsWith('image/')) {
+        if (img) {
+          img.src = blobUrl
+          img.style.display = 'block'
+        }
+      } else {
+        if (iframe) {
+          iframe.src = blobUrl
+          iframe.style.display = 'block'
+        }
+      }
+    } else if (doc.url && !doc.url.startsWith('data:') && !doc.url.startsWith('blob:')) {
+      if (iframe) {
+        iframe.src = doc.url
+        iframe.style.display = 'block'
+      }
+    } else {
+      win.document.body.innerHTML =
+        '<div style="padding: 20px; text-align: center; color: #ff4444; font-weight: bold;">Erro: Não foi possível carregar o conteúdo do documento para visualização.</div>'
+    }
+  } catch (err) {
+    console.error('Erro na visualização:', err)
+    if (win.document.body) {
+      win.document.body.innerHTML =
+        '<div style="padding: 20px; text-align: center; color: #ff4444; font-weight: bold;">Ocorreu um erro ao processar o documento.</div>'
+    }
+  }
+}
+
+export async function downloadDocument(doc: ActivityDocument, activity?: ActivityRecord) {
+  try {
+    const blob = await getDocumentBlob(doc, activity)
+    let downloadUrl = ''
+    let isObjectUrl = false
+
+    if (blob) {
+      downloadUrl = URL.createObjectURL(blob)
+      isObjectUrl = true
+    } else if (doc.url && !doc.url.startsWith('C:') && !doc.url.startsWith('blob:')) {
+      downloadUrl = doc.url
+    }
+
+    if (downloadUrl) {
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.download = doc.name || 'documento'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+
+      if (isObjectUrl) {
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
+      }
+    }
+  } catch (err) {
+    console.error('Erro ao baixar documento:', err)
+    alert('Houve um erro ao tentar realizar o download.')
+  }
 }

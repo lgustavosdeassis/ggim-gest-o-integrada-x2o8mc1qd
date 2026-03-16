@@ -51,7 +51,7 @@ export function DuracaoCard() {
             render={({ field }) => (
               <FormItem className="mt-2">
                 <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                  Início da Reunião
+                  INÍCIO DA REUNIÃO
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -71,7 +71,7 @@ export function DuracaoCard() {
             render={({ field }) => (
               <FormItem className="mt-2">
                 <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                  Término da Reunião
+                  TÉRMINO DA REUNIÃO
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -163,7 +163,7 @@ export function DuracaoCard() {
                         render={({ field: startField }) => (
                           <FormItem>
                             <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                              Início da Ação Extra
+                              INÍCIO DA AÇÃO EXTRA
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -182,7 +182,7 @@ export function DuracaoCard() {
                         render={({ field: endField }) => (
                           <FormItem>
                             <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                              Término da Ação Extra
+                              TÉRMINO DA AÇÃO EXTRA
                             </FormLabel>
                             <FormControl>
                               <Input

@@ -27,7 +27,7 @@ export function IdentificacaoCard() {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs">
-                Instância
+                INSTÂNCIA
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value || undefined}>
                 <FormControl>
@@ -57,7 +57,7 @@ export function IdentificacaoCard() {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs">
-                Tipo do Evento
+                TIPO DO EVENTO
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value || undefined}>
                 <FormControl>
@@ -87,7 +87,7 @@ export function IdentificacaoCard() {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs">
-                Modalidade
+                MODALIDADE
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value || undefined}>
                 <FormControl>
@@ -126,7 +126,7 @@ export function IdentificacaoCard() {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs">
-                Local
+                LOCAL
               </FormLabel>
               <FormControl>
                 <Input
