@@ -1,19 +1,36 @@
 import { Button } from '@/components/ui/button'
 import { Eye, Download, FileX } from 'lucide-react'
-import { Document as ActivityDocument } from '@/lib/types'
+import { Document as ActivityDocument, ActivityRecord } from '@/lib/types'
 import { getDocumentBlob } from '@/lib/utils'
 
-export function DocumentList({ documents }: { documents?: ActivityDocument[] }) {
+export function DocumentList({
+  documents,
+  activity,
+}: {
+  documents?: ActivityDocument[]
+  activity: ActivityRecord
+}) {
   const handleView = async (doc: ActivityDocument) => {
     try {
-      const blob = await getDocumentBlob(doc.name, doc.type, doc.url)
-      if (!blob && doc.url) {
-        window.open(doc.url, '_blank')
-        return
-      }
+      const newWin = window.open('', '_blank')
+
+      const blob = await getDocumentBlob(doc, activity)
+
       if (blob) {
         const url = URL.createObjectURL(blob)
-        window.open(url, '_blank')
+        if (newWin) {
+          newWin.location.href = url
+        } else {
+          const a = document.createElement('a')
+          a.href = url
+          a.target = '_blank'
+          a.click()
+        }
+      } else if (doc.url && !doc.url.startsWith('C:') && !doc.url.startsWith('blob:')) {
+        if (newWin) newWin.location.href = doc.url
+        else window.open(doc.url, '_blank')
+      } else {
+        if (newWin) newWin.close()
       }
     } catch (err) {
       console.error(err)
@@ -22,13 +39,15 @@ export function DocumentList({ documents }: { documents?: ActivityDocument[] }) 
 
   const handleDownload = async (doc: ActivityDocument) => {
     try {
-      const blob = await getDocumentBlob(doc.name, doc.type, doc.url)
-      let downloadUrl = doc.url
+      const blob = await getDocumentBlob(doc, activity)
+      let downloadUrl = ''
       let isObjectUrl = false
 
       if (blob) {
         downloadUrl = URL.createObjectURL(blob)
         isObjectUrl = true
+      } else if (doc.url && !doc.url.startsWith('C:') && !doc.url.startsWith('blob:')) {
+        downloadUrl = doc.url
       }
 
       if (downloadUrl) {
@@ -40,7 +59,7 @@ export function DocumentList({ documents }: { documents?: ActivityDocument[] }) 
         document.body.removeChild(a)
 
         if (isObjectUrl) {
-          setTimeout(() => URL.revokeObjectURL(downloadUrl!), 1000)
+          setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
         }
       }
     } catch (err) {
@@ -78,15 +97,14 @@ export function DocumentList({ documents }: { documents?: ActivityDocument[] }) 
           <div className="flex gap-2 mt-auto pt-3 border-t border-border/50">
             <Button
               size="sm"
-              variant="outline"
-              className="flex-1 text-xs font-bold h-8 bg-background"
+              className="flex-1 text-xs font-bold h-8 bg-[#0f172a] hover:bg-[#1e293b] text-white transition-colors"
               onClick={() => handleView(doc)}
             >
               <Eye className="w-3.5 h-3.5 mr-1.5" /> Visualizar
             </Button>
             <Button
               size="sm"
-              className="flex-1 text-xs font-bold h-8"
+              className="flex-1 text-xs font-bold h-8 bg-[#eab308] hover:bg-[#ca8a04] text-[#0f172a] transition-colors"
               onClick={() => handleDownload(doc)}
             >
               <Download className="w-3.5 h-3.5 mr-1.5" /> Baixar

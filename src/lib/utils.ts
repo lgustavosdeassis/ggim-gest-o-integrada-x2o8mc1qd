@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { Document as ActivityDocument, ActivityRecord } from '@/lib/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -42,32 +43,108 @@ export function formatDateTime(isoString: string): string {
 }
 
 export async function getDocumentBlob(
-  name: string,
-  type: string,
-  url?: string,
+  doc: ActivityDocument,
+  activity: ActivityRecord,
 ): Promise<Blob | null> {
-  if (url) {
-    if (url.startsWith('data:')) {
-      const res = await fetch(url)
-      return await res.blob()
-    }
-    return null
+  const { name, url } = doc
+
+  if (url && url.startsWith('data:')) {
+    const res = await fetch(url)
+    return await res.blob()
   }
 
-  const isPdf = name.toLowerCase().endsWith('.pdf')
-  const isImg = name.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)
+  const lowerName = name.toLowerCase()
+  const isPdf = lowerName.endsWith('.pdf')
+  const isImg = lowerName.match(/\.(jpg|jpeg|png|gif)$/)
 
   if (isPdf) {
-    const res = await fetch(
-      'data:application/pdf;base64,JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwogIC9QYWdlcyAyIDAgUgo+PgplbmRvYmoKCjIgMCBvYmoKPDwKICAvVHlwZSAvUGFnZXMKICAvTWVkaWFCb3ggWyAwIDAgMjAwIDIwMCBdCiAgL0NvdW50IDEKICAvS2lkcyBbIDMgMCBSIF0KPj4KZW5kb2JqCgozIDAgb2JqCjw8CiAgL1R5cGUgL1BhZ2UKICAvUGFyZW50IDIgMCBSCiAgL1Jlc291cmNlcyA8PAogICAgL0ZvbnQgPDwKICAgICAgL0YxIDQgMCBSCgkJPj4KICA+PgogIC9Db250ZW50cyA1IDAgUgo+PgplbmRvYmoKCjQgMCBvYmoKPDwKICAvVHlwZSAvRm9udAogIC9TdWJ0eXBlIC9UeXBlMQogIC9CYXNlRm9udCAvVGltZXMtUm9tYW4KPj4KZW5kb2JqCgo1IDAgb2JqICAlIHBhZ2UgY29udGVudAo8PAogIC9MZW5ndGggNDQKPj4Kc3RyZWFtCkJUCjcwIDUwIFRECi9GMSAxMiBUZgooSGVsbG8sIHdvcmxkISkgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDEwIDAwMDAwIG4gCjAwMDAwMDAwNjggMDAwMDAgbiAKMDAwMDAwMDE2NyAwMDAwMCBuIAowMDAwMDAwMjk2IDAwMDAwIG4gCjAwMDAwMDAzODQgMDAwMDAgbiAKdHJhaWxlcgo8PAogIC9TaXplIDYKICAvUm9vdCAxIDAgUgo+PgpzdGFydHhyZWYKNDc4CiUlRU9GCg==',
+    const content = [
+      'Registro de Atividade - GGIM',
+      `Instancia: ${activity.instance}`,
+      `Tipologia: ${activity.eventType}`,
+      `Modalidade: ${activity.modality}`,
+      `Data Inicio: ${formatDateTime(activity.meetingStart)}`,
+      `Data Fim: ${formatDateTime(activity.meetingEnd)}`,
+      `Local: ${activity.location}`,
+      `Participantes PF: ${parseSemicolonList(activity.participantsPF).length}`,
+      `Participantes PJ: ${parseSemicolonList(activity.participantsPJ).length}`,
+      `Acoes Extras: ${activity.hasAction ? 'Sim' : 'Nao'}`,
+    ]
+
+    let streamData = 'BT\n/F1 12 Tf\n15 TL\n50 750 Td\n'
+    for (const line of content) {
+      const escaped = line.replace(/[^\x20-\x7E]/g, '').replace(/[()]/g, '\\$&')
+      streamData += `(${escaped}) Tj T*\n`
+    }
+    streamData += 'ET'
+
+    const objects: string[] = []
+    objects.push(`1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj`)
+    objects.push(
+      `2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>\nendobj`,
     )
-    return await res.blob()
-  } else if (isImg) {
-    const res = await fetch(
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+    objects.push(
+      `3 0 obj\n<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj`,
     )
-    return await res.blob()
+    objects.push(`4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj`)
+    objects.push(
+      `5 0 obj\n<< /Length ${streamData.length} >>\nstream\n${streamData}\nendstream\nendobj`,
+    )
+
+    let pdfStr = '%PDF-1.4\n%\xD3\xEB\xE9\xE1\n'
+    const xref: number[] = [0]
+
+    for (const obj of objects) {
+      xref.push(pdfStr.length)
+      pdfStr += obj + '\n'
+    }
+
+    const startxref = pdfStr.length
+    pdfStr += `xref\n0 ${xref.length}\n0000000000 65535 f \n`
+    for (let i = 1; i < xref.length; i++) {
+      pdfStr += xref[i].toString().padStart(10, '0') + ' 00000 n \n'
+    }
+
+    pdfStr += `trailer\n<< /Size ${xref.length} /Root 1 0 R >>\nstartxref\n${startxref}\n%%EOF\n`
+
+    const bytes = new Uint8Array(pdfStr.length)
+    for (let i = 0; i < pdfStr.length; i++) {
+      bytes[i] = pdfStr.charCodeAt(i) & 0xff
+    }
+
+    return new Blob([bytes], { type: 'application/pdf' })
   }
 
-  return new Blob([`Conteúdo do documento: ${name}\nTipo: ${type}`], { type: 'text/plain' })
+  if (isImg) {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 800
+      canvas.height = 600
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(new Blob([''], { type: 'image/png' }))
+        return
+      }
+
+      ctx.fillStyle = '#ffffff'
+      ctx.fillRect(0, 0, 800, 600)
+
+      ctx.fillStyle = '#0f172a'
+      ctx.font = 'bold 24px Arial'
+      ctx.fillText('Registro de Atividade - GGIM', 40, 60)
+
+      ctx.font = '18px Arial'
+      ctx.fillText(`Instância: ${activity.instance}`, 40, 110)
+      ctx.fillText(`Tipologia: ${activity.eventType}`, 40, 150)
+      ctx.fillText(`Local: ${activity.location}`, 40, 190)
+      ctx.fillText(`Data: ${formatDateTime(activity.meetingStart)}`, 40, 230)
+
+      canvas.toBlob((blob) => {
+        resolve(blob || new Blob([''], { type: 'image/png' }))
+      }, 'image/png')
+    })
+  }
+
+  const textContent = `Registro de Atividade - GGIM\n\nInstancia: ${activity.instance}\nTipologia: ${activity.eventType}\nLocal: ${activity.location}\nData: ${formatDateTime(activity.meetingStart)}\n\n(Documento Gerado Dinamicamente)`
+  return new Blob([textContent], { type: 'text/plain' })
 }

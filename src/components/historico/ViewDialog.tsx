@@ -171,7 +171,7 @@ export function ViewDialog({
                 {viewActivity.documents?.length || 0}
               </span>
             </span>
-            <DocumentList documents={viewActivity.documents} />
+            <DocumentList documents={viewActivity.documents} activity={viewActivity} />
           </div>
         </div>
       </DialogContent>
