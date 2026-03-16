@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, FilePlus2, Upload, History, Settings } from 'lucide-react'
+import { LayoutDashboard, FilePlus2, Upload, History, Settings, Users } from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -13,16 +13,27 @@ import {
   SidebarGroupLabel,
 } from '@/components/ui/sidebar'
 import logoCmtecs from '@/assets/logo-cmtecs-a4c2e.jpeg'
+import { useAuthStore } from '@/stores/auth'
 
-const items = [
-  { title: 'Dashboard BI', url: '/', icon: LayoutDashboard },
-  { title: 'Registrar Atividade', url: '/registrar', icon: FilePlus2 },
-  { title: 'Importar / Migrar', url: '/importar', icon: Upload },
-  { title: 'Histórico Completo', url: '/historico', icon: History },
-]
+const getItems = (isEditor: boolean) => {
+  const base = [
+    { title: 'Dashboard BI', url: '/', icon: LayoutDashboard },
+    { title: 'Registrar Atividade', url: '/registrar', icon: FilePlus2 },
+    { title: 'Importar / Migrar', url: '/importar', icon: Upload },
+    { title: 'Histórico Completo', url: '/historico', icon: History },
+  ]
+  if (isEditor) {
+    base.push({ title: 'Gestão de Usuários', url: '/usuarios', icon: Users })
+  }
+  return base
+}
 
 export function AppSidebar() {
   const location = useLocation()
+  const user = useAuthStore((state) => state.user)
+  const isEditor = user?.role === 'editor'
+
+  const items = getItems(isEditor)
 
   return (
     <Sidebar className="border-r border-sidebar-border shadow-xl no-print bg-sidebar">

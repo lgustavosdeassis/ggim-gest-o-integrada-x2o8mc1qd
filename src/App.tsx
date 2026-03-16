@@ -7,6 +7,7 @@ import Historico from '@/pages/Historico'
 import NotFound from '@/pages/NotFound'
 import Profile from '@/pages/Profile'
 import Login from '@/pages/Login'
+import Usuarios from '@/pages/Usuarios'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
 
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="importar" element={<Importar />} />
           <Route path="historico" element={<Historico />} />
           <Route path="profile" element={<Profile />} />
+          <Route path="usuarios" element={<Usuarios />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

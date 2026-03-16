@@ -9,18 +9,8 @@ import logoGgim from '@/assets/logo-ggim-texto-preto-sem-fundo-4ad89.jpeg'
 import { Loader2, ArrowRight } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
-const PRE_REGISTERED_USERS = [
-  { email: 'admin@ggim.foz.br', password: 'admin', role: 'editor' as const, name: 'Gestor GGIM' },
-  {
-    email: 'viewer@ggim.foz.br',
-    password: 'viewer',
-    role: 'viewer' as const,
-    name: 'Visualizador GGIM',
-  },
-]
-
 export default function Login() {
-  const login = useAuthStore((state) => state.login)
+  const { login, users } = useAuthStore()
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -33,15 +23,9 @@ export default function Login() {
     setIsLoading(true)
 
     setTimeout(() => {
-      const user = PRE_REGISTERED_USERS.find((u) => u.email === email && u.password === password)
+      const user = users.find((u) => u.email === email && u.password === password)
       if (user) {
-        login({
-          name: user.name,
-          email: user.email,
-          role: user.role,
-          avatarUrl: null,
-          jobTitle: user.name,
-        })
+        login(user)
         navigate('/')
       } else {
         toast({
