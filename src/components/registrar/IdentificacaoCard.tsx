@@ -27,7 +27,7 @@ export function IdentificacaoCard() {
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs">
-                Instância / Comitê
+                Instância
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value || undefined}>
                 <FormControl>

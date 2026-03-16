@@ -76,20 +76,34 @@ export function ProdutividadeCard() {
 
   const handleViewFile = async (doc: any) => {
     if (!doc) return
+    const win = window.open('', '_blank')
+    if (!win) {
+      alert('Por favor, permita pop-ups no seu navegador para visualizar o documento.')
+      return
+    }
+
+    win.document.title = doc.name || 'Processando Documento...'
+    win.document.body.innerHTML = `
+      <div style="display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#0f172a;background-color:#f8fafc;margin:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="animation: spin 1s linear infinite; margin-bottom: 16px; opacity: 0.5;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+        <h2 style="margin:0;font-weight:600;font-size:1.25rem;">Preparando visualização...</h2>
+        <p style="margin-top:8px;color:#64748b;font-size:0.875rem;">O arquivo será exibido nesta guia em instantes.</p>
+        <style>@keyframes spin { 100% { transform: rotate(360deg); } }</style>
+      </div>
+    `
+
     try {
       const blob = await getDocumentBlob(doc)
       if (blob) {
-        const url = URL.createObjectURL(blob)
-        const win = window.open(url, '_blank')
-        if (!win) {
-          alert('Por favor, permita pop-ups no seu navegador para visualizar o documento.')
-        } else {
-          setTimeout(() => URL.revokeObjectURL(url), 10000)
-        }
+        win.location.replace(URL.createObjectURL(blob))
       } else if (doc.url) {
-        window.open(doc.url, '_blank')
+        win.location.replace(doc.url)
+      } else {
+        win.close()
+        alert('Documento indisponível.')
       }
     } catch (err) {
+      win.close()
       console.error(err)
       alert('Erro ao visualizar o arquivo.')
     }
@@ -223,7 +237,7 @@ export function ProdutividadeCard() {
             {docsFields.map((field, index) => (
               <div
                 key={field.id}
-                className="p-5 border-2 border-[#0f172a]/10 rounded-2xl bg-slate-50/50 shadow-sm relative grid grid-cols-1 lg:grid-cols-[1fr_240px_auto] gap-5 items-start group hover:border-[#0f172a]/30 transition-colors"
+                className="p-5 border-2 border-[#0f172a]/10 rounded-2xl bg-slate-50/50 shadow-sm relative grid grid-cols-1 lg:grid-cols-[1fr_200px_auto] gap-5 items-start group hover:border-[#0f172a]/30 transition-colors"
               >
                 <FormField
                   control={control}
@@ -277,31 +291,33 @@ export function ProdutividadeCard() {
                     </FormItem>
                   )}
                 />
-                <div className="flex items-center gap-2 lg:mt-7 shrink-0">
+                <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 lg:mt-7 shrink-0 w-full lg:w-auto justify-end">
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-11 w-11 p-0 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all"
+                    className="h-11 px-3 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all flex items-center gap-1.5"
                     onClick={() => handleViewFile(watchedDocs[index])}
-                    title="Visualizar anexo"
+                    title="Visualizar anexo em nova guia"
                   >
                     <Eye className="w-4 h-4" />
+                    <span className="text-xs font-bold">Visualizar</span>
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-11 w-11 p-0 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all"
+                    className="h-11 px-3 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all flex items-center gap-1.5"
                     onClick={() => handleDownloadFile(watchedDocs[index])}
-                    title="Baixar anexo"
+                    title="Baixar arquivo original"
                   >
                     <Download className="w-4 h-4" />
+                    <span className="text-xs font-bold">Baixar</span>
                   </Button>
                   <Button
                     type="button"
                     variant="ghost"
-                    className="text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-11 w-11 p-0 border border-transparent transition-all opacity-70 group-hover:opacity-100"
+                    className="text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-11 w-11 p-0 border border-transparent transition-all opacity-70 group-hover:opacity-100 shrink-0 ml-1"
                     onClick={() => removeDoc(index)}
-                    title="Remover anexo"
+                    title="Remover anexo do registro"
                   >
                     <Trash className="w-5 h-5" />
                   </Button>
