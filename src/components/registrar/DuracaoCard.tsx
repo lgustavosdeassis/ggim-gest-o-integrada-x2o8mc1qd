@@ -41,51 +41,55 @@ export function DuracaoCard() {
         <div className="sm:hidden mb-6 text-center text-xs font-black bg-[#eab308] text-[#0f172a] px-4 py-3 rounded-xl shadow-sm uppercase tracking-widest border border-[#0f172a]/10">
           Total Dedicado: <span className="text-base ml-1">{(tMeeting + tAction).toFixed(1)}h</span>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-2 border-[#0f172a]/10 p-6 rounded-2xl mb-8 bg-slate-50/50 relative">
-          <div className="absolute -top-3 left-6 bg-[#0f172a] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
+
+        <div className="border-2 border-[#0f172a]/10 rounded-2xl mb-8 bg-slate-50/50 relative mt-4">
+          <div className="absolute -top-3 left-6 bg-[#0f172a] text-white text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full shadow-sm z-10">
             Reunião Principal ({tMeeting.toFixed(1)}h)
           </div>
-          <FormField
-            control={control}
-            name="meetingStart"
-            render={({ field }) => (
-              <FormItem className="mt-2">
-                <FormLabel className="text-[#0f172a] font-bold text-sm">
-                  Início da Reunião
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="datetime-local"
-                    {...field}
-                    value={field.value || ''}
-                    className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] shadow-sm focus-visible:ring-[#eab308]"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={control}
-            name="meetingEnd"
-            render={({ field }) => (
-              <FormItem className="mt-2">
-                <FormLabel className="text-[#0f172a] font-bold text-sm">
-                  Término da Reunião
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="datetime-local"
-                    {...field}
-                    value={field.value || ''}
-                    className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] shadow-sm focus-visible:ring-[#eab308]"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6 pt-7">
+            <FormField
+              control={control}
+              name="meetingStart"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-[#0f172a] font-bold text-sm block">
+                    Início da Reunião
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="datetime-local"
+                      {...field}
+                      value={field.value || ''}
+                      className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] shadow-sm focus-visible:ring-[#eab308]"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={control}
+              name="meetingEnd"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-[#0f172a] font-bold text-sm block">
+                    Término da Reunião
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="datetime-local"
+                      {...field}
+                      value={field.value || ''}
+                      className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] shadow-sm focus-visible:ring-[#eab308]"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
+
         <FormField
           control={control}
           name="hasAction"
@@ -102,7 +106,7 @@ export function DuracaoCard() {
                 />
               </FormControl>
               <div className="space-y-2 leading-none cursor-pointer flex-1">
-                <FormLabel className="text-base font-bold text-[#0f172a] cursor-pointer">
+                <FormLabel className="text-base font-bold text-[#0f172a] cursor-pointer block">
                   Esta reunião gerou ou desdobrou em uma Ação Vinculada?
                 </FormLabel>
                 <p className="text-sm text-[#0f172a]/60 leading-relaxed font-medium">
@@ -162,7 +166,7 @@ export function DuracaoCard() {
                         name={`actions.${index}.start`}
                         render={({ field: startField }) => (
                           <FormItem>
-                            <FormLabel className="text-[#0f172a] font-bold text-sm">
+                            <FormLabel className="text-[#0f172a] font-bold text-sm block">
                               Início da Ação Extra
                             </FormLabel>
                             <FormControl>
@@ -181,7 +185,7 @@ export function DuracaoCard() {
                         name={`actions.${index}.end`}
                         render={({ field: endField }) => (
                           <FormItem>
-                            <FormLabel className="text-[#0f172a] font-bold text-sm">
+                            <FormLabel className="text-[#0f172a] font-bold text-sm block">
                               Término da Ação Extra
                             </FormLabel>
                             <FormControl>

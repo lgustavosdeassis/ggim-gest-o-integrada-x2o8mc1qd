@@ -26,7 +26,7 @@ export function IdentificacaoCard() {
           name="instance"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs">
+              <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
                 INSTÂNCIA
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value || undefined}>
@@ -56,7 +56,7 @@ export function IdentificacaoCard() {
           name="eventType"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs">
+              <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
                 TIPO DO EVENTO
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value || undefined}>
@@ -86,7 +86,7 @@ export function IdentificacaoCard() {
           name="modality"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs">
+              <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
                 MODALIDADE
               </FormLabel>
               <Select onValueChange={field.onChange} value={field.value || undefined}>
@@ -125,7 +125,7 @@ export function IdentificacaoCard() {
           name="location"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs">
+              <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
                 LOCAL
               </FormLabel>
               <FormControl>

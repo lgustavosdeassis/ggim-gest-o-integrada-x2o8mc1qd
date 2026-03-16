@@ -158,9 +158,9 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
                     <Pie
                       data={data.modalityData}
                       cx="50%"
-                      cy="45%"
-                      innerRadius={70}
-                      outerRadius={95}
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
                       paddingAngle={4}
                       dataKey="value"
                       stroke="transparent"
