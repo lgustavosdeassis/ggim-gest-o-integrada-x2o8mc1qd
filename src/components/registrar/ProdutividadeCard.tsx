@@ -13,17 +13,19 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { FileText, FileUp, Trash } from 'lucide-react'
-import { parseSemicolonList, cn } from '@/lib/utils'
+import { FileText, FileUp, Trash, Eye, Download } from 'lucide-react'
+import { parseSemicolonList, cn, getDocumentBlob } from '@/lib/utils'
 import { DOC_TYPES, FormValues } from './schema'
 
 export function ProdutividadeCard() {
-  const { control } = useFormContext<FormValues>()
+  const { control, watch } = useFormContext<FormValues>()
   const {
     fields: docsFields,
     append: appendDoc,
     remove: removeDoc,
   } = useFieldArray({ control, name: 'documents' })
+
+  const watchedDocs = watch('documents') || []
 
   const [isDragging, setIsDragging] = useState(false)
   const dragCounter = useRef(0)
@@ -59,6 +61,7 @@ export function ProdutividadeCard() {
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    if (!isDragging) setIsDragging(true)
   }
 
   const handleDrop = (e: React.DragEvent) => {
@@ -68,6 +71,47 @@ export function ProdutividadeCard() {
     dragCounter.current = 0
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       handleFiles(Array.from(e.dataTransfer.files))
+    }
+  }
+
+  const handleViewFile = async (doc: any) => {
+    if (!doc) return
+    try {
+      const blob = await getDocumentBlob(doc)
+      if (blob) {
+        const url = URL.createObjectURL(blob)
+        const win = window.open(url, '_blank')
+        if (!win) {
+          alert('Por favor, permita pop-ups no seu navegador para visualizar o documento.')
+        } else {
+          setTimeout(() => URL.revokeObjectURL(url), 10000)
+        }
+      } else if (doc.url) {
+        window.open(doc.url, '_blank')
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Erro ao visualizar o arquivo.')
+    }
+  }
+
+  const handleDownloadFile = async (doc: any) => {
+    if (!doc) return
+    try {
+      const blob = await getDocumentBlob(doc)
+      const url = blob ? URL.createObjectURL(blob) : doc.url
+      if (url) {
+        const a = document.createElement('a')
+        a.href = url
+        a.download = doc.name || 'documento'
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        if (blob) setTimeout(() => URL.revokeObjectURL(url), 1000)
+      }
+    } catch (err) {
+      console.error(err)
+      alert('Erro ao baixar o arquivo.')
     }
   }
 
@@ -233,15 +277,35 @@ export function ProdutividadeCard() {
                     </FormItem>
                   )}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="lg:mt-7 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-11 w-11 p-0 shrink-0 border border-transparent transition-all opacity-70 group-hover:opacity-100"
-                  onClick={() => removeDoc(index)}
-                  title="Remover anexo"
-                >
-                  <Trash className="w-5 h-5" />
-                </Button>
+                <div className="flex items-center gap-2 lg:mt-7 shrink-0">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 w-11 p-0 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all"
+                    onClick={() => handleViewFile(watchedDocs[index])}
+                    title="Visualizar anexo"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 w-11 p-0 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all"
+                    onClick={() => handleDownloadFile(watchedDocs[index])}
+                    title="Baixar anexo"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-11 w-11 p-0 border border-transparent transition-all opacity-70 group-hover:opacity-100"
+                    onClick={() => removeDoc(index)}
+                    title="Remover anexo"
+                  >
+                    <Trash className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
             ))}
             {docsFields.length === 0 && (

@@ -44,7 +44,7 @@ export function formatDateTime(isoString: string): string {
 
 export async function getDocumentBlob(
   doc: ActivityDocument,
-  activity: ActivityRecord,
+  activity?: ActivityRecord,
 ): Promise<Blob | null> {
   const { name, url } = doc
 
@@ -86,18 +86,25 @@ export async function getDocumentBlob(
   const isPdf = lowerName.endsWith('.pdf')
   const isImg = lowerName.match(/\.(jpg|jpeg|png|gif|webp)$/)
 
+  const fallbackInst = activity?.instance || 'N/A'
+  const fallbackType = activity?.eventType || 'N/A'
+  const fallbackLoc = activity?.location || 'N/A'
+  const fallbackDate = activity?.meetingStart ? formatDateTime(activity.meetingStart) : 'N/A'
+  const partsPF = activity?.participantsPF ? parseSemicolonList(activity.participantsPF).length : 0
+  const partsPJ = activity?.participantsPJ ? parseSemicolonList(activity.participantsPJ).length : 0
+  const hasAcoes = activity?.hasAction ? 'Sim' : 'Nao'
+
   if (isPdf) {
     const content = [
       'Registro de Atividade - GGIM',
-      `Instancia: ${activity.instance}`,
-      `Tipologia: ${activity.eventType}`,
-      `Modalidade: ${activity.modality}`,
-      `Data Inicio: ${formatDateTime(activity.meetingStart)}`,
-      `Data Fim: ${formatDateTime(activity.meetingEnd)}`,
-      `Local: ${activity.location}`,
-      `Participantes PF: ${parseSemicolonList(activity.participantsPF).length}`,
-      `Participantes PJ: ${parseSemicolonList(activity.participantsPJ).length}`,
-      `Acoes Extras: ${activity.hasAction ? 'Sim' : 'Nao'}`,
+      `Instancia: ${fallbackInst}`,
+      `Tipologia: ${fallbackType}`,
+      `Modalidade: ${activity?.modality || 'N/A'}`,
+      `Data Inicio: ${fallbackDate}`,
+      `Local: ${fallbackLoc}`,
+      `Participantes PF: ${partsPF}`,
+      `Participantes PJ: ${partsPJ}`,
+      `Acoes Extras: ${hasAcoes}`,
     ]
 
     let streamData = 'BT\n/F1 12 Tf\n15 TL\n50 750 Td\n'
@@ -163,10 +170,10 @@ export async function getDocumentBlob(
       ctx.fillText('Registro de Atividade - GGIM', 40, 60)
 
       ctx.font = '18px Arial'
-      ctx.fillText(`Instância: ${activity.instance}`, 40, 110)
-      ctx.fillText(`Tipologia: ${activity.eventType}`, 40, 150)
-      ctx.fillText(`Local: ${activity.location}`, 40, 190)
-      ctx.fillText(`Data: ${formatDateTime(activity.meetingStart)}`, 40, 230)
+      ctx.fillText(`Instância: ${fallbackInst}`, 40, 110)
+      ctx.fillText(`Tipologia: ${fallbackType}`, 40, 150)
+      ctx.fillText(`Local: ${fallbackLoc}`, 40, 190)
+      ctx.fillText(`Data: ${fallbackDate}`, 40, 230)
 
       canvas.toBlob((blob) => {
         resolve(blob || new Blob([''], { type: 'image/png' }))
@@ -174,6 +181,6 @@ export async function getDocumentBlob(
     })
   }
 
-  const textContent = `Registro de Atividade - GGIM\n\nInstancia: ${activity.instance}\nTipologia: ${activity.eventType}\nLocal: ${activity.location}\nData: ${formatDateTime(activity.meetingStart)}\n\n(Documento Gerado Dinamicamente)`
+  const textContent = `Registro de Atividade - GGIM\n\nInstancia: ${fallbackInst}\nTipologia: ${fallbackType}\nLocal: ${fallbackLoc}\nData: ${fallbackDate}\n\n(Documento Gerado Dinamicamente)`
   return new Blob([textContent], { type: 'text/plain' })
 }

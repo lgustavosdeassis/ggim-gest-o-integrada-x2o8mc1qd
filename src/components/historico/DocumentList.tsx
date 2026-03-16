@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Eye, Download, FileX, FileText } from 'lucide-react'
+import { Eye, Download, FileX, FileText, ExternalLink } from 'lucide-react'
 import { Document as ActivityDocument, ActivityRecord } from '@/lib/types'
 import { getDocumentBlob } from '@/lib/utils'
 import {
@@ -30,8 +30,21 @@ export function DocumentList({
       const blob = await getDocumentBlob(doc, activity)
       if (blob) {
         const url = URL.createObjectURL(blob)
-        setViewerContent({ url, type: blob.type, name: doc.name || 'Documento' })
-        setViewerOpen(true)
+        if (blob.type.includes('pdf')) {
+          // Open PDF directly in a new tab to bypass iframe "blocked by client" restrictions
+          const win = window.open(url, '_blank')
+          if (!win) {
+            // Popup was blocked, fallback to our internal modal viewer
+            setViewerContent({ url, type: blob.type, name: doc.name || 'Documento' })
+            setViewerOpen(true)
+          } else {
+            // Clean up the URL to prevent memory leaks after the new tab loads it
+            setTimeout(() => URL.revokeObjectURL(url), 10000)
+          }
+        } else {
+          setViewerContent({ url, type: blob.type, name: doc.name || 'Documento' })
+          setViewerOpen(true)
+        }
       } else if (doc.url && !doc.url.startsWith('C:') && !doc.url.startsWith('blob:')) {
         window.open(doc.url, '_blank')
       } else {
@@ -151,11 +164,24 @@ export function DocumentList({
           </DialogHeader>
           <div className="flex-1 overflow-hidden bg-muted/10 relative">
             {viewerContent?.type.includes('pdf') ? (
-              <iframe
-                src={viewerContent.url}
-                className="w-full h-full border-0 bg-white"
-                title={viewerContent.name}
-              />
+              <div className="w-full h-full flex flex-col">
+                <div className="bg-muted/50 p-3 flex items-center justify-between border-b border-border">
+                  <span className="text-sm font-semibold text-muted-foreground ml-2 hidden sm:inline-block">
+                    Modo de Segurança (Pop-up bloqueado)
+                  </span>
+                  <Button
+                    onClick={() => window.open(viewerContent.url, '_blank')}
+                    className="font-bold bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg w-full sm:w-auto"
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" /> Forçar Abertura em Nova Aba
+                  </Button>
+                </div>
+                <iframe
+                  src={viewerContent.url}
+                  className="w-full flex-1 border-0 bg-white"
+                  title={viewerContent.name}
+                />
+              </div>
             ) : viewerContent?.type.includes('image') ? (
               <div className="w-full h-full flex items-center justify-center p-6 bg-muted/20">
                 <img
