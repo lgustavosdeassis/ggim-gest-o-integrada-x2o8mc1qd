@@ -14,12 +14,52 @@ export function DocumentList({
     try {
       const newWin = window.open('', '_blank')
 
+      if (newWin) {
+        newWin.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head><title>Carregando ${doc.name}...</title></head>
+          <body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#0f172a;color:#fff;font-family:sans-serif;">
+            <h2>Processando documento...</h2>
+          </body>
+          </html>
+        `)
+      }
+
       const blob = await getDocumentBlob(doc, activity)
 
       if (blob) {
         const url = URL.createObjectURL(blob)
         if (newWin) {
-          newWin.location.href = url
+          const isPdf = doc.name.toLowerCase().endsWith('.pdf')
+          const isImg = doc.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+          const title = doc.name || 'Visualizar Documento'
+
+          let content = ''
+          if (isPdf) {
+            content = `<iframe src="${url}" style="width:100vw;height:100vh;border:none;"></iframe>`
+          } else if (isImg) {
+            content = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;background-color:#0f172a;"><img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`
+          } else {
+            content = `<iframe src="${url}" style="width:100vw;height:100vh;border:none;"></iframe>`
+          }
+
+          newWin.document.open()
+          newWin.document.write(`
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${title}</title>
+              <style>body { margin: 0; padding: 0; overflow: hidden; background-color: #0f172a; }</style>
+            </head>
+            <body>
+              ${content}
+            </body>
+            </html>
+          `)
+          newWin.document.close()
         } else {
           const a = document.createElement('a')
           a.href = url
@@ -33,7 +73,7 @@ export function DocumentList({
         if (newWin) newWin.close()
       }
     } catch (err) {
-      console.error(err)
+      console.error('Erro ao visualizar documento:', err)
     }
   }
 
@@ -63,7 +103,7 @@ export function DocumentList({
         }
       }
     } catch (err) {
-      console.error(err)
+      console.error('Erro ao baixar documento:', err)
     }
   }
 

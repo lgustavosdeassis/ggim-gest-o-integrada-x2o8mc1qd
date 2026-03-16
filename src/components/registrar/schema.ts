@@ -26,6 +26,7 @@ export const formSchema = z.object({
         id: z.string().optional(),
         name: z.string().min(1, 'Obrigatório'),
         type: z.string().min(1, 'Tipo de documento obrigatório para garantir o Dashboard.'),
+        url: z.string().optional(),
       }),
     )
     .optional(),

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useFormContext, useFieldArray } from 'react-hook-form'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { FileText, FileUp, Trash } from 'lucide-react'
-import { parseSemicolonList } from '@/lib/utils'
+import { parseSemicolonList, cn } from '@/lib/utils'
 import { DOC_TYPES, FormValues } from './schema'
 
 export function ProdutividadeCard() {
@@ -23,6 +24,17 @@ export function ProdutividadeCard() {
     append: appendDoc,
     remove: removeDoc,
   } = useFieldArray({ control, name: 'documents' })
+  const [isDragging, setIsDragging] = useState(false)
+
+  const handleFiles = (files: File[]) => {
+    files.forEach((file) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        appendDoc({ name: file.name, type: '', url: e.target?.result as string })
+      }
+      reader.readAsDataURL(file)
+    })
+  }
 
   return (
     <Card className="border-2 border-[#0f172a]/10 shadow-sm bg-white rounded-2xl overflow-hidden">
@@ -57,37 +69,76 @@ export function ProdutividadeCard() {
           )}
         />
         <div className="border-t-2 border-[#0f172a]/10 pt-8 space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center bg-slate-50/50 p-6 rounded-2xl border-2 border-dashed border-[#0f172a]/20 gap-6">
-            <div>
-              <h4 className="font-bold text-lg text-[#0f172a]">Gestão de Anexos</h4>
-              <p className="text-sm text-[#0f172a]/60 mt-2 max-w-lg leading-relaxed font-medium">
-                Obrigatório classificar o{' '}
-                <span className="text-[#0f172a] font-bold">Tipo de Documento</span> para cada
-                arquivo, o que alimenta diretamente o Dashboard.
-              </p>
-            </div>
-            <div className="flex flex-col items-end gap-4 w-full md:w-auto">
-              <div className="text-sm font-black bg-[#eab308]/20 text-[#0f172a] px-5 py-2.5 rounded-xl border border-[#eab308]/50 whitespace-nowrap w-full md:w-auto text-center">
+          <div>
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+              <div>
+                <h4 className="font-bold text-lg text-[#0f172a]">Gestão de Anexos</h4>
+                <p className="text-sm text-[#0f172a]/60 mt-1 max-w-lg leading-relaxed font-medium">
+                  Arraste seus arquivos ou clique para selecionar. Obrigatório classificar o{' '}
+                  <span className="text-[#0f172a] font-bold">Tipo de Documento</span>.
+                </p>
+              </div>
+              <div className="text-sm font-black bg-[#eab308]/20 text-[#0f172a] px-5 py-2.5 rounded-xl border border-[#eab308]/50 whitespace-nowrap text-center shadow-sm">
                 DOCUMENTOS TOTAIS: {docsFields.length}
               </div>
-              <Input
-                type="file"
-                className="hidden"
-                id="file-upload"
-                multiple
-                accept=".pdf,.docx,.txt,.jpg,.png,.jpeg,.mp3,.wav"
-                onChange={(e) => {
-                  const files = Array.from(e.target.files || [])
-                  files.forEach((file) => appendDoc({ name: file.name, type: '' }))
-                  e.target.value = ''
-                }}
-              />
-              <Label
-                htmlFor="file-upload"
-                className="cursor-pointer inline-flex w-full md:w-auto items-center justify-center gap-3 whitespace-nowrap rounded-xl text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:ring-[#eab308] bg-white text-[#0f172a] border-2 border-[#0f172a]/20 hover:bg-slate-100 h-12 px-6 shadow-md"
+            </div>
+
+            <div
+              onDragOver={(e) => {
+                e.preventDefault()
+                setIsDragging(true)
+              }}
+              onDragLeave={(e) => {
+                e.preventDefault()
+                setIsDragging(false)
+              }}
+              onDrop={(e) => {
+                e.preventDefault()
+                setIsDragging(false)
+                if (e.dataTransfer.files) handleFiles(Array.from(e.dataTransfer.files))
+              }}
+              className={cn(
+                'flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed gap-4 transition-all duration-300',
+                isDragging
+                  ? 'border-[#eab308] bg-[#eab308]/10 scale-[1.02]'
+                  : 'border-[#0f172a]/20 bg-slate-50/50 hover:border-[#0f172a]/40',
+              )}
+            >
+              <div
+                className={cn(
+                  'p-4 rounded-full shadow-sm border transition-colors duration-300',
+                  isDragging ? 'bg-[#eab308] border-[#eab308]' : 'bg-white border-[#0f172a]/10',
+                )}
               >
-                <FileUp className="w-5 h-5" /> Inserir Arquivos
-              </Label>
+                <FileUp className="w-8 h-8 text-[#0f172a]" />
+              </div>
+              <div className="text-center space-y-1">
+                <h4 className="font-black text-lg text-[#0f172a]">
+                  Arraste e solte seus arquivos aqui
+                </h4>
+                <p className="text-sm text-[#0f172a]/60 font-medium">
+                  ou utilize o botão abaixo para navegar no seu dispositivo
+                </p>
+              </div>
+              <div className="mt-2">
+                <Input
+                  type="file"
+                  className="hidden"
+                  id="file-upload"
+                  multiple
+                  accept=".pdf,.docx,.txt,.jpg,.png,.jpeg,.mp3,.wav"
+                  onChange={(e) => {
+                    if (e.target.files) handleFiles(Array.from(e.target.files))
+                    e.target.value = ''
+                  }}
+                />
+                <Label
+                  htmlFor="file-upload"
+                  className="cursor-pointer inline-flex items-center justify-center gap-3 whitespace-nowrap rounded-xl text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:ring-[#eab308] bg-[#0f172a] text-white hover:bg-[#1e293b] h-12 px-8 shadow-md"
+                >
+                  Procurar Arquivos
+                </Label>
+              </div>
             </div>
           </div>
           <div className="space-y-4">
@@ -161,7 +212,7 @@ export function ProdutividadeCard() {
             ))}
             {docsFields.length === 0 && (
               <div className="text-center p-8 border-2 border-dashed border-[#0f172a]/20 rounded-2xl text-[#0f172a]/60 font-medium text-sm bg-slate-50/50">
-                Lista de documentos vazia.
+                Lista de documentos vazia. Arraste arquivos acima para começar.
               </div>
             )}
           </div>
