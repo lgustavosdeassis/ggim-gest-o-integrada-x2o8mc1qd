@@ -1,4 +1,5 @@
 import { useFormContext } from 'react-hook-form'
+import { useAuthStore } from '@/stores/auth'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
@@ -8,6 +9,8 @@ import { FormValues } from './schema'
 
 export function EngajamentoCard() {
   const { control } = useFormContext<FormValues>()
+  const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
+
   return (
     <Card className="border-2 border-[#0f172a]/10 shadow-sm bg-white rounded-2xl overflow-hidden">
       <div className="bg-slate-50 px-6 py-4 border-b border-[#0f172a]/10 flex items-center gap-3">
@@ -34,6 +37,7 @@ export function EngajamentoCard() {
                   placeholder="Ex: João Silva; Maria Oliveira"
                   {...field}
                   value={field.value || ''}
+                  disabled={isViewer}
                 />
               </FormControl>
               <FormMessage />
@@ -59,6 +63,7 @@ export function EngajamentoCard() {
                   placeholder="Ex: Prefeitura Municipal; Polícia Federal; Bombeiros"
                   {...field}
                   value={field.value || ''}
+                  disabled={isViewer}
                 />
               </FormControl>
               <FormMessage />

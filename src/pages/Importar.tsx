@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react'
-import { UploadCloud, CheckCircle2, Loader2, FileSpreadsheet } from 'lucide-react'
+import { UploadCloud, CheckCircle2, Loader2, FileSpreadsheet, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
 import { useAppStore } from '@/stores/main'
+import { useAuthStore } from '@/stores/auth'
 import { ActivityRecord } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -12,9 +13,12 @@ export default function Importar() {
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+
   const { importActivities } = useAppStore()
+  const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
 
   const handleFile = (file: File) => {
+    if (isViewer) return
     setStep(2)
 
     setTimeout(() => {
@@ -64,7 +68,31 @@ export default function Importar() {
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files?.[0]) handleFile(e.target.files[0])
+    if (e.target.files?.[0] && !isViewer) handleFile(e.target.files[0])
+  }
+
+  if (isViewer) {
+    return (
+      <div className="flex flex-col gap-8 max-w-4xl mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight text-foreground mb-2">
+            Migração Automática
+          </h1>
+          <p className="text-muted-foreground text-base font-medium">
+            Módulo restrito para importação em lote.
+          </p>
+        </div>
+        <Card className="shadow-sm border-border bg-card rounded-2xl overflow-hidden p-16 text-center">
+          <Lock className="w-16 h-16 text-muted-foreground/30 mx-auto mb-6" />
+          <h3 className="text-2xl font-black text-foreground mb-3">Acesso Restrito</h3>
+          <p className="text-muted-foreground font-medium text-base max-w-md mx-auto">
+            Apenas usuários com a permissão de{' '}
+            <span className="text-primary font-bold">Editor (Proprietário)</span> podem realizar
+            importações de planilhas.
+          </p>
+        </Card>
+      </div>
+    )
   }
 
   return (

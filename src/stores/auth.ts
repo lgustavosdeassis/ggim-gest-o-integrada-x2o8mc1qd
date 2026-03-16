@@ -1,17 +1,18 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-interface User {
+export interface User {
   name: string
   email: string
   avatarUrl?: string | null
-  role?: string
+  role: 'editor' | 'viewer'
+  jobTitle?: string
 }
 
 interface AuthState {
   isAuthenticated: boolean
   user: User | null
-  login: () => void
+  login: (user: User) => void
   logout: () => void
   updateAvatar: (url: string) => void
   updateProfile: (data: Partial<User>) => void
@@ -20,15 +21,10 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      isAuthenticated: true,
-      user: {
-        name: 'Gestor GGIM',
-        email: 'gestor@ggim.foz.br',
-        avatarUrl: null,
-        role: 'Gestor Administrativo',
-      },
-      login: () => set({ isAuthenticated: true }),
-      logout: () => set({ isAuthenticated: false }),
+      isAuthenticated: false,
+      user: null,
+      login: (user) => set({ isAuthenticated: true, user }),
+      logout: () => set({ isAuthenticated: false, user: null }),
       updateAvatar: (url) =>
         set((state) => ({
           user: state.user ? { ...state.user, avatarUrl: url } : null,

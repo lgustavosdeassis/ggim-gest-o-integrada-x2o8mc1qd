@@ -11,9 +11,15 @@ import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  if (!isAuthenticated) return <Navigate to="/login" replace />
-  return children
+  const { isAuthenticated, user, logout } = useAuthStore()
+
+  // Verify strict authentication and ensure old sessions without a role are logged out
+  if (!isAuthenticated || (isAuthenticated && !user?.role)) {
+    if (isAuthenticated) logout()
+    return <Navigate to="/login" replace />
+  }
+
+  return <>{children}</>
 }
 
 export default function App() {

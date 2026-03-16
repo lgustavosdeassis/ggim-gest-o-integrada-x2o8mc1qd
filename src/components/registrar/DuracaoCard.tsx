@@ -1,4 +1,5 @@
 import { useFormContext, useFieldArray } from 'react-hook-form'
+import { useAuthStore } from '@/stores/auth'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,8 @@ import { FormValues } from './schema'
 
 export function DuracaoCard() {
   const { control, watch } = useFormContext<FormValues>()
+  const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
+
   const {
     fields: actionsFields,
     append: appendAction,
@@ -60,6 +63,7 @@ export function DuracaoCard() {
                       type="datetime-local"
                       {...field}
                       value={field.value || ''}
+                      disabled={isViewer}
                       className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] shadow-sm focus-visible:ring-[#eab308]"
                     />
                   </FormControl>
@@ -80,6 +84,7 @@ export function DuracaoCard() {
                       type="datetime-local"
                       {...field}
                       value={field.value || ''}
+                      disabled={isViewer}
                       className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] shadow-sm focus-visible:ring-[#eab308]"
                     />
                   </FormControl>
@@ -99,9 +104,11 @@ export function DuracaoCard() {
                 <Checkbox
                   className="mt-1 h-5 w-5 border-2 rounded text-[#0f172a] border-[#0f172a] bg-white data-[state=checked]:bg-[#eab308] data-[state=checked]:text-[#0f172a] data-[state=checked]:border-[#eab308]"
                   checked={field.value}
+                  disabled={isViewer}
                   onCheckedChange={(checked) => {
                     field.onChange(checked)
-                    if (checked && actionsFields.length === 0) appendAction({ start: '', end: '' })
+                    if (checked && actionsFields.length === 0 && !isViewer)
+                      appendAction({ start: '', end: '' })
                   }}
                 />
               </FormControl>
@@ -123,13 +130,15 @@ export function DuracaoCard() {
               <h4 className="font-bold text-base text-[#0f172a]">
                 Cronograma das Ações Vinculadas
               </h4>
-              <Button
-                type="button"
-                className="bg-white text-[#0f172a] hover:bg-slate-100 border-2 border-[#0f172a]/20 font-bold rounded-xl h-10 px-4 shadow-sm w-full sm:w-auto"
-                onClick={() => appendAction({ start: '', end: '' })}
-              >
-                + Nova Ação Extra
-              </Button>
+              {!isViewer && (
+                <Button
+                  type="button"
+                  className="bg-white text-[#0f172a] hover:bg-slate-100 border-2 border-[#0f172a]/20 font-bold rounded-xl h-10 px-4 shadow-sm w-full sm:w-auto"
+                  onClick={() => appendAction({ start: '', end: '' })}
+                >
+                  + Nova Ação Extra
+                </Button>
+              )}
             </div>
             <div className="space-y-5">
               {actionsFields.map((field, index) => {
@@ -142,16 +151,18 @@ export function DuracaoCard() {
                     key={field.id}
                     className="p-6 border-2 border-[#0f172a]/10 rounded-2xl bg-slate-50/50 relative group"
                   >
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-4 top-4 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-9 w-9 opacity-50 group-hover:opacity-100 transition-all"
-                      onClick={() => removeAction(index)}
-                      title="Remover Ação"
-                    >
-                      <Trash className="w-4 h-4" />
-                    </Button>
+                    {!isViewer && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-4 top-4 text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-9 w-9 opacity-50 group-hover:opacity-100 transition-all"
+                        onClick={() => removeAction(index)}
+                        title="Remover Ação"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    )}
                     <div className="flex items-center gap-3 mb-5 pr-12">
                       <span className="flex items-center justify-center w-6 h-6 rounded-full bg-[#0f172a] text-white font-black text-xs">
                         {index + 1}
@@ -174,6 +185,7 @@ export function DuracaoCard() {
                                 type="datetime-local"
                                 {...startField}
                                 value={startField.value || ''}
+                                disabled={isViewer}
                                 className="bg-white border-[#0f172a]/20 h-11 rounded-xl text-[#0f172a] shadow-sm focus-visible:ring-[#eab308]"
                               />
                             </FormControl>
@@ -193,6 +205,7 @@ export function DuracaoCard() {
                                 type="datetime-local"
                                 {...endField}
                                 value={endField.value || ''}
+                                disabled={isViewer}
                                 className="bg-white border-[#0f172a]/20 h-11 rounded-xl text-[#0f172a] shadow-sm focus-visible:ring-[#eab308]"
                               />
                             </FormControl>

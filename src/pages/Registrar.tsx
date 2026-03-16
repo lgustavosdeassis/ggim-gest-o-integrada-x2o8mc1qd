@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAppStore } from '@/stores/main'
+import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
@@ -28,7 +29,9 @@ export default function Registrar() {
   const editId = searchParams.get('edit')
   const navigate = useNavigate()
   const { toast } = useToast()
+
   const { activities, addActivity, updateActivity } = useAppStore()
+  const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
 
   const defaultActivity = useMemo(() => {
     return editId ? activities.find((a) => a.id === editId) : null
@@ -96,6 +99,7 @@ export default function Registrar() {
   }, [initialValues, form, defaultActivity])
 
   const onSubmit = (data: FormValues) => {
+    if (isViewer) return
     const payload = {
       ...data,
       actions: data.hasAction
@@ -123,10 +127,16 @@ export default function Registrar() {
     <div className="flex flex-col gap-8 max-w-5xl mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
         <h1 className="text-4xl font-black tracking-tight text-[#0f172a] mb-2">
-          {editId ? 'Editar Atividade' : 'Registrar Atividade'}
+          {editId
+            ? isViewer
+              ? 'Visualizar Atividade'
+              : 'Editar Atividade'
+            : 'Registrar Atividade'}
         </h1>
         <p className="text-[#0f172a]/60 text-base font-medium">
-          Preencha os campos abaixo de forma detalhada para alimentar o Dashboard Gerencial.
+          {isViewer
+            ? 'Visualizando os detalhes da atividade no modo leitura.'
+            : 'Preencha os campos abaixo de forma detalhada para alimentar o Dashboard Gerencial.'}
         </p>
       </div>
       <Form {...form}>
@@ -137,19 +147,25 @@ export default function Registrar() {
           <ProdutividadeCard />
           <div className="flex flex-col sm:flex-row justify-end gap-5 sticky bottom-6 bg-white/95 backdrop-blur-xl p-5 border-2 border-[#0f172a]/10 rounded-3xl shadow-xl z-10 mt-10 w-full sm:w-fit sm:ml-auto">
             <Button
-              variant="ghost"
+              variant={isViewer ? 'default' : 'ghost'}
               type="button"
               onClick={() => navigate('/historico')}
-              className="w-full sm:w-32 h-12 rounded-xl text-[#0f172a]/60 hover:text-[#0f172a] font-bold hover:bg-slate-100"
+              className={`w-full h-12 rounded-xl font-bold transition-all ${
+                isViewer
+                  ? 'sm:w-64 bg-[#0f172a] text-white hover:bg-[#1e293b]'
+                  : 'sm:w-32 text-[#0f172a]/60 hover:text-[#0f172a] hover:bg-slate-100'
+              }`}
             >
-              Cancelar
+              {isViewer ? 'Voltar para Histórico' : 'Cancelar'}
             </Button>
-            <Button
-              type="submit"
-              className="w-full sm:w-64 h-12 font-black text-base bg-[#eab308] text-[#0f172a] hover:bg-[#ca8a04] shadow-md transition-all rounded-xl"
-            >
-              {editId ? 'ATUALIZAR REGISTRO' : 'SALVAR NOVO REGISTRO'}
-            </Button>
+            {!isViewer && (
+              <Button
+                type="submit"
+                className="w-full sm:w-64 h-12 font-black text-base bg-[#eab308] text-[#0f172a] hover:bg-[#ca8a04] shadow-md transition-all rounded-xl"
+              >
+                {editId ? 'ATUALIZAR REGISTRO' : 'SALVAR NOVO REGISTRO'}
+              </Button>
+            )}
           </div>
         </form>
       </Form>

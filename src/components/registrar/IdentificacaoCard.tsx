@@ -1,4 +1,5 @@
 import { useFormContext } from 'react-hook-form'
+import { useAuthStore } from '@/stores/auth'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import {
   Select,
@@ -14,6 +15,8 @@ import { INSTANCIAS, EVENTOS_TIPO, FormValues } from './schema'
 
 export function IdentificacaoCard() {
   const { control } = useFormContext<FormValues>()
+  const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
+
   return (
     <Card className="border-2 border-[#0f172a]/10 shadow-sm bg-white rounded-2xl overflow-hidden">
       <div className="bg-slate-50 px-6 py-4 border-b border-[#0f172a]/10 flex items-center gap-3">
@@ -29,7 +32,11 @@ export function IdentificacaoCard() {
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
                 INSTÂNCIA
               </FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || undefined}>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || undefined}
+                disabled={isViewer}
+              >
                 <FormControl>
                   <SelectTrigger className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] focus:ring-[#eab308]">
                     <SelectValue placeholder="Selecione a instância" />
@@ -59,7 +66,11 @@ export function IdentificacaoCard() {
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
                 TIPO DO EVENTO
               </FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || undefined}>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || undefined}
+                disabled={isViewer}
+              >
                 <FormControl>
                   <SelectTrigger className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] focus:ring-[#eab308]">
                     <SelectValue placeholder="Selecione a tipologia" />
@@ -89,7 +100,11 @@ export function IdentificacaoCard() {
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
                 MODALIDADE
               </FormLabel>
-              <Select onValueChange={field.onChange} value={field.value || undefined}>
+              <Select
+                onValueChange={field.onChange}
+                value={field.value || undefined}
+                disabled={isViewer}
+              >
                 <FormControl>
                   <SelectTrigger className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] focus:ring-[#eab308]">
                     <SelectValue placeholder="Como ocorreu?" />
@@ -133,6 +148,7 @@ export function IdentificacaoCard() {
                   placeholder="Ex: Paço Municipal / Zoom"
                   {...field}
                   value={field.value || ''}
+                  disabled={isViewer}
                   className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] placeholder:text-[#0f172a]/40 focus-visible:ring-[#eab308]"
                 />
               </FormControl>

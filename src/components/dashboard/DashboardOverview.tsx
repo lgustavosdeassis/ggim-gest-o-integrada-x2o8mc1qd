@@ -96,7 +96,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
             <CardTitle className="text-base font-bold text-foreground">Eventos por Tipo</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="max-h-[280px] overflow-auto px-6 py-2">
+            <div className="max-h-[300px] overflow-auto px-6 py-2">
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-transparent">
@@ -139,9 +139,9 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
               Distribuição por Modalidade
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 pb-2">
             {data.modalityData.length > 0 ? (
-              <ChartContainer config={{ value: { label: 'Eventos' } }} className="h-[240px] w-full">
+              <ChartContainer config={{ value: { label: 'Eventos' } }} className="h-[280px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Tooltip
@@ -158,9 +158,9 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
                     <Pie
                       data={data.modalityData}
                       cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
+                      cy="45%"
+                      innerRadius={65}
+                      outerRadius={90}
                       paddingAngle={4}
                       dataKey="value"
                       stroke="transparent"
@@ -173,7 +173,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
                 </ResponsiveContainer>
               </ChartContainer>
             ) : (
-              <div className="h-[240px] flex items-center justify-center text-muted-foreground text-sm font-medium">
+              <div className="h-[280px] flex items-center justify-center text-muted-foreground text-sm font-medium">
                 Sem dados suficientes para exibição
               </div>
             )}

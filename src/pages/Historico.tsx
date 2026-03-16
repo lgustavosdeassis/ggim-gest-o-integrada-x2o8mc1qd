@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/stores/main'
+import { useAuthStore } from '@/stores/auth'
 import {
   Table,
   TableBody,
@@ -25,7 +26,10 @@ import { ViewDialog } from '@/components/historico/ViewDialog'
 
 export default function Historico() {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
+  const isViewer = user?.role === 'viewer'
   const { activities, deleteActivity, bulkDeleteActivities } = useAppStore()
+
   const [searchTerm, setSearchTerm] = useState('')
   const [startDate, setStartDate] = useState<Date | undefined>(undefined)
   const [endDate, setEndDate] = useState<Date | undefined>(undefined)
@@ -108,7 +112,7 @@ export default function Historico() {
           </p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          {selectedIds.size > 0 && (
+          {selectedIds.size > 0 && !isViewer && (
             <Button
               variant="destructive"
               onClick={handleBulkDelete}
@@ -133,14 +137,17 @@ export default function Historico() {
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow className="border-border hover:bg-transparent">
-              <TableHead className="w-[60px] pl-6 py-5">
-                <Checkbox
-                  checked={
-                    selectedIds.size === filteredActivities.length && filteredActivities.length > 0
-                  }
-                  onCheckedChange={toggleSelectAll}
-                />
-              </TableHead>
+              {!isViewer && (
+                <TableHead className="w-[60px] pl-6 py-5">
+                  <Checkbox
+                    checked={
+                      selectedIds.size === filteredActivities.length &&
+                      filteredActivities.length > 0
+                    }
+                    onCheckedChange={toggleSelectAll}
+                  />
+                </TableHead>
+              )}
               <TableHead className="text-xs font-bold uppercase tracking-widest text-muted-foreground py-5">
                 Identificação
               </TableHead>
@@ -162,7 +169,7 @@ export default function Historico() {
             {filteredActivities.length === 0 ? (
               <TableRow className="border-border">
                 <TableCell
-                  colSpan={6}
+                  colSpan={isViewer ? 5 : 6}
                   className="text-center py-16 text-muted-foreground font-medium text-base"
                 >
                   <FileText className="h-10 w-10 mx-auto mb-4 opacity-20" />
@@ -189,12 +196,14 @@ export default function Historico() {
                     key={act.id}
                     className="border-border hover:bg-muted/50 transition-colors group"
                   >
-                    <TableCell className="pl-6 py-4">
-                      <Checkbox
-                        checked={selectedIds.has(act.id)}
-                        onCheckedChange={() => toggleSelect(act.id)}
-                      />
-                    </TableCell>
+                    {!isViewer && (
+                      <TableCell className="pl-6 py-4">
+                        <Checkbox
+                          checked={selectedIds.has(act.id)}
+                          onCheckedChange={() => toggleSelect(act.id)}
+                        />
+                      </TableCell>
+                    )}
                     <TableCell className="py-4">
                       <div className="font-bold text-foreground text-sm mb-1">{act.instance}</div>
                       <div className="text-xs text-muted-foreground font-medium line-clamp-1">
@@ -270,18 +279,22 @@ export default function Historico() {
                           >
                             <Eye className="mr-3 h-4 w-4 text-primary" /> Inspecionar Total
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => navigate(`/registrar?edit=${act.id}`)}
-                            className="cursor-pointer py-2.5 font-medium focus:bg-accent focus:text-accent-foreground"
-                          >
-                            <Pencil className="mr-3 h-4 w-4 text-chart-2" /> Editar Dados
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="cursor-pointer py-2.5 font-bold text-destructive focus:bg-destructive/10 focus:text-destructive mt-1"
-                            onClick={() => handleDelete(act.id)}
-                          >
-                            <Trash className="mr-3 h-4 w-4" /> Apagar do Banco
-                          </DropdownMenuItem>
+                          {!isViewer && (
+                            <DropdownMenuItem
+                              onClick={() => navigate(`/registrar?edit=${act.id}`)}
+                              className="cursor-pointer py-2.5 font-medium focus:bg-accent focus:text-accent-foreground"
+                            >
+                              <Pencil className="mr-3 h-4 w-4 text-chart-2" /> Editar Dados
+                            </DropdownMenuItem>
+                          )}
+                          {!isViewer && (
+                            <DropdownMenuItem
+                              className="cursor-pointer py-2.5 font-bold text-destructive focus:bg-destructive/10 focus:text-destructive mt-1"
+                              onClick={() => handleDelete(act.id)}
+                            >
+                              <Trash className="mr-3 h-4 w-4" /> Apagar do Banco
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

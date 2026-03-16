@@ -15,10 +15,12 @@ export default function Profile() {
   const [isSavingAvatar, setIsSavingAvatar] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
 
+  const defaultJobTitle = user?.role === 'editor' ? 'Gestor Administrativo' : 'Visualizador'
+
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
-    role: user?.role || 'Gestor Administrativo',
+    jobTitle: user?.jobTitle || defaultJobTitle,
   })
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -42,7 +44,7 @@ export default function Profile() {
   }
 
   const handleSaveProfile = () => {
-    updateProfile({ name: formData.name, email: formData.email, role: formData.role })
+    updateProfile({ name: formData.name, email: formData.email, jobTitle: formData.jobTitle })
     setIsEditing(false)
     toast.success('Informações atualizadas com sucesso!')
   }
@@ -131,7 +133,10 @@ export default function Profile() {
           <div>
             <CardTitle className="text-xl font-bold text-foreground">Dados Profissionais</CardTitle>
             <CardDescription className="text-sm font-medium">
-              Informações de identificação institucional.
+              Informações de identificação institucional. Nível de Acesso:{' '}
+              <span className="font-bold text-primary ml-1 uppercase tracking-widest">
+                {user?.role}
+              </span>
             </CardDescription>
           </div>
           {!isEditing && (
@@ -187,15 +192,15 @@ export default function Profile() {
             </div>
             <div className="space-y-2.5 md:col-span-2">
               <Label
-                htmlFor="role"
+                htmlFor="jobTitle"
                 className="text-xs font-bold text-muted-foreground uppercase tracking-widest"
               >
                 Atribuição / Cargo
               </Label>
               <Input
-                id="role"
-                value={isEditing ? formData.role : user?.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                id="jobTitle"
+                value={isEditing ? formData.jobTitle : user?.jobTitle || defaultJobTitle}
+                onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
                 readOnly={!isEditing}
                 className={`h-12 rounded-xl text-foreground transition-all ${
                   !isEditing
@@ -215,7 +220,7 @@ export default function Profile() {
                   setFormData({
                     name: user?.name || '',
                     email: user?.email || '',
-                    role: user?.role || '',
+                    jobTitle: user?.jobTitle || defaultJobTitle,
                   })
                 }}
                 className="h-12 px-6 rounded-xl font-bold text-muted-foreground hover:text-foreground hover:bg-muted"

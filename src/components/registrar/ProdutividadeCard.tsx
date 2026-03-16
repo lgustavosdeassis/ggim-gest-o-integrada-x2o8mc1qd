@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useFormContext, useFieldArray } from 'react-hook-form'
+import { useAuthStore } from '@/stores/auth'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import {
@@ -19,6 +20,7 @@ import { DOC_TYPES, FormValues } from './schema'
 
 export function ProdutividadeCard() {
   const { control, watch } = useFormContext<FormValues>()
+  const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
   const {
     fields: docsFields,
     append: appendDoc,
@@ -100,6 +102,7 @@ export function ProdutividadeCard() {
                   placeholder="Ex: Aprovada diretriz de ação x; Pauta de segurança discutida;"
                   {...field}
                   value={field.value || ''}
+                  disabled={isViewer}
                 />
               </FormControl>
               <FormMessage />
@@ -112,8 +115,9 @@ export function ProdutividadeCard() {
               <div>
                 <h4 className="font-bold text-lg text-[#0f172a]">Gestão de Anexos</h4>
                 <p className="text-sm text-[#0f172a]/60 mt-1 max-w-lg leading-relaxed font-medium">
-                  Arraste seus arquivos ou clique para selecionar. Obrigatório classificar o{' '}
-                  <span className="text-[#0f172a] font-bold">Tipo de Documento</span>.
+                  {isViewer
+                    ? 'Visualize ou baixe os documentos atrelados a este evento.'
+                    : 'Arraste seus arquivos ou clique para selecionar. Obrigatório classificar o Tipo de Documento.'}
                 </p>
               </div>
               <div className="text-sm font-black bg-[#eab308]/20 text-[#0f172a] px-5 py-2.5 rounded-xl border border-[#eab308]/50 whitespace-nowrap text-center shadow-sm">
@@ -121,63 +125,66 @@ export function ProdutividadeCard() {
               </div>
             </div>
 
-            <div
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-              className={cn(
-                'relative flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed gap-4 transition-all duration-300 overflow-hidden',
-                isDragging
-                  ? 'border-[#eab308] bg-[#eab308]/10 scale-[1.02] shadow-inner'
-                  : 'border-[#0f172a]/20 bg-slate-50/50 hover:border-[#0f172a]/40',
-              )}
-            >
-              {isDragging && (
-                <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] flex items-center justify-center z-10 pointer-events-none rounded-2xl">
-                  <span className="bg-[#0f172a] text-white font-black px-6 py-3 rounded-xl shadow-xl animate-in zoom-in duration-200">
-                    Solte para anexar arquivo
-                  </span>
-                </div>
-              )}
-
+            {!isViewer && (
               <div
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
                 className={cn(
-                  'p-4 rounded-full shadow-sm border transition-colors duration-300 relative z-0',
-                  isDragging ? 'bg-[#eab308] border-[#eab308]' : 'bg-white border-[#0f172a]/10',
+                  'relative flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed gap-4 transition-all duration-300 overflow-hidden mb-6',
+                  isDragging
+                    ? 'border-[#eab308] bg-[#eab308]/10 scale-[1.02] shadow-inner'
+                    : 'border-[#0f172a]/20 bg-slate-50/50 hover:border-[#0f172a]/40',
                 )}
               >
-                <FileUp className="w-8 h-8 text-[#0f172a]" />
-              </div>
-              <div className="text-center space-y-1 relative z-0 pointer-events-none">
-                <h4 className="font-black text-lg text-[#0f172a]">
-                  Arraste e solte seus arquivos aqui
-                </h4>
-                <p className="text-sm text-[#0f172a]/60 font-medium">
-                  ou utilize o botão abaixo para navegar no seu dispositivo
-                </p>
-              </div>
-              <div className="mt-2 relative z-20">
-                <Input
-                  type="file"
-                  className="hidden"
-                  id="file-upload"
-                  multiple
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.png,.jpeg,.mp3,.wav"
-                  onChange={(e) => {
-                    if (e.target.files) handleFiles(Array.from(e.target.files))
-                    e.target.value = ''
-                  }}
-                />
-                <Label
-                  htmlFor="file-upload"
-                  className="cursor-pointer inline-flex items-center justify-center gap-3 whitespace-nowrap rounded-xl text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:ring-[#eab308] bg-[#0f172a] text-white hover:bg-[#1e293b] h-12 px-8 shadow-md"
+                {isDragging && (
+                  <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] flex items-center justify-center z-10 pointer-events-none rounded-2xl">
+                    <span className="bg-[#0f172a] text-white font-black px-6 py-3 rounded-xl shadow-xl animate-in zoom-in duration-200">
+                      Solte para anexar arquivo
+                    </span>
+                  </div>
+                )}
+
+                <div
+                  className={cn(
+                    'p-4 rounded-full shadow-sm border transition-colors duration-300 relative z-0',
+                    isDragging ? 'bg-[#eab308] border-[#eab308]' : 'bg-white border-[#0f172a]/10',
+                  )}
                 >
-                  Procurar Arquivos
-                </Label>
+                  <FileUp className="w-8 h-8 text-[#0f172a]" />
+                </div>
+                <div className="text-center space-y-1 relative z-0 pointer-events-none">
+                  <h4 className="font-black text-lg text-[#0f172a]">
+                    Arraste e solte seus arquivos aqui
+                  </h4>
+                  <p className="text-sm text-[#0f172a]/60 font-medium">
+                    ou utilize o botão abaixo para navegar no seu dispositivo
+                  </p>
+                </div>
+                <div className="mt-2 relative z-20">
+                  <Input
+                    type="file"
+                    className="hidden"
+                    id="file-upload"
+                    multiple
+                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.png,.jpeg,.mp3,.wav"
+                    onChange={(e) => {
+                      if (e.target.files) handleFiles(Array.from(e.target.files))
+                      e.target.value = ''
+                    }}
+                  />
+                  <Label
+                    htmlFor="file-upload"
+                    className="cursor-pointer inline-flex items-center justify-center gap-3 whitespace-nowrap rounded-xl text-sm font-bold transition-colors focus-visible:ring-2 focus-visible:ring-[#eab308] bg-[#0f172a] text-white hover:bg-[#1e293b] h-12 px-8 shadow-md"
+                  >
+                    Procurar Arquivos
+                  </Label>
+                </div>
               </div>
-            </div>
+            )}
           </div>
+
           <div className="space-y-4">
             {docsFields.map((field, index) => (
               <div
@@ -190,7 +197,7 @@ export function ProdutividadeCard() {
                   render={({ field: nameField }) => (
                     <FormItem className="flex-1 mt-1">
                       <FormLabel className="text-[10px] font-black text-[#0f172a]/60 uppercase tracking-widest">
-                        ARQUIVO RECEBIDO
+                        ARQUIVO
                       </FormLabel>
                       <FormControl>
                         <Input
@@ -214,6 +221,7 @@ export function ProdutividadeCard() {
                       <Select
                         onValueChange={typeField.onChange}
                         value={typeField.value || undefined}
+                        disabled={isViewer}
                       >
                         <FormControl>
                           <SelectTrigger className="bg-white border-[#0f172a]/20 shadow-sm focus:ring-[#eab308] h-11 rounded-xl font-bold text-[#0f172a]">
@@ -257,21 +265,23 @@ export function ProdutividadeCard() {
                     <Download className="w-4 h-4" />
                     <span className="text-xs font-bold">Baixar</span>
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-11 w-11 p-0 border border-transparent transition-all opacity-70 group-hover:opacity-100 shrink-0 ml-1"
-                    onClick={() => removeDoc(index)}
-                    title="Remover anexo do registro"
-                  >
-                    <Trash className="w-5 h-5" />
-                  </Button>
+                  {!isViewer && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="text-red-500 hover:bg-red-500 hover:text-white rounded-xl h-11 w-11 p-0 border border-transparent transition-all opacity-70 group-hover:opacity-100 shrink-0 ml-1"
+                      onClick={() => removeDoc(index)}
+                      title="Remover anexo do registro"
+                    >
+                      <Trash className="w-5 h-5" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
             {docsFields.length === 0 && (
               <div className="text-center p-8 border-2 border-dashed border-[#0f172a]/20 rounded-2xl text-[#0f172a]/60 font-medium text-sm bg-slate-50/50">
-                Lista de documentos vazia. Arraste arquivos acima para começar.
+                Lista de documentos vazia.
               </div>
             )}
           </div>
