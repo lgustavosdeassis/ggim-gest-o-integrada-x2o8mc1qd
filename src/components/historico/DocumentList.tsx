@@ -39,6 +39,7 @@ export function DocumentList({
           </div>
           <div className="flex gap-2 mt-auto pt-3 border-t border-border/50">
             <Button
+              type="button"
               size="sm"
               variant="ghost"
               className="flex-1 text-xs font-bold h-8 bg-[#0f172a] hover:bg-[#1e293b] text-white transition-colors"
@@ -46,10 +47,12 @@ export function DocumentList({
                 e.preventDefault()
                 openDocumentViewer(doc, activity)
               }}
+              title="Abrir em nova aba"
             >
               <Eye className="w-3.5 h-3.5 mr-1.5" /> Visualizar
             </Button>
             <Button
+              type="button"
               size="sm"
               variant="ghost"
               className="flex-1 text-xs font-bold h-8 bg-[#eab308] hover:bg-[#ca8a04] text-[#0f172a] transition-colors"

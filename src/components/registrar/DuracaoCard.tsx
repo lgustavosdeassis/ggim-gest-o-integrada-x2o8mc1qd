@@ -50,8 +50,8 @@ export function DuracaoCard() {
             name="meetingStart"
             render={({ field }) => (
               <FormItem className="mt-2">
-                <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                  INÍCIO DA REUNIÃO
+                <FormLabel className="text-[#0f172a] font-bold text-sm">
+                  Início da Reunião
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -70,8 +70,8 @@ export function DuracaoCard() {
             name="meetingEnd"
             render={({ field }) => (
               <FormItem className="mt-2">
-                <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                  TÉRMINO DA REUNIÃO
+                <FormLabel className="text-[#0f172a] font-bold text-sm">
+                  Término da Reunião
                 </FormLabel>
                 <FormControl>
                   <Input
@@ -162,8 +162,8 @@ export function DuracaoCard() {
                         name={`actions.${index}.start`}
                         render={({ field: startField }) => (
                           <FormItem>
-                            <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                              INÍCIO DA AÇÃO EXTRA
+                            <FormLabel className="text-[#0f172a] font-bold text-sm">
+                              Início da Ação Extra
                             </FormLabel>
                             <FormControl>
                               <Input
@@ -181,8 +181,8 @@ export function DuracaoCard() {
                         name={`actions.${index}.end`}
                         render={({ field: endField }) => (
                           <FormItem>
-                            <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                              TÉRMINO DA AÇÃO EXTRA
+                            <FormLabel className="text-[#0f172a] font-bold text-sm">
+                              Término da Ação Extra
                             </FormLabel>
                             <FormControl>
                               <Input
