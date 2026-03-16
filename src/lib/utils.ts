@@ -49,13 +49,42 @@ export async function getDocumentBlob(
   const { name, url } = doc
 
   if (url && url.startsWith('data:')) {
-    const res = await fetch(url)
-    return await res.blob()
+    try {
+      const res = await fetch(url)
+      return await res.blob()
+    } catch (e) {
+      console.warn('Fetch failed for data URL, attempting manual base64 decoding.', e)
+      try {
+        const arr = url.split(',')
+        if (arr.length === 2) {
+          const mime = arr[0].match(/:(.*?);/)?.[1] || 'application/octet-stream'
+          const bstr = atob(arr[1])
+          let n = bstr.length
+          const u8arr = new Uint8Array(n)
+          while (n--) {
+            u8arr[n] = bstr.charCodeAt(n)
+          }
+          return new Blob([u8arr], { type: mime })
+        }
+      } catch (err2) {
+        console.error('Failed manual base64 decoding:', err2)
+      }
+    }
   }
 
-  const lowerName = name.toLowerCase()
+  if (url && url.startsWith('blob:')) {
+    try {
+      const res = await fetch(url)
+      return await res.blob()
+    } catch (e) {
+      console.warn('Fetch failed for blob URL.', e)
+    }
+  }
+
+  // Fallbacks strictly for mocked data that has no actual url attached.
+  const lowerName = (name || '').toLowerCase()
   const isPdf = lowerName.endsWith('.pdf')
-  const isImg = lowerName.match(/\.(jpg|jpeg|png|gif)$/)
+  const isImg = lowerName.match(/\.(jpg|jpeg|png|gif|webp)$/)
 
   if (isPdf) {
     const content = [

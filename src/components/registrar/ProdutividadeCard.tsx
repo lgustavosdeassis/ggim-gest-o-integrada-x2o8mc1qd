@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useFormContext, useFieldArray } from 'react-hook-form'
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
@@ -24,7 +24,9 @@ export function ProdutividadeCard() {
     append: appendDoc,
     remove: removeDoc,
   } = useFieldArray({ control, name: 'documents' })
+
   const [isDragging, setIsDragging] = useState(false)
+  const dragCounter = useRef(0)
 
   const handleFiles = (files: File[]) => {
     files.forEach((file) => {
@@ -34,6 +36,39 @@ export function ProdutividadeCard() {
       }
       reader.readAsDataURL(file)
     })
+  }
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current += 1
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounter.current -= 1
+    if (dragCounter.current === 0) {
+      setIsDragging(false)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+    dragCounter.current = 0
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFiles(Array.from(e.dataTransfer.files))
+    }
   }
 
   return (
@@ -84,35 +119,34 @@ export function ProdutividadeCard() {
             </div>
 
             <div
-              onDragOver={(e) => {
-                e.preventDefault()
-                setIsDragging(true)
-              }}
-              onDragLeave={(e) => {
-                e.preventDefault()
-                setIsDragging(false)
-              }}
-              onDrop={(e) => {
-                e.preventDefault()
-                setIsDragging(false)
-                if (e.dataTransfer.files) handleFiles(Array.from(e.dataTransfer.files))
-              }}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
               className={cn(
-                'flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed gap-4 transition-all duration-300',
+                'relative flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed gap-4 transition-all duration-300 overflow-hidden',
                 isDragging
-                  ? 'border-[#eab308] bg-[#eab308]/10 scale-[1.02]'
+                  ? 'border-[#eab308] bg-[#eab308]/10 scale-[1.02] shadow-inner'
                   : 'border-[#0f172a]/20 bg-slate-50/50 hover:border-[#0f172a]/40',
               )}
             >
+              {isDragging && (
+                <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] flex items-center justify-center z-10 pointer-events-none rounded-2xl">
+                  <span className="bg-[#0f172a] text-white font-black px-6 py-3 rounded-xl shadow-xl animate-in zoom-in duration-200">
+                    Solte para anexar arquivo
+                  </span>
+                </div>
+              )}
+
               <div
                 className={cn(
-                  'p-4 rounded-full shadow-sm border transition-colors duration-300',
+                  'p-4 rounded-full shadow-sm border transition-colors duration-300 relative z-0',
                   isDragging ? 'bg-[#eab308] border-[#eab308]' : 'bg-white border-[#0f172a]/10',
                 )}
               >
                 <FileUp className="w-8 h-8 text-[#0f172a]" />
               </div>
-              <div className="text-center space-y-1">
+              <div className="text-center space-y-1 relative z-0 pointer-events-none">
                 <h4 className="font-black text-lg text-[#0f172a]">
                   Arraste e solte seus arquivos aqui
                 </h4>
@@ -120,13 +154,13 @@ export function ProdutividadeCard() {
                   ou utilize o botão abaixo para navegar no seu dispositivo
                 </p>
               </div>
-              <div className="mt-2">
+              <div className="mt-2 relative z-20">
                 <Input
                   type="file"
                   className="hidden"
                   id="file-upload"
                   multiple
-                  accept=".pdf,.docx,.txt,.jpg,.png,.jpeg,.mp3,.wav"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.png,.jpeg,.mp3,.wav"
                   onChange={(e) => {
                     if (e.target.files) handleFiles(Array.from(e.target.files))
                     e.target.value = ''

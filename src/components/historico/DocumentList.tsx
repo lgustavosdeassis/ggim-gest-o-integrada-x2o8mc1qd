@@ -12,6 +12,7 @@ export function DocumentList({
 }) {
   const handleView = async (doc: ActivityDocument) => {
     try {
+      // Abre a janela imediatamente de forma síncrona para evitar bloqueadores de pop-up
       const newWin = window.open('', '_blank')
 
       if (newWin) {
@@ -20,7 +21,7 @@ export function DocumentList({
           <html>
           <head><title>Carregando ${doc.name}...</title></head>
           <body style="margin:0;display:flex;justify-content:center;align-items:center;height:100vh;background:#0f172a;color:#fff;font-family:sans-serif;">
-            <h2>Processando documento...</h2>
+            <h2>Acessando arquivo seguro...</h2>
           </body>
           </html>
         `)
@@ -31,49 +32,25 @@ export function DocumentList({
       if (blob) {
         const url = URL.createObjectURL(blob)
         if (newWin) {
-          const isPdf = doc.name.toLowerCase().endsWith('.pdf')
-          const isImg = doc.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)
-          const title = doc.name || 'Visualizar Documento'
-
-          let content = ''
-          if (isPdf) {
-            content = `<iframe src="${url}" style="width:100vw;height:100vh;border:none;"></iframe>`
-          } else if (isImg) {
-            content = `<div style="display:flex;justify-content:center;align-items:center;height:100vh;background-color:#0f172a;"><img src="${url}" style="max-width:100%;max-height:100%;object-fit:contain;" /></div>`
-          } else {
-            content = `<iframe src="${url}" style="width:100vw;height:100vh;border:none;"></iframe>`
-          }
-
-          newWin.document.open()
-          newWin.document.write(`
-            <!DOCTYPE html>
-            <html lang="pt-BR">
-            <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>${title}</title>
-              <style>body { margin: 0; padding: 0; overflow: hidden; background-color: #0f172a; }</style>
-            </head>
-            <body>
-              ${content}
-            </body>
-            </html>
-          `)
-          newWin.document.close()
+          // Utiliza replace para não poluir o histórico e renderizar nativamente o arquivo,
+          // resolvendo o erro ERR_BLOCKED_BY_CLIENT (XSS em iFrames injetados).
+          newWin.location.replace(url)
         } else {
+          // Fallback caso pop-ups continuem bloqueados
           const a = document.createElement('a')
           a.href = url
           a.target = '_blank'
           a.click()
         }
       } else if (doc.url && !doc.url.startsWith('C:') && !doc.url.startsWith('blob:')) {
-        if (newWin) newWin.location.href = doc.url
+        if (newWin) newWin.location.replace(doc.url)
         else window.open(doc.url, '_blank')
       } else {
         if (newWin) newWin.close()
       }
     } catch (err) {
       console.error('Erro ao visualizar documento:', err)
+      alert('Houve um erro ao tentar visualizar este documento.')
     }
   }
 
@@ -93,7 +70,7 @@ export function DocumentList({
       if (downloadUrl) {
         const a = document.createElement('a')
         a.href = downloadUrl
-        a.download = doc.name
+        a.download = doc.name || 'documento'
         document.body.appendChild(a)
         a.click()
         document.body.removeChild(a)
@@ -104,6 +81,7 @@ export function DocumentList({
       }
     } catch (err) {
       console.error('Erro ao baixar documento:', err)
+      alert('Houve um erro ao tentar realizar o download.')
     }
   }
 
