@@ -2,6 +2,7 @@ export interface Document {
   id: string
   name: string
   type: string
+  url?: string
 }
 
 export interface ActivityAction {

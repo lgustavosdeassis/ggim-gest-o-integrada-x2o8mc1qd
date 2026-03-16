@@ -5,10 +5,10 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Clock, Eye, Download, FileX } from 'lucide-react'
+import { Clock } from 'lucide-react'
 import { formatDateTime, parseSemicolonList, calculateHoursDifference } from '@/lib/utils'
-import { ActivityRecord, Document as ActivityDocument } from '@/lib/types'
+import { ActivityRecord } from '@/lib/types'
+import { DocumentList } from '@/components/historico/DocumentList'
 
 export function ViewDialog({
   viewActivity,
@@ -18,27 +18,6 @@ export function ViewDialog({
   setViewActivity: (v: ActivityRecord | null) => void
 }) {
   if (!viewActivity) return null
-
-  const handleView = (doc: ActivityDocument) => {
-    const content = `Conteúdo simulado para o documento: ${doc.name}\nTipo: ${doc.type}`
-    const blob = new Blob([content], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    window.open(url, '_blank')
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
-  }
-
-  const handleDownload = (doc: ActivityDocument) => {
-    const content = `Conteúdo simulado para o documento: ${doc.name}\nTipo: ${doc.type}`
-    const blob = new Blob([content], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = doc.name
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
-  }
 
   return (
     <Dialog open={!!viewActivity} onOpenChange={(open) => !open && setViewActivity(null)}>
@@ -192,55 +171,7 @@ export function ViewDialog({
                 {viewActivity.documents?.length || 0}
               </span>
             </span>
-            {viewActivity.documents && viewActivity.documents.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {viewActivity.documents.map((doc, idx) => (
-                  <div
-                    key={idx}
-                    className="flex flex-col gap-3 bg-card p-4 border border-border rounded-xl shadow-sm hover:border-primary/50 transition-colors"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <span
-                        className="font-semibold text-sm text-foreground line-clamp-2"
-                        title={doc.name}
-                      >
-                        {doc.name}
-                      </span>
-                      <span className="text-[10px] font-black bg-muted px-2 py-1 rounded uppercase tracking-widest text-primary shrink-0 border border-border mt-0.5">
-                        {doc.type || 'S/TIPO'}
-                      </span>
-                    </div>
-                    <div className="flex gap-2 mt-auto pt-3 border-t border-border/50">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 text-xs font-bold h-8 bg-background"
-                        onClick={() => handleView(doc)}
-                      >
-                        <Eye className="w-3.5 h-3.5 mr-1.5" /> Visualizar
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="flex-1 text-xs font-bold h-8"
-                        onClick={() => handleDownload(doc)}
-                      >
-                        <Download className="w-3.5 h-3.5 mr-1.5" /> Baixar
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center p-8 bg-muted/30 border border-border border-dashed rounded-xl text-center">
-                <FileX className="w-8 h-8 text-muted-foreground/40 mb-3" />
-                <span className="text-sm font-semibold text-muted-foreground">
-                  Nenhum arquivo anexado
-                </span>
-                <span className="text-xs text-muted-foreground/70 mt-1">
-                  Este registro não possui documentos ou imagens.
-                </span>
-              </div>
-            )}
+            <DocumentList documents={viewActivity.documents} />
           </div>
         </div>
       </DialogContent>

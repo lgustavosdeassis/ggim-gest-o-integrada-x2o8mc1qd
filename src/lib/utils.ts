@@ -12,9 +12,6 @@ export function calculateHoursDifference(start: string, end: string): number {
 
   if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0
 
-  // Handling Midnight Rollover
-  // If the end time evaluates to a timestamp strictly before the start time,
-  // we assume it crossed midnight into the next day and add 24 hours.
   if (d2.getTime() < d1.getTime()) {
     d2 = new Date(d2.getTime() + 24 * 60 * 60 * 1000)
   }
@@ -42,4 +39,35 @@ export function formatDateTime(isoString: string): string {
     hour: '2-digit',
     minute: '2-digit',
   }).format(date)
+}
+
+export async function getDocumentBlob(
+  name: string,
+  type: string,
+  url?: string,
+): Promise<Blob | null> {
+  if (url) {
+    if (url.startsWith('data:')) {
+      const res = await fetch(url)
+      return await res.blob()
+    }
+    return null
+  }
+
+  const isPdf = name.toLowerCase().endsWith('.pdf')
+  const isImg = name.toLowerCase().match(/\.(jpg|jpeg|png|gif)$/)
+
+  if (isPdf) {
+    const res = await fetch(
+      'data:application/pdf;base64,JVBERi0xLjcKCjEgMCBvYmogICUgZW50cnkgcG9pbnQKPDwKICAvVHlwZSAvQ2F0YWxvZwogIC9QYWdlcyAyIDAgUgo+PgplbmRvYmoKCjIgMCBvYmoKPDwKICAvVHlwZSAvUGFnZXMKICAvTWVkaWFCb3ggWyAwIDAgMjAwIDIwMCBdCiAgL0NvdW50IDEKICAvS2lkcyBbIDMgMCBSIF0KPj4KZW5kb2JqCgozIDAgb2JqCjw8CiAgL1R5cGUgL1BhZ2UKICAvUGFyZW50IDIgMCBSCiAgL1Jlc291cmNlcyA8PAogICAgL0ZvbnQgPDwKICAgICAgL0YxIDQgMCBSCgkJPj4KICA+PgogIC9Db250ZW50cyA1IDAgUgo+PgplbmRvYmoKCjQgMCBvYmoKPDwKICAvVHlwZSAvRm9udAogIC9TdWJ0eXBlIC9UeXBlMQogIC9CYXNlRm9udCAvVGltZXMtUm9tYW4KPj4KZW5kb2JqCgo1IDAgb2JqICAlIHBhZ2UgY29udGVudAo8PAogIC9MZW5ndGggNDQKPj4Kc3RyZWFtCkJUCjcwIDUwIFRECi9GMSAxMiBUZgooSGVsbG8sIHdvcmxkISkgVGoKRVQKZW5kc3RyZWFtCmVuZG9iagoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDEwIDAwMDAwIG4gCjAwMDAwMDAwNjggMDAwMDAgbiAKMDAwMDAwMDE2NyAwMDAwMCBuIAowMDAwMDAwMjk2IDAwMDAwIG4gCjAwMDAwMDAzODQgMDAwMDAgbiAKdHJhaWxlcgo8PAogIC9TaXplIDYKICAvUm9vdCAxIDAgUgo+PgpzdGFydHhyZWYKNDc4CiUlRU9GCg==',
+    )
+    return await res.blob()
+  } else if (isImg) {
+    const res = await fetch(
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+    )
+    return await res.blob()
+  }
+
+  return new Blob([`Conteúdo do documento: ${name}\nTipo: ${type}`], { type: 'text/plain' })
 }
