@@ -264,3 +264,52 @@ export async function downloadDocument(doc: ActivityDocument, activity?: Activit
     alert('Houve um erro ao tentar realizar o download.')
   }
 }
+
+export async function printDocument(doc: ActivityDocument, activity?: ActivityRecord) {
+  try {
+    const blob = await getDocumentBlob(doc, activity)
+    let printUrl = ''
+    let isObjectUrl = false
+
+    if (blob) {
+      printUrl = URL.createObjectURL(blob)
+      isObjectUrl = true
+    } else if (doc.url && !doc.url.startsWith('C:') && !doc.url.startsWith('blob:')) {
+      printUrl = doc.url
+    }
+
+    if (!printUrl) {
+      alert('Não foi possível carregar o documento para impressão.')
+      return
+    }
+
+    const iframe = document.createElement('iframe')
+    iframe.style.display = 'none'
+    iframe.src = printUrl
+    document.body.appendChild(iframe)
+
+    iframe.onload = () => {
+      setTimeout(() => {
+        try {
+          if (iframe.contentWindow) {
+            iframe.contentWindow.print()
+          }
+        } catch (e) {
+          console.error('Print failed', e)
+          window.open(printUrl, '_blank')
+        }
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe)
+          }
+          if (isObjectUrl) {
+            URL.revokeObjectURL(printUrl)
+          }
+        }, 60000)
+      }, 500)
+    }
+  } catch (err) {
+    console.error('Erro ao imprimir documento:', err)
+    alert('Houve um erro ao tentar imprimir o documento.')
+  }
+}

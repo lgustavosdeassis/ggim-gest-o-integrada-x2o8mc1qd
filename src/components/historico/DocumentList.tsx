@@ -1,7 +1,13 @@
 import { Button } from '@/components/ui/button'
-import { Eye, Download, FileX } from 'lucide-react'
+import { Eye, Download, FileX, Printer, ChevronDown } from 'lucide-react'
 import { Document as ActivityDocument, ActivityRecord } from '@/lib/types'
-import { openDocumentViewer, downloadDocument } from '@/lib/utils'
+import { openDocumentViewer, downloadDocument, printDocument } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export function DocumentList({
   documents,
@@ -37,32 +43,48 @@ export function DocumentList({
               {doc.type || 'S/TIPO'}
             </span>
           </div>
-          <div className="flex gap-2 mt-auto pt-3 border-t border-border/50">
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="flex-1 text-xs font-bold h-8 bg-[#0f172a] hover:bg-[#1e293b] text-white transition-colors"
-              onClick={(e) => {
-                e.preventDefault()
-                openDocumentViewer(doc, activity)
-              }}
-              title="Abrir em nova aba"
-            >
-              <Eye className="w-3.5 h-3.5 mr-1.5" /> Visualizar
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              className="flex-1 text-xs font-bold h-8 bg-[#eab308] hover:bg-[#ca8a04] text-[#0f172a] transition-colors"
-              onClick={(e) => {
-                e.preventDefault()
-                downloadDocument(doc, activity)
-              }}
-            >
-              <Download className="w-3.5 h-3.5 mr-1.5" /> Baixar
-            </Button>
+          <div className="flex gap-2 mt-auto pt-3 border-t border-border/50 justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="w-full text-xs font-bold h-8 bg-card hover:bg-muted text-foreground transition-colors flex items-center justify-center gap-1.5 px-3"
+                >
+                  Opções <ChevronDown className="w-3.5 h-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40 rounded-xl">
+                <DropdownMenuItem
+                  className="cursor-pointer font-medium flex items-center gap-2 py-2"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    openDocumentViewer(doc, activity)
+                  }}
+                >
+                  <Eye className="w-4 h-4 text-muted-foreground" /> Visualizar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer font-medium flex items-center gap-2 py-2"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    downloadDocument(doc, activity)
+                  }}
+                >
+                  <Download className="w-4 h-4 text-muted-foreground" /> Baixar
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="cursor-pointer font-medium flex items-center gap-2 py-2"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    printDocument(doc, activity)
+                  }}
+                >
+                  <Printer className="w-4 h-4 text-muted-foreground" /> Imprimir
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       ))}

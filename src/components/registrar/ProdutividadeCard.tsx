@@ -14,8 +14,20 @@ import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
-import { FileText, FileUp, Trash, Eye, Download } from 'lucide-react'
-import { parseSemicolonList, cn, openDocumentViewer, downloadDocument } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { FileText, FileUp, Trash, Eye, Download, Printer, ChevronDown } from 'lucide-react'
+import {
+  parseSemicolonList,
+  cn,
+  openDocumentViewer,
+  downloadDocument,
+  printDocument,
+} from '@/lib/utils'
 import { DOC_TYPES, FormValues } from './schema'
 
 export function ProdutividadeCard() {
@@ -245,26 +257,39 @@ export function ProdutividadeCard() {
                   )}
                 />
                 <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 lg:mt-7 shrink-0 w-full lg:w-auto justify-end">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-11 px-3 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all flex items-center gap-1.5"
-                    onClick={() => openDocumentViewer(watchedDocs[index])}
-                    title="Visualizar anexo em nova guia"
-                  >
-                    <Eye className="w-4 h-4" />
-                    <span className="text-xs font-bold">Visualizar</span>
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-11 px-3 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all flex items-center gap-1.5"
-                    onClick={() => downloadDocument(watchedDocs[index])}
-                    title="Baixar arquivo original"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span className="text-xs font-bold">Baixar</span>
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 px-4 rounded-xl bg-white hover:bg-slate-100 border-[#0f172a]/20 text-[#0f172a] shadow-sm transition-all flex items-center gap-2"
+                      >
+                        <span className="text-xs font-bold">Opções</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44 rounded-xl shadow-lg">
+                      <DropdownMenuItem
+                        className="cursor-pointer font-medium flex items-center gap-2 py-2"
+                        onClick={() => openDocumentViewer(watchedDocs[index])}
+                      >
+                        <Eye className="w-4 h-4 text-[#0f172a]/70" /> Visualizar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer font-medium flex items-center gap-2 py-2"
+                        onClick={() => downloadDocument(watchedDocs[index])}
+                      >
+                        <Download className="w-4 h-4 text-[#0f172a]/70" /> Baixar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer font-medium flex items-center gap-2 py-2"
+                        onClick={() => printDocument(watchedDocs[index])}
+                      >
+                        <Printer className="w-4 h-4 text-[#0f172a]/70" /> Imprimir
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
                   {!isViewer && (
                     <Button
                       type="button"

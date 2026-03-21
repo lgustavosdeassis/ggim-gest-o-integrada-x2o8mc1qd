@@ -13,7 +13,7 @@ export const mockActivities: ActivityRecord[] = [
     actions: [],
     participantsPF: 'João Silva; Maria Souza; Pedro Costa; Ana Lima',
     participantsPJ: 'Prefeitura; Guarda Municipal',
-    documents: [{ id: 'd1', name: 'Ata da Reunião.pdf', type: 'ATA' }],
+    documents: [{ id: 'd1', name: 'Ata da Reunião.pdf', type: 'ATO' }],
     deliberations: 'Aprovação da pauta; Agendamento da próxima reunião',
     createdAt: '2025-12-01T10:00:00Z',
   },
@@ -33,7 +33,7 @@ export const mockActivities: ActivityRecord[] = [
     participantsPJ: 'Prefeitura; Polícia Civil; Corpo de Bombeiros',
     documents: [
       { id: 'd2', name: 'Apresentacao.pptx', type: 'OUTROS' },
-      { id: 'd3', name: 'Fotos_Evento.jpg', type: 'FOTO' },
+      { id: 'd3', name: 'Fotos_Evento.jpg', type: 'IMAGENS' },
     ],
     deliberations: 'Envio de material aos participantes',
     createdAt: '2025-12-02T10:00:00Z',

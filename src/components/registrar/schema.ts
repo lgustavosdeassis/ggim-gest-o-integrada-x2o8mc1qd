@@ -79,12 +79,14 @@ export const EVENTOS_TIPO = [
 ]
 
 export const DOC_TYPES = [
-  'ATA',
+  'ATO',
   'OFÍCIO',
   'RELATÓRIO',
   'TRANSCRIÇÃO',
-  'EMAIL',
+  'E-MAIL',
   'SID',
-  'FOTO',
+  'FORMULÁRIO',
+  'IMAGENS',
+  'ÁUDIO',
   'OUTROS',
 ]
