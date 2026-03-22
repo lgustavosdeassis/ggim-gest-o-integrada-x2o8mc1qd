@@ -102,23 +102,36 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
   const id = await getCloudDbId()
   const fetchUrl = `${JSONBLOB_API}/${id}`
 
-  const p = fetch(fetchUrl, {
-    method: 'GET',
-    headers: {
-      Accept: 'application/json',
-    },
-    // Using native fetch caching strategies eliminates the need for custom headers
-    // like 'Cache-Control' which can trigger CORS preflight failures on some external APIs.
-    cache: 'no-store',
-  })
-    .then(async (res) => {
+  // Resilient fetching logic with retries to handle intermittent network failures
+  // Omitted 'cache: "no-store"' as it can trigger strict CORS preflight rejections
+  // or "Failed to fetch" TypeErrors on certain browsers/proxies.
+  const doFetch = async (retries = 3): Promise<any> => {
+    try {
+      const res = await fetch(fetchUrl, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+
       if (!res.ok) {
-        if (res.status === 404)
+        if (res.status === 404) {
           return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+        }
         throw new Error(`HTTP Error: ${res.status}`)
       }
-      return res.json()
-    })
+
+      return await res.json()
+    } catch (e) {
+      if (retries > 0) {
+        await new Promise((resolve) => setTimeout(resolve, 800))
+        return doFetch(retries - 1)
+      }
+      throw e
+    }
+  }
+
+  const p = doFetch()
     .then((data) => {
       // Only update memory if we haven't started a new save during the fetch window
       if (!isSaving) {
@@ -128,7 +141,7 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
       return JSON.parse(JSON.stringify(data))
     })
     .catch((e) => {
-      console.warn('Cloud DB fetch failed, utilizing active memory state', e)
+      console.warn('Cloud DB fetch failed after retries, utilizing active memory state', e)
       if (fetchPromise === p) fetchPromise = null
       return memoryDb
         ? JSON.parse(JSON.stringify(memoryDb))
@@ -156,11 +169,25 @@ export async function atomicUpdate(updater: (db: any) => void) {
       db.updatedAt = Date.now()
       memoryDb = JSON.parse(JSON.stringify(db)) // Optimistically update memory instantly
 
-      const res = await fetch(`${JSONBLOB_API}/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(db),
-      })
+      const doUpdate = async (retries = 2): Promise<Response> => {
+        try {
+          const res = await fetch(`${JSONBLOB_API}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(db),
+          })
+          if (!res.ok && res.status !== 404) throw new Error(`HTTP Error: ${res.status}`)
+          return res
+        } catch (e) {
+          if (retries > 0) {
+            await new Promise((r) => setTimeout(r, 1000))
+            return doUpdate(retries - 1)
+          }
+          throw e
+        }
+      }
+
+      const res = await doUpdate()
 
       if (!res.ok && res.status === 404) {
         // DB got deleted or expired, recreate it and update the ID globally
