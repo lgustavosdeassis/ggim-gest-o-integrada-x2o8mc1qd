@@ -12,8 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-
-const logoGgim = '/logo-ggim.png'
+import logoGgim from '@/assets/logo-ggim.svg'
 
 export function Header() {
   const { user, logout } = useAuthStore()
@@ -33,8 +32,12 @@ export function Header() {
 
       {/* Center section: GGIM Logo and Title */}
       <div className="hidden lg:flex flex-1 items-center justify-center gap-4">
-        <div className="flex h-14 px-2 shrink-0 items-center justify-center rounded-xl bg-white shadow-md border border-white/20">
-          <img src={logoGgim} alt="GGIM Logo" className="h-full w-auto object-contain" />
+        <div className="flex h-16 shrink-0 items-center justify-center">
+          <img
+            src={logoGgim}
+            alt="GGIM Logo"
+            className="h-full w-auto object-contain drop-shadow-md"
+          />
         </div>
         <h1 className="text-base lg:text-lg font-bold tracking-tight text-center">
           Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)

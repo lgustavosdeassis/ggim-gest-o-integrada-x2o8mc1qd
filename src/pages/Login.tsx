@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, ArrowRight } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-
-const logoGgim = '/logo-ggim.png'
+import logoGgim from '@/assets/logo-ggim.svg'
 
 export default function Login() {
   const { login, users } = useAuthStore()
@@ -48,7 +47,7 @@ export default function Login() {
         <CardHeader className="space-y-6 flex flex-col items-center text-center pb-8 pt-12 border-b border-[#0f172a]/10 bg-slate-50/50">
           <div className="flex items-center gap-6 relative">
             <div className="absolute inset-0 bg-[#eab308]/20 blur-2xl rounded-full scale-150 z-0" />
-            <div className="w-28 h-28 rounded-2xl overflow-hidden border border-[#0f172a]/10 shadow-md bg-white p-2 z-10">
+            <div className="w-32 h-32 z-10 flex items-center justify-center drop-shadow-xl">
               <img src={logoGgim} alt="GGIM Logo" className="w-full h-full object-contain" />
             </div>
           </div>
