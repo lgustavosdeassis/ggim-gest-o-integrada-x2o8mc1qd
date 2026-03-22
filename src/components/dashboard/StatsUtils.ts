@@ -52,9 +52,21 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
   records.forEach((r) => {
     totalHours += calculateHoursDifference(r.meetingStart, r.meetingEnd)
 
+    if (r.hasAdditionalDays && r.additionalDays) {
+      r.additionalDays.forEach((d) => {
+        totalHours += calculateHoursDifference(d.start, d.end)
+      })
+    }
+
     if (r.actions && r.actions.length > 0) {
       r.actions.forEach((a) => {
-        totalHours += calculateHoursDifference(a.start, a.end)
+        if (a.periods && a.periods.length > 0) {
+          a.periods.forEach((p) => {
+            totalHours += calculateHoursDifference(p.start, p.end)
+          })
+        } else if (a.start && a.end) {
+          totalHours += calculateHoursDifference(a.start, a.end)
+        }
         actionsGenerated++
       })
     } else if (r.hasAction && r.actionStart && r.actionEnd) {
@@ -109,8 +121,20 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value)
 
-  const DOC_TYPES = ['ATA', 'OFÍCIO', 'RELATÓRIO', 'TRANSCRIÇÃO', 'EMAIL', 'SID', 'FOTO', 'OUTROS']
-  const docsByType = DOC_TYPES.reduce(
+  const DOC_TYPES_CHART = [
+    'Ata',
+    'Ofício',
+    'Relatório',
+    'Transcrição',
+    'E-mail',
+    'SID',
+    'Formulário',
+    'Imagens',
+    'Áudio',
+    'Lista de Presença',
+    'Outros',
+  ]
+  const docsByType = DOC_TYPES_CHART.reduce(
     (acc, t) => {
       acc[t] = 0
       return acc
@@ -120,18 +144,29 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
 
   allDocs.forEach((t) => {
     const upper = t.toUpperCase()
-    let mapped = upper
-    if (upper === 'E-MAIL') mapped = 'EMAIL'
-    if (upper === 'ÁUDIO' || upper === 'FOTOS') mapped = upper === 'FOTOS' ? 'FOTO' : 'OUTROS'
+    let mapped = 'Outros'
+    if (upper === 'ATO' || upper === 'ATA') mapped = 'Ata'
+    else if (upper === 'OFÍCIO') mapped = 'Ofício'
+    else if (upper === 'RELATÓRIO') mapped = 'Relatório'
+    else if (upper === 'TRANSCRIÇÃO') mapped = 'Transcrição'
+    else if (upper === 'E-MAIL' || upper === 'EMAIL') mapped = 'E-mail'
+    else if (upper === 'SID') mapped = 'SID'
+    else if (upper === 'FORMULÁRIO') mapped = 'Formulário'
+    else if (upper === 'IMAGENS' || upper === 'FOTO' || upper === 'FOTOS') mapped = 'Imagens'
+    else if (upper === 'ÁUDIO') mapped = 'Áudio'
+    else if (upper === 'LISTA DE PRESENÇA') mapped = 'Lista de Presença'
+    else if (upper === 'OUTROS') mapped = 'Outros'
+    else if (docsByType[t]) mapped = t
 
     if (docsByType[mapped] !== undefined) {
       docsByType[mapped]++
     } else {
-      docsByType['OUTROS']++
+      docsByType['Outros']++
     }
   })
 
   const docsData = Object.entries(docsByType)
+    .filter(([_, value]) => value > 0)
     .map(([name, value], i) => ({
       name,
       value,

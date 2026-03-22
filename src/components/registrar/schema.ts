@@ -7,13 +7,30 @@ export const formSchema = z.object({
   location: z.string().min(1, 'Obrigatório'),
   meetingStart: z.string().min(1, 'Obrigatório'),
   meetingEnd: z.string().min(1, 'Obrigatório'),
-  hasAction: z.boolean().default(false),
-  actions: z
+  hasAdditionalDays: z.boolean().default(false),
+  additionalDays: z
     .array(
       z.object({
         id: z.string().optional(),
         start: z.string().min(1, 'Obrigatório'),
         end: z.string().min(1, 'Obrigatório'),
+      }),
+    )
+    .default([]),
+  hasAction: z.boolean().default(false),
+  actions: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        periods: z
+          .array(
+            z.object({
+              id: z.string().optional(),
+              start: z.string().min(1, 'Obrigatório'),
+              end: z.string().min(1, 'Obrigatório'),
+            }),
+          )
+          .default([]),
       }),
     )
     .default([]),
@@ -79,14 +96,15 @@ export const EVENTOS_TIPO = [
 ]
 
 export const DOC_TYPES = [
-  'ATO',
-  'OFÍCIO',
-  'RELATÓRIO',
-  'TRANSCRIÇÃO',
-  'E-MAIL',
+  'Ata',
+  'Ofício',
+  'Relatório',
+  'Transcrição',
+  'E-mail',
   'SID',
-  'FORMULÁRIO',
-  'IMAGENS',
-  'ÁUDIO',
-  'OUTROS',
+  'Formulário',
+  'Imagens',
+  'Áudio',
+  'Lista de Presença',
+  'Outros',
 ]

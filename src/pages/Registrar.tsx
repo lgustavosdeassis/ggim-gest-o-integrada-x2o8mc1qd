@@ -50,25 +50,68 @@ export default function Registrar() {
         initialActions = [
           {
             id: Math.random().toString(),
-            start: defaultActivity.actionStart,
-            end: defaultActivity.actionEnd,
+            periods: [
+              {
+                id: Math.random().toString(),
+                start: defaultActivity.actionStart,
+                end: defaultActivity.actionEnd,
+              },
+            ],
           },
         ]
         initialHasAction = true
       }
-      const migratedDocs = (defaultActivity.documents || []).map((d) => ({
-        ...d,
-        type: d.type || (d as any).categories?.[0]?.toUpperCase() || 'OUTROS',
-      }))
+      const migratedDocs = (defaultActivity.documents || []).map((d) => {
+        let t = d.type || (d as any).categories?.[0] || 'Outros'
+        const map: Record<string, string> = {
+          ATO: 'Ata',
+          ATA: 'Ata',
+          OFÍCIO: 'Ofício',
+          RELATÓRIO: 'Relatório',
+          TRANSCRIÇÃO: 'Transcrição',
+          'E-MAIL': 'E-mail',
+          EMAIL: 'E-mail',
+          SID: 'SID',
+          FORMULÁRIO: 'Formulário',
+          IMAGENS: 'Imagens',
+          FOTO: 'Imagens',
+          FOTOS: 'Imagens',
+          ÁUDIO: 'Áudio',
+          OUTROS: 'Outros',
+          'LISTA DE PRESENÇA': 'Lista de Presença',
+        }
+        return {
+          ...d,
+          type: map[t.toUpperCase()] || t,
+        }
+      })
       return {
         ...defaultActivity,
         meetingStart: formatForDatetimeLocal(defaultActivity.meetingStart),
         meetingEnd: formatForDatetimeLocal(defaultActivity.meetingEnd),
+        hasAdditionalDays: defaultActivity.hasAdditionalDays || false,
+        additionalDays: (defaultActivity.additionalDays || []).map((ad) => ({
+          ...ad,
+          start: formatForDatetimeLocal(ad.start),
+          end: formatForDatetimeLocal(ad.end),
+        })),
         hasAction: initialHasAction,
         actions: initialActions.map((a) => ({
           ...a,
-          start: formatForDatetimeLocal(a.start),
-          end: formatForDatetimeLocal(a.end),
+          periods:
+            a.periods && a.periods.length > 0
+              ? a.periods.map((p) => ({
+                  ...p,
+                  start: formatForDatetimeLocal(p.start),
+                  end: formatForDatetimeLocal(p.end),
+                }))
+              : [
+                  {
+                    id: Math.random().toString(),
+                    start: formatForDatetimeLocal(a.start),
+                    end: formatForDatetimeLocal(a.end),
+                  },
+                ],
         })),
         documents: migratedDocs,
       } as FormValues
@@ -80,6 +123,8 @@ export default function Registrar() {
       location: '',
       meetingStart: '',
       meetingEnd: '',
+      hasAdditionalDays: false,
+      additionalDays: [],
       hasAction: false,
       actions: [],
       participantsPF: '',
@@ -102,10 +147,20 @@ export default function Registrar() {
     if (isViewer) return
     const payload = {
       ...data,
+      additionalDays: data.hasAdditionalDays
+        ? (data.additionalDays || []).map((ad) => ({
+            ...ad,
+            id: ad.id || Math.random().toString(36).substr(2, 9),
+          }))
+        : [],
       actions: data.hasAction
         ? (data.actions || []).map((act) => ({
             ...act,
             id: act.id || Math.random().toString(36).substr(2, 9),
+            periods: (act.periods || []).map((p) => ({
+              ...p,
+              id: p.id || Math.random().toString(36).substr(2, 9),
+            })),
           }))
         : [],
       documents: (data.documents || []).map((doc) => ({

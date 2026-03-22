@@ -5,10 +5,17 @@ export interface Document {
   url?: string
 }
 
-export interface ActivityAction {
+export interface ActivityPeriod {
   id: string
   start: string
   end: string
+}
+
+export interface ActivityAction {
+  id: string
+  start?: string
+  end?: string
+  periods?: ActivityPeriod[]
 }
 
 export interface ActivityRecord {
@@ -19,6 +26,8 @@ export interface ActivityRecord {
   location: string
   meetingStart: string
   meetingEnd: string
+  hasAdditionalDays?: boolean
+  additionalDays?: ActivityPeriod[]
   hasAction: boolean
   actionStart?: string
   actionEnd?: string

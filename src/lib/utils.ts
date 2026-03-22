@@ -185,6 +185,11 @@ export async function getDocumentBlob(
 }
 
 export async function openDocumentViewer(doc: ActivityDocument, activity?: ActivityRecord) {
+  if (doc.url && doc.url.startsWith('http')) {
+    window.open(doc.url, '_blank', 'noopener,noreferrer')
+    return
+  }
+
   const win = window.open('', '_blank')
   if (!win) {
     alert('Por favor, permita pop-ups no seu navegador para visualizar o documento.')
@@ -217,8 +222,8 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
     const blob = await getDocumentBlob(doc, activity)
     if (blob) {
       const blobUrl = URL.createObjectURL(blob)
-      win.location.href = blobUrl
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 15000)
+      win.document.body.innerHTML = `<iframe src="${blobUrl}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
     } else if (doc.url && !doc.url.startsWith('data:') && !doc.url.startsWith('blob:')) {
       win.location.href = doc.url
     } else {
@@ -267,52 +272,50 @@ export async function downloadDocument(doc: ActivityDocument, activity?: Activit
 
 export async function printDocument(doc: ActivityDocument, activity?: ActivityRecord) {
   try {
-    const blob = await getDocumentBlob(doc, activity)
-    let printUrl = ''
-    let isObjectUrl = false
-
-    if (blob) {
-      printUrl = URL.createObjectURL(blob)
-      isObjectUrl = true
-    } else if (doc.url && !doc.url.startsWith('C:') && !doc.url.startsWith('blob:')) {
-      printUrl = doc.url
+    if (doc.url && doc.url.startsWith('http')) {
+      window.open(doc.url, '_blank', 'noopener,noreferrer')
+      return
     }
 
-    if (!printUrl) {
+    const blob = await getDocumentBlob(doc, activity)
+    if (!blob) {
       alert('Não foi possível carregar o documento para impressão.')
       return
     }
 
-    const isPdf = blob?.type === 'application/pdf' || doc.name?.toLowerCase().endsWith('.pdf')
+    const printUrl = URL.createObjectURL(blob)
+    const isPdf = blob.type === 'application/pdf' || doc.name?.toLowerCase().endsWith('.pdf')
 
-    // For PDFs, we open them safely in a new tab. Trying to call print() on an iframe
-    // containing a PDF triggers cross-origin errors because the browser's PDF viewer
-    // extension takes over the frame.
     if (isPdf) {
-      const win = window.open(printUrl, '_blank')
+      const win = window.open('', '_blank')
       if (!win) {
         alert('Por favor, permita pop-ups no seu navegador para imprimir o documento.')
+        URL.revokeObjectURL(printUrl)
+        return
       }
-      if (isObjectUrl) {
-        setTimeout(() => URL.revokeObjectURL(printUrl), 60000)
-      }
+      win.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head><title>Imprimir - ${doc.name || 'Documento'}</title></head>
+          <body style="margin:0;"><iframe src="${printUrl}" style="width:100%;height:100vh;border:none;"></iframe></body>
+        </html>
+      `)
+      win.document.close()
+      setTimeout(() => URL.revokeObjectURL(printUrl), 60000)
       return
     }
 
-    // For images and other documents, we create a hidden iframe and inject the content safely
-    // using document.write, avoiding cross-origin issues completely.
     const iframe = document.createElement('iframe')
     iframe.style.display = 'none'
     document.body.appendChild(iframe)
-
     const iframeDoc = iframe.contentWindow?.document
+
     if (!iframeDoc) {
       window.open(printUrl, '_blank')
       return
     }
 
-    const isImage =
-      blob?.type.startsWith('image/') || doc.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+    const isImage = blob.type.startsWith('image/') || doc.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
 
     iframeDoc.write(`
       <!DOCTYPE html>
@@ -336,9 +339,8 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
     `)
     iframeDoc.close()
 
-    // If it's text/plain fallback, populate it and trigger print manually
     if (!isImage) {
-      const text = blob ? await blob.text() : 'Documento pronto para impressão.'
+      const text = await blob.text()
       const contentEl = iframeDoc.getElementById('content')
       if (contentEl) contentEl.textContent = text
       setTimeout(() => {
@@ -351,14 +353,11 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
       }, 500)
     }
 
-    // Cleanup resources
     setTimeout(() => {
       if (document.body.contains(iframe)) {
         document.body.removeChild(iframe)
       }
-      if (isObjectUrl) {
-        URL.revokeObjectURL(printUrl)
-      }
+      URL.revokeObjectURL(printUrl)
     }, 60000)
   } catch (err) {
     console.error('Erro ao imprimir documento:', err)
