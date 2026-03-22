@@ -103,8 +103,6 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
   const fetchUrl = `${JSONBLOB_API}/${id}`
 
   // Resilient fetching logic with retries to handle intermittent network failures
-  // Omitted 'cache: "no-store"' as it can trigger strict CORS preflight rejections
-  // or "Failed to fetch" TypeErrors on certain browsers/proxies.
   const doFetch = async (retries = 3): Promise<any> => {
     try {
       let res: Response | undefined
@@ -137,7 +135,13 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
       if (!rawText) {
         return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
       }
-      return JSON.parse(rawText)
+
+      try {
+        return JSON.parse(rawText)
+      } catch (parseErr) {
+        console.warn('Failed to parse external database JSON payload, using default', parseErr)
+        return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+      }
     } catch (e: any) {
       if (retries > 0) {
         await new Promise((resolve) => setTimeout(resolve, 800))
@@ -183,60 +187,76 @@ let updateMutex = Promise.resolve()
 
 // Guaranteed atomic sequential update directly to the centralized database
 export async function atomicUpdate(updater: (db: any) => void) {
-  updateMutex = updateMutex.then(async () => {
-    isSaving = true
-    try {
-      const id = await getCloudDbId()
-      const db = await fetchCloudDb(true)
+  updateMutex = updateMutex
+    .then(async () => {
+      isSaving = true
+      try {
+        const id = await getCloudDbId()
+        const db = await fetchCloudDb(true)
 
-      updater(db)
-      db.updatedAt = Date.now()
-      memoryDb = JSON.parse(JSON.stringify(db)) // Optimistically update memory instantly
+        updater(db)
+        db.updatedAt = Date.now()
+        memoryDb = JSON.parse(JSON.stringify(db)) // Optimistically update memory instantly
 
-      const doUpdate = async (retries = 2): Promise<Response | null> => {
-        try {
-          const res = await fetch(`${JSONBLOB_API}/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify(db),
-          })
-          if (!res.ok && res.status !== 404) throw new Error(`HTTP Error: ${res.status || 'N/A'}`)
-          return res
-        } catch (e) {
-          if (retries > 0) {
-            await new Promise((r) => setTimeout(r, 1000))
-            return doUpdate(retries - 1)
+        const doUpdate = async (retries = 2): Promise<Response | null> => {
+          try {
+            let res: Response | undefined
+
+            try {
+              res = await fetch(`${JSONBLOB_API}/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify(db),
+              })
+            } catch (err: any) {
+              throw new Error(
+                err.message?.includes('Failed to fetch') ? 'Failed to fetch' : 'HTTP N/A',
+              )
+            }
+
+            if (!res) throw new Error('HTTP N/A')
+
+            if (!res.ok && res.status !== 404) throw new Error(`HTTP Error: ${res.status || 'N/A'}`)
+
+            return res
+          } catch (e) {
+            if (retries > 0) {
+              await new Promise((r) => setTimeout(r, 1000))
+              return doUpdate(retries - 1)
+            }
+            console.warn('Network request failed during atomic update sync', e)
+            return null // Return null gracefully instead of breaking the chain
           }
-          console.warn('Network request failed during atomic update sync', e)
-          return null // Return null gracefully instead of breaking the chain
         }
-      }
 
-      const res = await doUpdate()
+        const res = await doUpdate()
 
-      if (res && !res.ok && res.status === 404) {
-        try {
-          // DB got deleted or expired, recreate it and update the ID globally
-          const createRes = await fetch(JSONBLOB_API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify(db),
-          })
-          const location = createRes.headers.get('Location')
-          if (location) {
-            const newId = location.split('/').pop() || id
-            localStorage.setItem(SYNC_KEY, newId)
+        if (res && !res.ok && res.status === 404) {
+          try {
+            // DB got deleted or expired, recreate it and update the ID globally
+            const createRes = await fetch(JSONBLOB_API, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              body: JSON.stringify(db),
+            })
+            const location = createRes.headers.get('Location')
+            if (location) {
+              const newId = location.split('/').pop() || id
+              localStorage.setItem(SYNC_KEY, newId)
+            }
+          } catch (createErr) {
+            console.warn('Failed to recreate external database on 404', createErr)
           }
-        } catch (createErr) {
-          console.warn('Failed to recreate external database on 404', createErr)
         }
+      } catch (e) {
+        console.error('Atomic update encountered a critical synchronization failure', e)
+      } finally {
+        isSaving = false
       }
-    } catch (e) {
-      console.error('Atomic update encountered a critical synchronization failure', e)
-    } finally {
-      isSaving = false
-    }
-  })
+    })
+    .catch((e) => {
+      console.warn('Mutex chain recovery', e)
+    })
   return updateMutex
 }
 
@@ -244,44 +264,69 @@ export const api = {
   activities: {
     list: async (forceFresh = false) => (await fetchCloudDb(forceFresh)).activities || [],
     syncUpdate: async (updater: (data: ActivityRecord[]) => ActivityRecord[]) => {
-      await atomicUpdate((db) => {
-        db.activities = updater(db.activities || [])
-      })
+      try {
+        await atomicUpdate((db) => {
+          db.activities = updater(db.activities || [])
+        })
+      } catch (e) {
+        console.warn('Silent failure in activities syncUpdate', e)
+      }
     },
   },
   users: {
     list: async (forceFresh = false) => (await fetchCloudDb(forceFresh)).users || [],
     syncUpdate: async (updater: (data: User[]) => User[]) => {
-      await atomicUpdate((db) => {
-        db.users = updater(db.users || [])
-      })
+      try {
+        await atomicUpdate((db) => {
+          db.users = updater(db.users || [])
+        })
+      } catch (e) {
+        console.warn('Silent failure in users syncUpdate', e)
+      }
     },
   },
   video: {
     list: async (forceFresh = false) => (await fetchCloudDb(forceFresh)).videoRecords || [],
     syncUpdate: async (updater: (data: VideoRecord[]) => VideoRecord[]) => {
-      await atomicUpdate((db) => {
-        db.videoRecords = updater(db.videoRecords || [])
-      })
+      try {
+        await atomicUpdate((db) => {
+          db.videoRecords = updater(db.videoRecords || [])
+        })
+      } catch (e) {
+        console.warn('Silent failure in video syncUpdate', e)
+      }
     },
   },
   obs: {
     list: async (forceFresh = false) => (await fetchCloudDb(forceFresh)).obsRecords || [],
     syncUpdate: async (updater: (data: ObsRecord[]) => ObsRecord[]) => {
-      await atomicUpdate((db) => {
-        db.obsRecords = updater(db.obsRecords || [])
-      })
+      try {
+        await atomicUpdate((db) => {
+          db.obsRecords = updater(db.obsRecords || [])
+        })
+      } catch (e) {
+        console.warn('Silent failure in obs syncUpdate', e)
+      }
     },
   },
   audit: {
     list: async (forceFresh = false) => {
-      const db = await fetchCloudDb(forceFresh)
-      return db?.auditLogs || []
+      try {
+        const db = await fetchCloudDb(forceFresh)
+        return db?.auditLogs || []
+      } catch (e) {
+        console.warn('Silent failure in audit list', e)
+        return []
+      }
     },
     syncUpdate: async (updater: (data: AuditLog[]) => AuditLog[]) => {
-      await atomicUpdate((db) => {
-        db.auditLogs = updater(db.auditLogs || [])
-      })
+      try {
+        await atomicUpdate((db) => {
+          db.auditLogs = updater(db.auditLogs || [])
+        })
+      } catch (e) {
+        console.warn('Silent failure in audit syncUpdate', e)
+      }
     },
   },
 }
