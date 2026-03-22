@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { api, setCloudDbId } from '@/lib/api'
@@ -19,6 +19,14 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [syncId, setSyncId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    // Non-blocking background fetch to pre-warm cache immediately upon component mount,
+    // guaranteeing rendering will not be interrupted by potential network latency
+    api.users.list(true).catch(() => {
+      // Silently ignore prefetch errors to maintain uncompromised UI flow
+    })
+  }, [])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

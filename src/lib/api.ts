@@ -76,19 +76,34 @@ export function setCloudDbId(id: string) {
   window.dispatchEvent(new Event('db_updated'))
 }
 
-// Resilient Fetch with built-in retries and advanced exception handling
-async function fetchStrict(id: string, retries = 3, throwOnFailure = false): Promise<any> {
+// Resilient Fetch with built-in retries, exponential backoff, and advanced exception handling
+async function fetchStrict(
+  id: string,
+  retries = 3,
+  throwOnFailure = false,
+  attempt = 0,
+): Promise<any> {
   try {
     let res: Response | undefined
+
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 12000)
 
     try {
       res = await fetch(`${JSONBLOB_API}/${id}`, {
         method: 'GET',
         headers: { Accept: 'application/json' },
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
     } catch (fetchErr: any) {
+      clearTimeout(timeoutId)
       // Catch core network exceptions ensuring UI won't hard crash
-      throw new Error(`TypeError: Failed to fetch (${fetchErr?.message || 'Network disconnected'})`)
+      const errorMsg =
+        fetchErr?.name === 'AbortError'
+          ? 'Server Timeout'
+          : fetchErr?.message || 'Network disconnected'
+      throw new Error(`TypeError: Failed to fetch (${errorMsg})`)
     }
 
     if (!res || !res.ok) {
@@ -102,19 +117,22 @@ async function fetchStrict(id: string, retries = 3, throwOnFailure = false): Pro
     return text
       ? JSON.parse(text)
       : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
-  } catch (e) {
-    // Intelligent Backoff: At least 3 automatic retry attempts
+  } catch (e: any) {
+    // Intelligent Backoff: At least 3 automatic retry attempts with exponential backoff strategy
     if (retries > 0) {
-      const delay = 1000 + (3 - retries) * 500
+      const delay = 1000 * Math.pow(2, attempt)
       await new Promise((r) => setTimeout(r, delay))
-      return fetchStrict(id, retries - 1, throwOnFailure)
+      return fetchStrict(id, retries - 1, throwOnFailure, attempt + 1)
     }
 
     if (throwOnFailure) {
       throw e
     }
 
-    console.warn('Network issue intercepted by fetchStrict, returning resilient fallback state', e)
+    console.warn(
+      `Network issue intercepted by fetchStrict [${e?.message || 'Unknown'}], returning resilient fallback state`,
+      e,
+    )
     return memoryDb
       ? JSON.parse(JSON.stringify(memoryDb))
       : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))

@@ -15,9 +15,31 @@ import Usuarios from '@/pages/Usuarios'
 import AuditLogs from '@/pages/AuditLogs'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
+import { useState, useEffect } from 'react'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, logout } = useAuthStore()
+  const [isReady, setIsReady] = useState(false)
+
+  useEffect(() => {
+    // Incorporate a controlled delay enforcing graceful initialization
+    // avoiding runtime crashes when network latency stalls the global state hydration
+    const timer = setTimeout(() => setIsReady(true), 250)
+    return () => clearTimeout(timer)
+  }, [])
+
+  if (!isReady) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#020617] text-white">
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 border-4 border-[#eab308] border-t-transparent rounded-full animate-spin mb-5" />
+          <p className="text-white/60 font-bold text-xs uppercase tracking-[0.2em]">
+            Carregando Módulo Seguro...
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   // Verify strict authentication and ensure old sessions without a role are logged out
   if (!isAuthenticated || (isAuthenticated && !user?.role)) {
