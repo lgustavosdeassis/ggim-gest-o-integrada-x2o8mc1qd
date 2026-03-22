@@ -2,20 +2,9 @@ import { useState } from 'react'
 import { Shield } from 'lucide-react'
 
 export function GgimHexLogo({ className = '' }: { className?: string }) {
-  const [errorCount, setErrorCount] = useState(0)
+  const [hasError, setHasError] = useState(false)
 
-  // Implement fallback logic to ensure the new branding appears perfectly regardless of the exact attachment mapping path
-  const getSrc = () => {
-    if (errorCount === 0) return '/logo.png'
-    if (errorCount === 1) return '/ggim-logo.png'
-    if (errorCount === 2) return '/ggim-hex-logo.png'
-    return null
-  }
-
-  const src = getSrc()
-
-  if (!src) {
-    // Graceful visual degradation using the verified branding structure
+  if (hasError) {
     return (
       <div className={`relative flex items-center justify-center bg-transparent ${className}`}>
         <Shield
@@ -31,10 +20,10 @@ export function GgimHexLogo({ className = '' }: { className?: string }) {
 
   return (
     <img
-      src={src}
+      src="/ggim-logo.png"
       alt="GGIM Foz"
       className={className}
-      onError={() => setErrorCount((c) => c + 1)}
+      onError={() => setHasError(true)}
     />
   )
 }

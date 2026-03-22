@@ -54,16 +54,15 @@ const DEFAULT_DB = {
 
 const JSONBLOB_API = 'https://jsonblob.com/api/jsonBlob'
 const PRIMARY_DB_ID = import.meta.env.VITE_GLOBAL_SYNC_ID || '1351608930495815680'
+const LOCAL_STORAGE_DB_KEY = 'ggim_db_cache'
 
 let isSaving = false
 let memoryDb: any = null
 let fetchPromise: Promise<any> | null = null
 let updateMutex = Promise.resolve()
 
-// Centralized Session Identity strictly isolated from local/session storage to enforce resilience and compliance
 let activeSyncId: string | null = null
 
-// Circuit Breaker to prevent runtime errors and cascading failures
 let consecutiveFailures = 0
 const MAX_FAILURES = 3
 const CIRCUIT_TIMEOUT = 15000
@@ -72,7 +71,7 @@ let lastFailureTime = 0
 function isCircuitOpen() {
   if (consecutiveFailures >= MAX_FAILURES) {
     if (Date.now() - lastFailureTime > CIRCUIT_TIMEOUT) {
-      consecutiveFailures = 0 // Half-open
+      consecutiveFailures = 0
       return false
     }
     return true
@@ -93,7 +92,20 @@ export function setCloudDbId(id: string) {
   window.dispatchEvent(new Event('db_updated'))
 }
 
-// Resilient Fetch with built-in retries, exponential backoff, and advanced exception handling
+function getFallbackDb() {
+  try {
+    const cached = localStorage.getItem(LOCAL_STORAGE_DB_KEY)
+    if (cached) {
+      return JSON.parse(cached)
+    }
+  } catch (e) {
+    console.warn('[Bug Scanner] Failed to parse cached DB', e)
+  }
+  return memoryDb
+    ? JSON.parse(JSON.stringify(memoryDb))
+    : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+}
+
 async function fetchStrict(
   id: string,
   retries = 3,
@@ -107,9 +119,7 @@ async function fetchStrict(
     if (throwOnFailure) {
       throw new Error('Safe Mode Fallback: Circuit Breaker Open')
     }
-    return memoryDb
-      ? JSON.parse(JSON.stringify(memoryDb))
-      : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+    return getFallbackDb()
   }
 
   try {
@@ -126,7 +136,6 @@ async function fetchStrict(
       clearTimeout(timeoutId)
     } catch (fetchErr: any) {
       clearTimeout(timeoutId)
-      // Catch core network exceptions ensuring UI won't hard crash
       const fetchErrorMsg =
         fetchErr?.name === 'AbortError'
           ? 'Server Timeout'
@@ -144,10 +153,16 @@ async function fetchStrict(
     }
 
     const text = await res.text()
-    consecutiveFailures = 0 // Reset circuit breaker on success
-    return text
-      ? JSON.parse(text)
-      : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+    consecutiveFailures = 0
+    if (text) {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_DB_KEY, text)
+      } catch (e) {
+        // Ignore quota issues
+      }
+      return JSON.parse(text)
+    }
+    return getFallbackDb()
   } catch (e: any) {
     const errorMsg = e?.message || 'Unknown error'
     const targetUrl = `${JSONBLOB_API}/${id}`
@@ -164,9 +179,8 @@ async function fetchStrict(
       )
     }
 
-    // Intelligent Backoff: At least 3 automatic retry attempts with exponential backoff strategy
     if (retries > 0) {
-      const delay = 1000 * Math.pow(1.5, attempt) // 1s, 1.5s, 2.25s
+      const delay = 1000 * Math.pow(1.5, attempt)
       await new Promise((r) => setTimeout(r, delay))
       return fetchStrict(id, retries - 1, throwOnFailure, attempt + 1)
     }
@@ -174,24 +188,15 @@ async function fetchStrict(
     consecutiveFailures++
     lastFailureTime = Date.now()
 
-    if (isTargetUrl) {
-      console.warn(
-        `[Bug Scanner] Network failure intercepted after max retries: ${errorMsg}. Safe mode fallback activated.`,
-      )
-    } else {
-      console.warn(
-        `[Bug Scanner] External network failure intercepted: ${errorMsg}. Safe mode fallback activated.`,
-      )
-    }
+    console.warn(
+      `[Bug Scanner] Network failure intercepted after max retries: ${errorMsg}. Safe mode fallback activated.`,
+    )
 
     if (throwOnFailure) {
       throw new Error('Safe Mode Fallback: Network failure intercepted')
     }
 
-    // Safe mode fallback ensuring system integrity
-    return memoryDb
-      ? JSON.parse(JSON.stringify(memoryDb))
-      : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+    return getFallbackDb()
   }
 }
 
@@ -207,22 +212,18 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
       console.warn(
         '[Bug Scanner] Network issue during background fetch setup, using resilient fallback state',
       )
-      return memoryDb
-        ? JSON.parse(JSON.stringify(memoryDb))
-        : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+      return getFallbackDb()
     }
   })()
     .then((data) => {
       if (!isSaving && data) memoryDb = data
       if (fetchPromise === p) fetchPromise = null
-      return data || JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+      return data || getFallbackDb()
     })
     .catch((e) => {
       console.warn('[Bug Scanner] Unhandled failure in fetchCloudDb intercepted')
       if (fetchPromise === p) fetchPromise = null
-      return memoryDb
-        ? JSON.parse(JSON.stringify(memoryDb))
-        : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+      return getFallbackDb()
     })
 
   if (!forceFresh || !fetchPromise) fetchPromise = p
@@ -236,7 +237,6 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
         isSaving = true
         try {
           const id = await getCloudDbId()
-          // Strictly fetch latest state, ensuring write conflicts won't arise from stale memory DB
           const db = await fetchStrict(id, 3, true)
 
           updater(db)
@@ -307,6 +307,11 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
           }
 
           memoryDb = JSON.parse(JSON.stringify(db))
+          try {
+            localStorage.setItem(LOCAL_STORAGE_DB_KEY, JSON.stringify(db))
+          } catch (e) {
+            // Ignore quota issues
+          }
           resolve()
         } catch (e: any) {
           console.warn('[Bug Scanner] Atomic update failed to synchronize:', e?.message || e)

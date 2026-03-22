@@ -23,9 +23,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation()
 
   useEffect(() => {
-    // Incorporate a controlled delay enforcing graceful initialization
-    // avoiding runtime crashes when network latency stalls the global state hydration
-    // Extended timeout to 1000ms ensures API retries complete without triggering loops
     let isMounted = true
     const timer = setTimeout(() => {
       if (isMounted) setIsReady(true)
@@ -36,6 +33,12 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       clearTimeout(timer)
     }
   }, [])
+
+  useEffect(() => {
+    if (isReady && isAuthenticated && !user?.role) {
+      logout()
+    }
+  }, [isReady, isAuthenticated, user, logout])
 
   if (!isReady) {
     return (
@@ -50,12 +53,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     )
   }
 
-  // Verify strict authentication and ensure old sessions without a role are logged out
-  if (!isAuthenticated || (isAuthenticated && !user?.role)) {
-    if (isAuthenticated) {
-      // Prevents redirect loop and ensures safe state reset without breaking UI
-      setTimeout(() => logout(), 0)
-    }
+  if (!isAuthenticated || !user?.role) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 

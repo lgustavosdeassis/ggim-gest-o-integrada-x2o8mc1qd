@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 import { GgimHexLogo } from '@/components/GgimHexLogo'
 
 export default function Login() {
-  const { login } = useAuthStore()
+  const { login, logout, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -19,17 +19,26 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [syncId, setSyncId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [isPrefetching, setIsPrefetching] = useState(true)
 
   useEffect(() => {
-    // Non-blocking background fetch to pre-warm cache immediately upon component mount,
-    // guaranteeing rendering will not be interrupted by potential network latency
-    api.users.list(true).catch((err) => {
-      console.warn(
-        '[Bug Scanner] Prefetch network issue intercepted, UI remains fully available and stable:',
-        err?.message,
-      )
-    })
-  }, [])
+    if (isAuthenticated) {
+      logout()
+    }
+
+    api.users
+      .list(true)
+      .then(() => {
+        setIsPrefetching(false)
+      })
+      .catch((err) => {
+        console.warn(
+          '[Bug Scanner] Prefetch network issue intercepted, UI remains fully available and stable:',
+          err?.message,
+        )
+        setIsPrefetching(false)
+      })
+  }, [isAuthenticated, logout])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,11 +50,8 @@ export default function Login() {
         await new Promise((resolve) => setTimeout(resolve, 800))
       }
 
-      // Always fetch the freshest users from the centralized API to authenticate globally.
-      // This is resilient and won't crash if the connection completely drops.
       let usersList
       try {
-        // Race condition to prevent infinite pending state during login if network is stall
         usersList = await Promise.race([
           api.users.list(true),
           new Promise<any>((_, reject) =>
@@ -59,14 +65,13 @@ export default function Login() {
         )
         toast({
           title: 'Modo de Segurança Ativado',
-          description: 'A rede apresenta instabilidade. Operando com dados offline.',
+          description: 'A rede apresenta instabilidade. Operando com dados em cache local.',
           variant: 'default',
         })
         usersList = useAuthStore.getState().users
       }
 
       if (!Array.isArray(usersList) || usersList.length === 0) {
-        // Fallback to initial default db users if store is also empty, enabling silent fallback
         usersList = [
           {
             id: '1',
@@ -125,12 +130,16 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#020617] p-4 relative overflow-hidden">
-      {/* Decorative dark background gradient for the new visual identity */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0f172a] via-[#020617] to-[#020617] z-0 pointer-events-none opacity-80" />
 
       <Card className="w-full max-w-[440px] shadow-2xl border border-white/5 bg-[#0f172a]/95 backdrop-blur-xl z-10 rounded-[2.5rem] overflow-hidden text-white transition-all duration-500 hover:shadow-[0_0_40px_rgba(234,179,8,0.05)]">
         <CardHeader className="space-y-6 flex flex-col items-center text-center pb-6 pt-12 relative">
-          <div className="w-[180px] h-[180px] flex items-center justify-center p-0 transition-transform hover:scale-105 duration-500 ease-out">
+          <div className="w-[180px] h-[180px] flex items-center justify-center p-0 transition-transform hover:scale-105 duration-500 ease-out relative">
+            {isPrefetching && (
+              <div className="absolute -top-2 -right-2 bg-[#020617] rounded-full p-1 border border-[#eab308]/30 shadow-lg">
+                <Loader2 className="h-4 w-4 animate-spin text-[#eab308]" />
+              </div>
+            )}
             <GgimHexLogo className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]" />
           </div>
           <div className="space-y-1.5 z-10">
