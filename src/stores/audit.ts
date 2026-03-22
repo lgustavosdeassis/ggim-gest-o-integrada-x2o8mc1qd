@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { api } from '@/lib/api'
 
 export interface AuditLog {
   id: string
@@ -11,37 +11,36 @@ export interface AuditLog {
 
 interface AuditState {
   logs: AuditLog[]
-  addLog: (log: Omit<AuditLog, 'id' | 'timestamp'>) => void
-  clearLogs: () => void
+  isFetching: boolean
+  fetchLogs: () => Promise<void>
+  addLog: (log: Omit<AuditLog, 'id' | 'timestamp'>) => Promise<void>
+  clearLogs: () => Promise<void>
 }
 
-export const useAuditStore = create<AuditState>()(
-  persist(
-    (set) => ({
-      logs: [],
-      addLog: (log) =>
-        set((state) => ({
-          logs: [
-            {
-              ...log,
-              id: Math.random().toString(36).substring(2, 9),
-              timestamp: new Date().toISOString(),
-            },
-            ...state.logs,
-          ],
-        })),
-      clearLogs: () => set({ logs: [] }),
-    }),
-    {
-      name: 'audit-storage',
-    },
-  ),
-)
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'audit-storage') {
-      useAuditStore.persist.rehydrate()
+export const useAuditStore = create<AuditState>()((set, get) => ({
+  logs: [],
+  isFetching: false,
+  fetchLogs: async () => {
+    set({ isFetching: true })
+    try {
+      const data = await api.audit.list()
+      set({ logs: data, isFetching: false })
+    } catch (e) {
+      set({ isFetching: false })
     }
-  })
-}
+  },
+  addLog: async (log) => {
+    const newLog = {
+      ...log,
+      id: Math.random().toString(36).substring(2, 9),
+      timestamp: new Date().toISOString(),
+    }
+    const newLogs = [newLog, ...get().logs]
+    set({ logs: newLogs })
+    await api.audit.sync(newLogs)
+  },
+  clearLogs: async () => {
+    set({ logs: [] })
+    await api.audit.sync([])
+  },
+}))

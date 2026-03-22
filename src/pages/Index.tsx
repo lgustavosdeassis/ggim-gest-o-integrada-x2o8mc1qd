@@ -12,7 +12,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { FileDown, Filter, X } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
-import logoGgim from '@/assets/logo-ggim.svg'
 
 const INSTANCIAS = [
   'Colegiado Pleno',
@@ -51,7 +50,7 @@ export default function Index() {
     <div className="flex-1 space-y-8 max-w-[1600px] mx-auto min-h-[calc(100vh-80px)]">
       {/* Print Header */}
       <div className="hidden print:flex items-center gap-4 mb-8 border-b border-border pb-4">
-        <img src={logoGgim} alt="Logo GGIM" className="h-16 object-contain drop-shadow-sm" />
+        <img src="/logo-ggim.png" alt="Logo GGIM" className="h-16 object-contain drop-shadow-sm" />
         <div>
           <h1 className="text-2xl font-bold text-foreground">
             Relatório Gerencial - GGIM Foz do Iguaçu

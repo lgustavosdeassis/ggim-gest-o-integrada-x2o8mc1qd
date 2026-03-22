@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { api } from '@/lib/api'
 
 export type Role = 'owner' | 'editor' | 'viewer'
 
@@ -13,98 +14,73 @@ export interface User {
   password?: string
 }
 
-const DEFAULT_USERS: User[] = [
-  {
-    id: '1',
-    email: 'admin@ggim.foz.br',
-    password: 'admin',
-    role: 'owner',
-    name: 'Gestor GGIM',
-    jobTitle: 'Proprietário',
-  },
-  {
-    id: '2',
-    email: 'editor@ggim.foz.br',
-    password: 'editor',
-    role: 'editor',
-    name: 'Editor GGIM',
-    jobTitle: 'Editor',
-  },
-  {
-    id: '3',
-    email: 'viewer@ggim.foz.br',
-    password: 'viewer',
-    role: 'viewer',
-    name: 'Visualizador GGIM',
-    jobTitle: 'Visualizador',
-  },
-]
-
 interface AuthState {
   isAuthenticated: boolean
   user: User | null
   users: User[]
+  isFetching: boolean
+  fetchUsers: () => Promise<void>
   login: (user: User) => void
   logout: () => void
-  updateAvatar: (url: string) => void
-  updateProfile: (data: Partial<User>) => void
-  addUser: (user: User) => void
-  removeUser: (id: string) => void
+  updateAvatar: (url: string) => Promise<void>
+  updateProfile: (data: Partial<User>) => Promise<void>
+  addUser: (user: User) => Promise<void>
+  removeUser: (id: string) => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       isAuthenticated: false,
       user: null,
-      users: DEFAULT_USERS,
-      login: (user) => set({ isAuthenticated: true, user }),
-      logout: () => set({ isAuthenticated: false, user: null }),
-      updateAvatar: (url) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, avatarUrl: url } : null,
-          users: state.user
-            ? state.users.map((u) => (u.id === state.user!.id ? { ...u, avatarUrl: url } : u))
-            : state.users,
-        })),
-      updateProfile: (data) =>
-        set((state) => ({
-          user: state.user ? { ...state.user, ...data } : null,
-          users: state.user
-            ? state.users.map((u) => (u.id === state.user!.id ? { ...u, ...data } : u))
-            : state.users,
-        })),
-      addUser: (newUser) => set((state) => ({ users: [...state.users, newUser] })),
-      removeUser: (id) => set((state) => ({ users: state.users.filter((u) => u.id !== id) })),
-    }),
-    {
-      name: 'auth-storage',
-      onRehydrateStorage: () => (state) => {
-        if (state) {
-          let updated = false
-          const newUsers = state.users.map((u) => {
-            if (u.email === 'admin@ggim.foz.br' && u.role !== 'owner') {
-              updated = true
-              return { ...u, role: 'owner' as Role, jobTitle: 'Proprietário' }
-            }
-            return u
+      users: [],
+      isFetching: false,
+      fetchUsers: async () => {
+        set({ isFetching: true })
+        try {
+          const data = await api.users.list()
+          set((state) => {
+            const updatedCurrentUser = state.user
+              ? data.find((u) => u.id === state.user!.id) || state.user
+              : null
+            return { users: data, user: updatedCurrentUser, isFetching: false }
           })
-          if (updated) {
-            state.users = newUsers
-            if (state.user?.email === 'admin@ggim.foz.br') {
-              state.user = { ...state.user, role: 'owner', jobTitle: 'Proprietário' }
-            }
-          }
+        } catch (e) {
+          set({ isFetching: false })
         }
       },
+      login: (user) => set({ isAuthenticated: true, user }),
+      logout: () => set({ isAuthenticated: false, user: null }),
+      updateAvatar: async (url) => {
+        const state = get()
+        if (!state.user) return
+        const updatedUser = { ...state.user, avatarUrl: url }
+        const newUsers = state.users.map((u) => (u.id === state.user!.id ? updatedUser : u))
+        set({ user: updatedUser, users: newUsers })
+        await api.users.sync(newUsers)
+      },
+      updateProfile: async (data) => {
+        const state = get()
+        if (!state.user) return
+        const updatedUser = { ...state.user, ...data }
+        const newUsers = state.users.map((u) => (u.id === state.user!.id ? updatedUser : u))
+        set({ user: updatedUser, users: newUsers })
+        await api.users.sync(newUsers)
+      },
+      addUser: async (newUser) => {
+        const newUsers = [...get().users, newUser]
+        set({ users: newUsers })
+        await api.users.sync(newUsers)
+      },
+      removeUser: async (id) => {
+        const newUsers = get().users.filter((u) => u.id !== id)
+        set({ users: newUsers })
+        await api.users.sync(newUsers)
+      },
+    }),
+    {
+      name: 'auth-session',
+      partialize: (state) => ({ isAuthenticated: state.isAuthenticated, user: state.user }),
     },
   ),
 )
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'auth-storage') {
-      useAuthStore.persist.rehydrate()
-    }
-  })
-}

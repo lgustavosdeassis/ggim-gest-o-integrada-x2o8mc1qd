@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
+import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -17,14 +18,15 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
-    setTimeout(() => {
-      // Get fresh state to ensure new users created in other sessions are immediately available
-      const currentUsers = useAuthStore.getState().users
-      const user = currentUsers.find(
+    try {
+      // Always fetch the freshest users from the centralized API to authenticate globally
+      const usersList = await api.users.list()
+
+      const user = usersList.find(
         (u) =>
           u.email.toLowerCase().trim() === email.toLowerCase().trim() && u.password === password,
       )
@@ -38,9 +40,16 @@ export default function Login() {
           description: 'Login ou Senha incorretos. Verifique as credenciais.',
           variant: 'destructive',
         })
-        setIsLoading(false)
       }
-    }, 800)
+    } catch (error) {
+      toast({
+        title: 'Erro de Conexão',
+        description: 'Não foi possível contatar o servidor central.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -48,28 +57,7 @@ export default function Login() {
       <Card className="w-full max-w-[400px] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border-0 bg-white z-10 rounded-[2rem] overflow-hidden">
         <CardHeader className="space-y-4 flex flex-col items-center text-center pb-6 pt-10">
           <div className="w-[110px] h-[110px] flex items-center justify-center shadow-xl bg-[#0f172a] rounded-[2rem] p-3 mb-2 border-2 border-[#1e293b]">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-full text-[#eab308] drop-shadow-md"
-            >
-              <path d="M12 2L2 7L2 17L12 22L22 17L22 7L12 2Z" fill="currentColor" />
-              <path d="M12 4.5L4.5 8.5V15.5L12 19.5L19.5 15.5V8.5L12 4.5Z" fill="#0f172a" />
-              <path d="M12 6L6 9V15L12 18L18 15V9L12 6Z" fill="currentColor" fillOpacity="0.1" />
-              <text
-                x="12"
-                y="13.5"
-                fontSize="4.5"
-                fontWeight="900"
-                fill="#eab308"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                letterSpacing="0.5"
-              >
-                GGIM
-              </text>
-            </svg>
+            <img src="/logo-ggim.png" alt="GGIM Foz" className="w-full h-full object-contain" />
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black tracking-tight text-[#0f172a]">

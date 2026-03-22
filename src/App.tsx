@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from '@/components/Layout'
+import { GlobalDataSync } from '@/components/GlobalDataSync'
 import Index from '@/pages/Index'
 import Registrar from '@/pages/Registrar'
 import Importar from '@/pages/Importar'
@@ -35,6 +36,7 @@ export default function App() {
           path="/"
           element={
             <ProtectedRoute>
+              <GlobalDataSync />
               <Layout />
             </ProtectedRoute>
           }
