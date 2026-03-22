@@ -144,10 +144,11 @@ export function DuracaoCard() {
     remove: removeAdditionalDay,
   } = useFieldArray({ control, name: 'additionalDays' })
 
-  const { fields: actionsFields, append: appendAction } = useFieldArray({
-    control,
-    name: 'actions',
-  })
+  const {
+    fields: actionsFields,
+    append: appendAction,
+    remove: removeAction,
+  } = useFieldArray({ control, name: 'actions' })
 
   const wMeetingStart = watch('meetingStart')
   const wMeetingEnd = watch('meetingEnd')
@@ -402,10 +403,7 @@ export function DuracaoCard() {
                   key={field.id}
                   actionIndex={index}
                   isViewer={isViewer}
-                  removeAction={(idx) => {
-                    const methods = useFieldArray({ control, name: 'actions' })
-                    methods.remove(idx)
-                  }}
+                  removeAction={removeAction}
                 />
               ))}
               {actionsFields.length === 0 && (
