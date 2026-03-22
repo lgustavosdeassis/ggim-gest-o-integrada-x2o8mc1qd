@@ -63,8 +63,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 relative">
       <Card className="w-full max-w-[400px] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border-0 bg-white z-10 rounded-[2rem] overflow-hidden">
         <CardHeader className="space-y-4 flex flex-col items-center text-center pb-6 pt-10">
-          <div className="w-[110px] h-[110px] flex items-center justify-center shadow-xl bg-[#0f172a] rounded-[2rem] p-3 mb-2 border-2 border-[#1e293b]">
-            <GgimLogo className="w-full h-full object-contain" />
+          <div className="w-[120px] h-[120px] flex items-center justify-center shadow-xl bg-[#0f172a] rounded-[2rem] p-3 mb-2 border-2 border-[#1e293b]">
+            <GgimLogo className="w-full h-full object-contain rounded-xl" />
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black tracking-tight text-[#0f172a]">

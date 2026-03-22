@@ -6,6 +6,7 @@ import { AuditLog } from '@/stores/audit'
 import { mockActivities } from '@/lib/mock-data'
 
 const DEFAULT_DB = {
+  updatedAt: 0,
   activities: mockActivities,
   users: [
     {
@@ -61,6 +62,7 @@ const DEFAULT_DB = {
 // Global Centralized Database Implementation using JSONBlob to ensure real-time cross-device sync
 const JSONBLOB_API = 'https://jsonblob.com/api/jsonBlob'
 const SYNC_KEY = 'ggim_cloud_sync_id'
+const PRIMARY_DB_ID = import.meta.env.VITE_GLOBAL_SYNC_ID || '1351608930495815680'
 
 let lastFetchTime = 0
 let cachedDb: any = null
@@ -68,53 +70,64 @@ let fetchPromise: Promise<any> | null = null
 
 export async function getCloudDbId(): Promise<string> {
   let id = localStorage.getItem(SYNC_KEY)
-  if (!id) id = import.meta.env.VITE_GLOBAL_SYNC_ID || null
-
   if (!id) {
-    try {
-      const res = await fetch(JSONBLOB_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(DEFAULT_DB),
-      })
-      const location = res.headers.get('Location')
-      if (location) {
-        id = location.split('/').pop() || null
-        if (id) localStorage.setItem(SYNC_KEY, id)
-      } else {
-        console.warn(
-          'No Location header returned, fallback may be used across devices without manual sync code.',
-        )
-      }
-    } catch (e) {
-      console.error('Failed to initialize cloud DB', e)
-    }
+    id = PRIMARY_DB_ID
+    localStorage.setItem(SYNC_KEY, id)
   }
-  return id || 'fallback_local'
+  return id
 }
 
 export function setCloudDbId(id: string) {
   if (id) localStorage.setItem(SYNC_KEY, id)
-  else localStorage.removeItem(SYNC_KEY)
+  else localStorage.setItem(SYNC_KEY, PRIMARY_DB_ID)
   cachedDb = null // Invalidate cache
   window.dispatchEvent(new Event('db_updated'))
 }
 
 async function fetchCloudDb(): Promise<any> {
   const id = await getCloudDbId()
-  if (id === 'fallback_local') return getLocalFallback()
-
   const now = Date.now()
+
   // Cache for 2 seconds to batch concurrent module fetches (Activities, Users, Video, etc)
   if (cachedDb && now - lastFetchTime < 2000) return cachedDb
   if (fetchPromise) return fetchPromise
 
   fetchPromise = fetch(`${JSONBLOB_API}/${id}`)
-    .then((res) => {
-      if (!res.ok) throw new Error('Cloud DB not found')
+    .then(async (res) => {
+      if (!res.ok) {
+        if (res.status === 404) {
+          // Attempt to PUT to create it at the EXACT hardcoded ID to ensure cross-device consistency
+          const putRes = await fetch(`${JSONBLOB_API}/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }),
+          })
+
+          if (!putRes.ok) {
+            // Fallback to POST if PUT doesn't allow creation
+            const createRes = await fetch(JSONBLOB_API, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              body: JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }),
+            })
+            const location = createRes.headers.get('Location')
+            if (location) {
+              const newId = location.split('/').pop() || id
+              localStorage.setItem(SYNC_KEY, newId)
+            }
+          }
+          return { ...DEFAULT_DB, updatedAt: Date.now() }
+        }
+        throw new Error('Cloud DB not found')
+      }
       return res.json()
     })
     .then((data) => {
+      // FIX: Disappearing data bug. Prevent older data from the server overwriting newer local data
+      if (cachedDb && cachedDb.updatedAt && data.updatedAt && data.updatedAt < cachedDb.updatedAt) {
+        fetchPromise = null
+        return cachedDb
+      }
       cachedDb = data
       lastFetchTime = Date.now()
       fetchPromise = null
@@ -131,13 +144,9 @@ async function fetchCloudDb(): Promise<any> {
 
 async function saveCloudDb(data: any): Promise<void> {
   const id = await getCloudDbId()
+  data.updatedAt = Date.now() // Tag with timestamp for consistency checks
   cachedDb = data
   lastFetchTime = Date.now()
-
-  if (id === 'fallback_local') {
-    saveLocalFallback(data)
-    return
-  }
 
   try {
     await fetch(`${JSONBLOB_API}/${id}`, {
