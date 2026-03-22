@@ -31,22 +31,26 @@ export const useAppStore = create<AppState>()((set, get) => ({
       id: Math.random().toString(36).substr(2, 9),
       createdAt: new Date().toISOString(),
     } as ActivityRecord
-    const newActivities = [newActivity, ...get().activities]
+    const currentServer = await api.activities.list(true)
+    const newActivities = [newActivity, ...currentServer]
     set({ activities: newActivities })
     await api.activities.sync(newActivities)
   },
   updateActivity: async (id, updated) => {
-    const newActivities = get().activities.map((a) => (a.id === id ? { ...a, ...updated } : a))
+    const currentServer = await api.activities.list(true)
+    const newActivities = currentServer.map((a) => (a.id === id ? { ...a, ...updated } : a))
     set({ activities: newActivities })
     await api.activities.sync(newActivities)
   },
   deleteActivity: async (id) => {
-    const newActivities = get().activities.filter((a) => a.id !== id)
+    const currentServer = await api.activities.list(true)
+    const newActivities = currentServer.filter((a) => a.id !== id)
     set({ activities: newActivities })
     await api.activities.sync(newActivities)
   },
   bulkDeleteActivities: async (ids) => {
-    const newActivities = get().activities.filter((a) => !ids.includes(a.id))
+    const currentServer = await api.activities.list(true)
+    const newActivities = currentServer.filter((a) => !ids.includes(a.id))
     set({ activities: newActivities })
     await api.activities.sync(newActivities)
   },
@@ -59,7 +63,8 @@ export const useAppStore = create<AppState>()((set, get) => ({
           createdAt: new Date().toISOString(),
         }) as ActivityRecord,
     )
-    const combined = [...mapped, ...get().activities]
+    const currentServer = await api.activities.list(true)
+    const combined = [...mapped, ...currentServer]
     set({ activities: combined })
     await api.activities.sync(combined)
   },

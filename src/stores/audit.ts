@@ -35,7 +35,8 @@ export const useAuditStore = create<AuditState>()((set, get) => ({
       id: Math.random().toString(36).substring(2, 9),
       timestamp: new Date().toISOString(),
     }
-    const newLogs = [newLog, ...get().logs]
+    const currentServer = await api.audit.list(true)
+    const newLogs = [newLog, ...currentServer]
     set({ logs: newLogs })
     await api.audit.sync(newLogs)
   },

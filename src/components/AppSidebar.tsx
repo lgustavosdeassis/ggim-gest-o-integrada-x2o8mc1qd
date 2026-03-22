@@ -51,12 +51,12 @@ export function AppSidebar() {
   return (
     <Sidebar className="border-r border-sidebar-border shadow-xl no-print bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border py-6 px-6 bg-sidebar">
-        <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-sidebar-primary/30 shadow-lg bg-[#0f172a] p-1.5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg overflow-hidden border border-sidebar-primary/20 shadow-md bg-black">
             <GgimLogo className="h-full w-full object-contain" />
           </div>
           <div className="flex flex-col flex-1 truncate">
-            <span className="truncate font-black text-xl tracking-tight text-sidebar-foreground">
+            <span className="truncate font-black text-[22px] tracking-tight text-sidebar-foreground">
               CMTecs
             </span>
           </div>

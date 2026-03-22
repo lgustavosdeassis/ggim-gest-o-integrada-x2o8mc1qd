@@ -84,15 +84,23 @@ export function setCloudDbId(id: string) {
   window.dispatchEvent(new Event('db_updated'))
 }
 
-async function fetchCloudDb(): Promise<any> {
+async function fetchCloudDb(forceFresh = false): Promise<any> {
   const id = await getCloudDbId()
   const now = Date.now()
 
   // Cache for 2 seconds to batch concurrent module fetches (Activities, Users, Video, etc)
-  if (cachedDb && now - lastFetchTime < 2000) return cachedDb
-  if (fetchPromise) return fetchPromise
+  if (!forceFresh && cachedDb && now - lastFetchTime < 2000) return cachedDb
+  if (!forceFresh && fetchPromise) return fetchPromise
 
-  fetchPromise = fetch(`${JSONBLOB_API}/${id}`)
+  const fetchUrl = `${JSONBLOB_API}/${id}?_t=${now}`
+
+  const newPromise = fetch(fetchUrl, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+    },
+  })
     .then(async (res) => {
       if (!res.ok) {
         if (res.status === 404) {
@@ -123,23 +131,22 @@ async function fetchCloudDb(): Promise<any> {
       return res.json()
     })
     .then((data) => {
-      // FIX: Disappearing data bug. Prevent older data from the server overwriting newer local data
-      if (cachedDb && cachedDb.updatedAt && data.updatedAt && data.updatedAt < cachedDb.updatedAt) {
-        fetchPromise = null
-        return cachedDb
-      }
       cachedDb = data
       lastFetchTime = Date.now()
-      fetchPromise = null
+      if (fetchPromise === newPromise) fetchPromise = null
       return data
     })
     .catch((e) => {
       console.warn('Cloud DB fetch failed, using local fallback', e)
-      fetchPromise = null
+      if (fetchPromise === newPromise) fetchPromise = null
       return getLocalFallback()
     })
 
-  return fetchPromise
+  if (!forceFresh || !fetchPromise) {
+    fetchPromise = newPromise
+  }
+
+  return newPromise
 }
 
 async function saveCloudDb(data: any): Promise<void> {
@@ -174,8 +181,8 @@ function saveLocalFallback(data: any) {
 
 export const api = {
   activities: {
-    list: async () => {
-      const db = await fetchCloudDb()
+    list: async (forceFresh = false) => {
+      const db = await fetchCloudDb(forceFresh)
       return db.activities || []
     },
     sync: async (data: ActivityRecord[]) => {
@@ -185,8 +192,8 @@ export const api = {
     },
   },
   users: {
-    list: async () => {
-      const db = await fetchCloudDb()
+    list: async (forceFresh = false) => {
+      const db = await fetchCloudDb(forceFresh)
       return db.users || []
     },
     sync: async (data: User[]) => {
@@ -196,8 +203,8 @@ export const api = {
     },
   },
   video: {
-    list: async () => {
-      const db = await fetchCloudDb()
+    list: async (forceFresh = false) => {
+      const db = await fetchCloudDb(forceFresh)
       return db.videoRecords || []
     },
     sync: async (data: VideoRecord[]) => {
@@ -207,8 +214,8 @@ export const api = {
     },
   },
   obs: {
-    list: async () => {
-      const db = await fetchCloudDb()
+    list: async (forceFresh = false) => {
+      const db = await fetchCloudDb(forceFresh)
       return db.obsRecords || []
     },
     sync: async (data: ObsRecord[]) => {
@@ -218,8 +225,8 @@ export const api = {
     },
   },
   audit: {
-    list: async () => {
-      const db = await fetchCloudDb()
+    list: async (forceFresh = false) => {
+      const db = await fetchCloudDb(forceFresh)
       return db.auditLogs || []
     },
     sync: async (data: AuditLog[]) => {

@@ -55,7 +55,8 @@ export const useAuthStore = create<AuthState>()(
         const state = get()
         if (!state.user) return
         const updatedUser = { ...state.user, avatarUrl: url }
-        const newUsers = state.users.map((u) => (u.id === state.user!.id ? updatedUser : u))
+        const currentServer = await api.users.list(true)
+        const newUsers = currentServer.map((u) => (u.id === state.user!.id ? updatedUser : u))
         set({ user: updatedUser, users: newUsers })
         await api.users.sync(newUsers)
       },
@@ -63,17 +64,20 @@ export const useAuthStore = create<AuthState>()(
         const state = get()
         if (!state.user) return
         const updatedUser = { ...state.user, ...data }
-        const newUsers = state.users.map((u) => (u.id === state.user!.id ? updatedUser : u))
+        const currentServer = await api.users.list(true)
+        const newUsers = currentServer.map((u) => (u.id === state.user!.id ? updatedUser : u))
         set({ user: updatedUser, users: newUsers })
         await api.users.sync(newUsers)
       },
       addUser: async (newUser) => {
-        const newUsers = [...get().users, newUser]
+        const currentServer = await api.users.list(true)
+        const newUsers = [...currentServer, newUser]
         set({ users: newUsers })
         await api.users.sync(newUsers)
       },
       removeUser: async (id) => {
-        const newUsers = get().users.filter((u) => u.id !== id)
+        const currentServer = await api.users.list(true)
+        const newUsers = currentServer.filter((u) => u.id !== id)
         set({ users: newUsers })
         await api.users.sync(newUsers)
       },

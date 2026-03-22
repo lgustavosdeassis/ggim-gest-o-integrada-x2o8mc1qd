@@ -51,7 +51,7 @@ export default function Index() {
     <div className="flex-1 space-y-8 max-w-[1600px] mx-auto min-h-[calc(100vh-80px)]">
       {/* Print Header */}
       <div className="hidden print:flex items-center gap-4 mb-8 border-b border-border pb-4">
-        <div className="h-16 w-16 drop-shadow-sm bg-[#0f172a] p-1.5 rounded-xl flex items-center justify-center">
+        <div className="h-16 w-16 drop-shadow-sm bg-black rounded-xl flex items-center justify-center overflow-hidden border border-border">
           <GgimLogo className="w-full h-full object-contain" />
         </div>
         <div>

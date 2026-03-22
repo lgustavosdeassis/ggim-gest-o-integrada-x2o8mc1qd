@@ -31,22 +31,23 @@ export const useVideoStore = create<VideoState>()((set, get) => ({
     }
   },
   addRecord: async (record) => {
-    const current = get().records
-    const existingIndex = current.findIndex((r) => r.date === record.date)
+    const currentServer = await api.video.list(true)
+    const existingIndex = currentServer.findIndex((r) => r.date === record.date)
     let newRecords: VideoRecord[]
 
     if (existingIndex >= 0) {
-      newRecords = [...current]
-      newRecords[existingIndex] = { ...record, id: current[existingIndex].id }
+      newRecords = [...currentServer]
+      newRecords[existingIndex] = { ...record, id: currentServer[existingIndex].id }
     } else {
-      newRecords = [...current, { ...record, id: Math.random().toString(36).substr(2, 9) }]
+      newRecords = [...currentServer, { ...record, id: Math.random().toString(36).substr(2, 9) }]
     }
 
     set({ records: newRecords })
     await api.video.sync(newRecords)
   },
   deleteRecord: async (id) => {
-    const newRecords = get().records.filter((r) => r.id !== id)
+    const currentServer = await api.video.list(true)
+    const newRecords = currentServer.filter((r) => r.id !== id)
     set({ records: newRecords })
     await api.video.sync(newRecords)
   },
