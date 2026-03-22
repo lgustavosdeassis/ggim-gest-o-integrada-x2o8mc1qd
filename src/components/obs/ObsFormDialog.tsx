@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useObsStore } from '@/stores/obs'
+import { MonthPicker } from '@/components/ui/month-picker'
 
 export function ObsFormDialog({
   open,
@@ -57,13 +58,7 @@ export function ObsFormDialog({
             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
               Mês de Referência
             </Label>
-            <Input
-              type="month"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              className="h-11 rounded-xl"
-            />
+            <MonthPicker value={date} onChange={setDate} />
           </div>
           <div className="grid grid-cols-2 gap-5">
             <div className="space-y-2">

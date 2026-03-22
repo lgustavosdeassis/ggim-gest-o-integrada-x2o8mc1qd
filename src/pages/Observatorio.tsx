@@ -2,13 +2,6 @@ import { useState } from 'react'
 import { Plus, Calendar as CalendarIcon } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
@@ -25,19 +18,21 @@ const getYYYYMM = (d: Date) => {
 
 export default function Observatorio() {
   const { records } = useObsStore()
-  const [period, setPeriod] = useState('Personalizado')
   const [customStart, setCustomStart] = useState<Date | undefined>(new Date(2026, 0, 1))
   const [customEnd, setCustomEnd] = useState<Date | undefined>(new Date(2026, 11, 31))
   const [isFormOpen, setIsFormOpen] = useState(false)
 
   const filteredRecords = records.filter((r) => {
-    if (period === 'Personalizado') {
-      if (customStart && customEnd) {
-        const startStr = getYYYYMM(customStart)
-        const endStr = getYYYYMM(customEnd)
-        return r.date >= startStr && r.date <= endStr
-      }
-      return true
+    if (customStart && customEnd) {
+      const startStr = getYYYYMM(customStart)
+      const endStr = getYYYYMM(customEnd)
+      return r.date >= startStr && r.date <= endStr
+    }
+    if (customStart) {
+      return r.date >= getYYYYMM(customStart)
+    }
+    if (customEnd) {
+      return r.date <= getYYYYMM(customEnd)
     }
     return true
   })
@@ -79,82 +74,62 @@ export default function Observatorio() {
           </h1>
         </div>
         <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center justify-end gap-4 w-full xl:w-auto mt-4 xl:mt-0">
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-full md:w-48 h-12 rounded-xl bg-background border-border text-foreground font-bold">
-              <SelectValue placeholder="Período" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem
-                value="Personalizado"
-                className="data-[state=checked]:bg-[#eab308] data-[state=checked]:text-[#0f172a] focus:bg-[#eab308]/80 focus:text-[#0f172a] font-bold"
-              >
-                Personalizado
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          {period === 'Personalizado' && (
-            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto mt-1 md:mt-0">
-              <div className="relative flex-1 md:flex-none">
-                <span className="absolute -top-2.5 left-3 bg-background px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10">
-                  Data Inicial
-                </span>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full md:w-[170px] h-12 justify-start text-left font-bold rounded-xl border-border bg-background',
-                        !customStart && 'text-muted-foreground',
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {customStart ? (
-                        customStart.toLocaleDateString('pt-BR')
-                      ) : (
-                        <span>Selecione</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={customStart}
-                      onSelect={setCustomStart}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="relative flex-1 md:flex-none">
-                <span className="absolute -top-2.5 left-3 bg-background px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10">
-                  Data Final
-                </span>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        'w-full md:w-[170px] h-12 justify-start text-left font-bold rounded-xl border-border bg-background',
-                        !customEnd && 'text-muted-foreground',
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {customEnd ? customEnd.toLocaleDateString('pt-BR') : <span>Selecione</span>}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={customEnd}
-                      onSelect={setCustomEnd}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
+          <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto mt-1 md:mt-0">
+            <div className="relative flex-1 md:flex-none">
+              <span className="absolute -top-2.5 left-3 bg-background px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10">
+                Data Inicial
+              </span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full md:w-[170px] h-12 justify-start text-left font-bold rounded-xl border-border bg-background',
+                      !customStart && 'text-muted-foreground',
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customStart ? customStart.toLocaleDateString('pt-BR') : <span>Selecione</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={customStart}
+                    onSelect={setCustomStart}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
-          )}
+            <div className="relative flex-1 md:flex-none">
+              <span className="absolute -top-2.5 left-3 bg-background px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10">
+                Data Final
+              </span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      'w-full md:w-[170px] h-12 justify-start text-left font-bold rounded-xl border-border bg-background',
+                      !customEnd && 'text-muted-foreground',
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customEnd ? customEnd.toLocaleDateString('pt-BR') : <span>Selecione</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={customEnd}
+                    onSelect={setCustomEnd}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
 
           <Button
             onClick={() => setIsFormOpen(true)}
