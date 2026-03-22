@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Hexagon } from 'lucide-react'
+import { Shield } from 'lucide-react'
 
 export function GgimHexLogo({ className = '' }: { className?: string }) {
   const [errorCount, setErrorCount] = useState(0)
@@ -15,9 +15,13 @@ export function GgimHexLogo({ className = '' }: { className?: string }) {
   const src = getSrc()
 
   if (!src) {
+    // Graceful visual degradation using the verified branding structure
     return (
       <div className={`relative flex items-center justify-center bg-transparent ${className}`}>
-        <Hexagon className="w-full h-full fill-white/5 text-white/10 absolute z-0" />
+        <Shield
+          className="w-full h-full fill-white/10 text-white/30 absolute z-0"
+          strokeWidth={1.5}
+        />
         <span className="font-black text-white tracking-widest drop-shadow-lg z-10 text-xs sm:text-base">
           GGIM
         </span>

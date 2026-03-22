@@ -53,7 +53,6 @@ const DEFAULT_DB = {
 }
 
 const JSONBLOB_API = 'https://jsonblob.com/api/jsonBlob'
-const SYNC_KEY = 'ggim_cloud_sync_id'
 const PRIMARY_DB_ID = import.meta.env.VITE_GLOBAL_SYNC_ID || '1351608930495815680'
 
 let isSaving = false
@@ -61,22 +60,24 @@ let memoryDb: any = null
 let fetchPromise: Promise<any> | null = null
 let updateMutex = Promise.resolve()
 
+// Centralized Session Identity strictly isolated from local/session storage to enforce resilience and compliance
+let activeSyncId: string | null = null
+
 export async function getCloudDbId(): Promise<string> {
-  let id = localStorage.getItem(SYNC_KEY)
-  if (!id) {
-    id = PRIMARY_DB_ID
-    localStorage.setItem(SYNC_KEY, id)
+  if (!activeSyncId) {
+    activeSyncId = PRIMARY_DB_ID
   }
-  return id
+  return activeSyncId
 }
 
 export function setCloudDbId(id: string) {
-  localStorage.setItem(SYNC_KEY, id || PRIMARY_DB_ID)
+  activeSyncId = id || PRIMARY_DB_ID
   memoryDb = null
   window.dispatchEvent(new Event('db_updated'))
 }
 
-async function fetchStrict(id: string, retries = 2, throwOnFailure = false): Promise<any> {
+// Resilient Fetch with built-in retries and advanced exception handling
+async function fetchStrict(id: string, retries = 3, throwOnFailure = false): Promise<any> {
   try {
     let res: Response | undefined
 
@@ -86,7 +87,7 @@ async function fetchStrict(id: string, retries = 2, throwOnFailure = false): Pro
         headers: { Accept: 'application/json' },
       })
     } catch (fetchErr: any) {
-      // Catch network-related exceptions (e.g., TypeError: Failed to fetch)
+      // Catch core network exceptions ensuring UI won't hard crash
       throw new Error(`TypeError: Failed to fetch (${fetchErr?.message || 'Network disconnected'})`)
     }
 
@@ -102,8 +103,10 @@ async function fetchStrict(id: string, retries = 2, throwOnFailure = false): Pro
       ? JSON.parse(text)
       : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
   } catch (e) {
+    // Intelligent Backoff: At least 3 automatic retry attempts
     if (retries > 0) {
-      await new Promise((r) => setTimeout(r, 800))
+      const delay = 1000 + (3 - retries) * 500
+      await new Promise((r) => setTimeout(r, delay))
       return fetchStrict(id, retries - 1, throwOnFailure)
     }
 
@@ -125,7 +128,7 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
   const p = (async () => {
     try {
       const id = await getCloudDbId()
-      return await fetchStrict(id, 2, false)
+      return await fetchStrict(id, 3, false)
     } catch (e) {
       console.warn('Network issue during background fetch setup, using resilient fallback state', e)
       return memoryDb
@@ -157,13 +160,13 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
         isSaving = true
         try {
           const id = await getCloudDbId()
-          // Strictly fetch latest to prevent overwriting cloud state with a stale memory state
+          // Strictly fetch latest state, ensuring write conflicts won't arise from stale memory DB
           const db = await fetchStrict(id, 3, true)
 
           updater(db)
           db.updatedAt = Date.now()
 
-          const doPut = async (r = 2): Promise<Response> => {
+          const doPut = async (r = 3): Promise<Response> => {
             try {
               let putRes: Response | undefined
               try {
@@ -181,7 +184,7 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
               return putRes
             } catch (e) {
               if (r > 0) {
-                await new Promise((res) => setTimeout(res, 800))
+                await new Promise((res) => setTimeout(res, 1000 + (3 - r) * 500))
                 return doPut(r - 1)
               }
               throw e
@@ -197,7 +200,7 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
             })
             if (createRes.ok) {
               const newId = createRes.headers.get('Location')?.split('/').pop() || id
-              localStorage.setItem(SYNC_KEY, newId)
+              activeSyncId = newId
             } else {
               throw new Error('DB Recreation Failed')
             }
