@@ -48,8 +48,12 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 relative">
       <Card className="w-full max-w-[400px] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border-0 bg-white z-10 rounded-[2rem] overflow-hidden">
         <CardHeader className="space-y-4 flex flex-col items-center text-center pb-6 pt-10">
-          <div className="w-[120px] h-[120px] flex items-center justify-center shadow-lg bg-[#0f172a] rounded-3xl p-3 mb-2 border border-[#1e293b]/50">
-            <img src="/logo-ggim.png" alt="GGIM Logo" className="w-full h-full object-contain" />
+          <div className="w-[120px] h-[120px] flex items-center justify-center shadow-xl bg-[#0f172a] rounded-[2rem] p-3 mb-2 border-2 border-[#1e293b]">
+            <img
+              src="/logo-ggim.png"
+              alt="GGIM Logo"
+              className="w-full h-full object-contain drop-shadow-md"
+            />
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black tracking-tight text-[#0f172a]">
@@ -67,12 +71,12 @@ export default function Login() {
                 htmlFor="email"
                 className="text-xs font-bold text-[#0f172a] uppercase tracking-widest ml-1"
               >
-                Login
+                E-mail de Acesso
               </Label>
               <Input
                 id="email"
-                type="text"
-                placeholder="ggim.ctfoz@gmail.com"
+                type="email"
+                placeholder="Digite seu e-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="bg-[#f1f5f9] border-transparent hover:border-slate-300 h-14 rounded-xl text-[#0f172a] px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#eab308] focus-visible:border-transparent focus-visible:bg-white shadow-inner transition-all"
@@ -91,7 +95,7 @@ export default function Login() {
               <Input
                 id="password"
                 type="password"
-                placeholder="........."
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-[#f1f5f9] border-transparent hover:border-slate-300 h-14 rounded-xl text-[#0f172a] px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#eab308] focus-visible:border-transparent focus-visible:bg-white tracking-widest shadow-inner transition-all"
