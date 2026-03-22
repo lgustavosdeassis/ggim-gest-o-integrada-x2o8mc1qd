@@ -87,8 +87,9 @@ export default function Importar() {
           <h3 className="text-2xl font-black text-foreground mb-3">Acesso Restrito</h3>
           <p className="text-muted-foreground font-medium text-base max-w-md mx-auto">
             Apenas usuários com a permissão de{' '}
-            <span className="text-primary font-bold">Editor (Proprietário)</span> podem realizar
-            importações de planilhas.
+            <span className="text-primary font-bold">Proprietário</span> ou{' '}
+            <span className="text-primary font-bold">Editor</span> podem realizar importações de
+            planilhas.
           </p>
         </Card>
       </div>

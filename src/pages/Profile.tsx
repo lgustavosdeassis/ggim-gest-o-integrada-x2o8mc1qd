@@ -15,7 +15,8 @@ export default function Profile() {
   const [isSavingAvatar, setIsSavingAvatar] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
 
-  const defaultJobTitle = user?.role === 'editor' ? 'Gestor Administrativo' : 'Visualizador'
+  const defaultJobTitle =
+    user?.role === 'owner' ? 'Proprietário' : user?.role === 'editor' ? 'Editor' : 'Visualizador'
 
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -135,7 +136,7 @@ export default function Profile() {
             <CardDescription className="text-sm font-medium">
               Informações de identificação institucional. Nível de Acesso:{' '}
               <span className="font-bold text-primary ml-1 uppercase tracking-widest">
-                {user?.role}
+                {user?.role === 'owner' ? 'Proprietário' : user?.role}
               </span>
             </CardDescription>
           </div>

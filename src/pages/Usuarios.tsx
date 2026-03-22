@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { Button } from '@/components/ui/button'
@@ -37,7 +37,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Trash2, ShieldAlert, UserPlus, Shield } from 'lucide-react'
+import { Trash2, ShieldAlert, UserPlus, Shield, Upload, User as UserIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -51,24 +51,27 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Card } from '@/components/ui/card'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 const formSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('E-mail inválido'),
   password: z.string().min(4, 'A senha deve ter pelo menos 4 caracteres'),
-  role: z.enum(['editor', 'viewer'], { required_error: 'Selecione um perfil' }),
+  role: z.enum(['owner', 'editor', 'viewer'], { required_error: 'Selecione um perfil' }),
+  avatarUrl: z.string().optional(),
 })
 
 export default function Usuarios() {
   const { user: currentUser, users, addUser, removeUser } = useAuthStore()
   const [isOpen, setIsOpen] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: '', email: '', password: '', role: 'viewer' },
+    defaultValues: { name: '', email: '', password: '', role: 'viewer', avatarUrl: '' },
   })
 
-  if (currentUser?.role !== 'editor') return <Navigate to="/" replace />
+  if (currentUser?.role !== 'owner') return <Navigate to="/" replace />
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     if (users.some((u) => u.email === values.email)) {
@@ -77,11 +80,27 @@ export default function Usuarios() {
     addUser({
       id: Math.random().toString(36).substring(2, 9),
       ...values,
-      jobTitle: values.role === 'editor' ? 'Gestor Administrativo' : 'Visualizador',
+      jobTitle:
+        values.role === 'owner'
+          ? 'Proprietário'
+          : values.role === 'editor'
+            ? 'Editor'
+            : 'Visualizador',
     })
     toast.success('Usuário registrado com sucesso!')
     setIsOpen(false)
     form.reset()
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        form.setValue('avatarUrl', reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
   }
 
   return (
@@ -102,7 +121,7 @@ export default function Usuarios() {
               <UserPlus className="mr-2 h-5 w-5" /> Novo Usuário
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] border-border bg-card rounded-2xl">
+          <DialogContent className="sm:max-w-[425px] border-border bg-card rounded-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-black text-foreground">
                 Registrar Acesso
@@ -110,6 +129,30 @@ export default function Usuarios() {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
+                <div className="flex justify-center mb-6">
+                  <div
+                    className="relative group cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Avatar className="h-24 w-24 border-4 border-background shadow-lg transition-all duration-300 group-hover:opacity-80">
+                      <AvatarImage src={form.watch('avatarUrl') || ''} className="object-cover" />
+                      <AvatarFallback className="bg-secondary text-secondary-foreground font-bold text-xl">
+                        <UserIcon className="h-8 w-8" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <Upload className="h-6 w-6 text-white" />
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
                   name="name"
@@ -184,7 +227,8 @@ export default function Usuarios() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent className="rounded-xl">
-                          <SelectItem value="editor">Proprietário (Admin)</SelectItem>
+                          <SelectItem value="owner">Proprietário (Admin)</SelectItem>
+                          <SelectItem value="editor">Editor</SelectItem>
                           <SelectItem value="viewer">Visualizador</SelectItem>
                         </SelectContent>
                       </Select>
@@ -235,22 +279,42 @@ export default function Usuarios() {
               return (
                 <TableRow key={u.id} className="border-border hover:bg-muted/50">
                   <TableCell className="py-4 pl-6 font-bold text-sm">
-                    {u.name}{' '}
-                    {isMe && (
-                      <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary uppercase">
-                        Você
-                      </span>
-                    )}
-                    <div className="text-xs text-muted-foreground font-medium mt-1">
-                      {u.jobTitle || 'N/A'}
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 border border-border shadow-sm">
+                        <AvatarImage src={u.avatarUrl || ''} />
+                        <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">
+                          {u.name.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        {u.name}{' '}
+                        {isMe && (
+                          <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary uppercase">
+                            Você
+                          </span>
+                        )}
+                        <div className="text-xs text-muted-foreground font-medium mt-1">
+                          {u.jobTitle || 'N/A'}
+                        </div>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="py-4 text-sm text-muted-foreground">{u.email}</TableCell>
                   <TableCell className="py-4">
                     <span
-                      className={`rounded-md border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-widest ${u.role === 'editor' ? 'border-chart-2/20 bg-chart-2/10 text-chart-2' : 'border-chart-3/20 bg-chart-3/10 text-chart-3'}`}
+                      className={`rounded-md border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-widest ${
+                        u.role === 'owner'
+                          ? 'border-primary/20 bg-primary/10 text-primary'
+                          : u.role === 'editor'
+                            ? 'border-chart-2/20 bg-chart-2/10 text-chart-2'
+                            : 'border-chart-3/20 bg-chart-3/10 text-chart-3'
+                      }`}
                     >
-                      {u.role === 'editor' ? 'Proprietário' : 'Visualizador'}
+                      {u.role === 'owner'
+                        ? 'Proprietário'
+                        : u.role === 'editor'
+                          ? 'Editor'
+                          : 'Visualizador'}
                     </span>
                   </TableCell>
                   <TableCell className="text-right pr-6 py-4">

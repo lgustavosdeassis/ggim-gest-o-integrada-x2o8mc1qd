@@ -66,11 +66,15 @@ export default function Login() {
               <p className="mb-2 font-bold text-sm">Credenciais de Acesso (Teste):</p>
               <div className="space-y-1">
                 <p>
-                  Nível Editor: <span className="font-bold">admin@ggim.foz.br</span> /{' '}
+                  Proprietário: <span className="font-bold">admin@ggim.foz.br</span> /{' '}
                   <span className="font-bold">admin</span>
                 </p>
                 <p>
-                  Nível Viewer: <span className="font-bold">viewer@ggim.foz.br</span> /{' '}
+                  Editor: <span className="font-bold">editor@ggim.foz.br</span> /{' '}
+                  <span className="font-bold">editor</span>
+                </p>
+                <p>
+                  Visualizador: <span className="font-bold">viewer@ggim.foz.br</span> /{' '}
                   <span className="font-bold">viewer</span>
                 </p>
               </div>

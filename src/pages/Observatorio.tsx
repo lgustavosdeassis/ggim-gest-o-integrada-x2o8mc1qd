@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell, LabelList } f
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { useObsStore } from '@/stores/obs'
 import { ObsFormDialog } from '@/components/obs/ObsFormDialog'
+import { useAuthStore } from '@/stores/auth'
 
 const getYYYYMM = (d: Date) => {
   const year = d.getFullYear()
@@ -18,6 +19,7 @@ const getYYYYMM = (d: Date) => {
 
 export default function Observatorio() {
   const { records } = useObsStore()
+  const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
   const [customStart, setCustomStart] = useState<Date | undefined>(new Date(2026, 0, 1))
   const [customEnd, setCustomEnd] = useState<Date | undefined>(new Date(2026, 11, 31))
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -131,12 +133,14 @@ export default function Observatorio() {
             </div>
           </div>
 
-          <Button
-            onClick={() => setIsFormOpen(true)}
-            className="w-full md:w-auto h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap"
-          >
-            <Plus className="w-5 h-5 mr-2" /> Lançar Dados
-          </Button>
+          {!isViewer && (
+            <Button
+              onClick={() => setIsFormOpen(true)}
+              className="w-full md:w-auto h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap"
+            >
+              <Plus className="w-5 h-5 mr-2" /> Lançar Dados
+            </Button>
+          )}
         </div>
       </div>
 

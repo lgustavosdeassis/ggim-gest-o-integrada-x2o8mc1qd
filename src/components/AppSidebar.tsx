@@ -24,7 +24,7 @@ import {
 import logoCmtecs from '@/assets/logo-cmtecs-a4c2e.jpeg'
 import { useAuthStore } from '@/stores/auth'
 
-const getItems = (isEditor: boolean) => {
+const getItems = (isOwner: boolean) => {
   const base = [
     { title: 'Dashboard BI', url: '/', icon: LayoutDashboard },
     { title: 'Registrar Atividade', url: '/registrar', icon: FilePlus2 },
@@ -33,7 +33,7 @@ const getItems = (isEditor: boolean) => {
     { title: 'Videomonitoramento', url: '/videomonitoramento', icon: MonitorPlay },
     { title: 'Observatório (OMSP)', url: '/observatorio', icon: ShieldAlert },
   ]
-  if (isEditor) {
+  if (isOwner) {
     base.push({ title: 'Gestão de Usuários', url: '/usuarios', icon: Users })
   }
   return base
@@ -42,9 +42,9 @@ const getItems = (isEditor: boolean) => {
 export function AppSidebar() {
   const location = useLocation()
   const user = useAuthStore((state) => state.user)
-  const isEditor = user?.role === 'editor'
+  const isOwner = user?.role === 'owner'
 
-  const items = getItems(isEditor)
+  const items = getItems(isOwner)
 
   return (
     <Sidebar className="border-r border-sidebar-border shadow-xl no-print bg-sidebar">
