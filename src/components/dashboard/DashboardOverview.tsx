@@ -11,6 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { formatHoursToHHMM } from '@/lib/utils'
 
 export function DashboardOverview({ data }: { data: DashboardStats['overview'] }) {
   return (
@@ -83,8 +84,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-4xl font-black text-foreground">
-              {data.totalHours.toFixed(1)}
-              <span className="text-xl text-muted-foreground ml-1">h</span>
+              {formatHoursToHHMM(data.totalHours)}
             </div>
           </CardContent>
         </Card>

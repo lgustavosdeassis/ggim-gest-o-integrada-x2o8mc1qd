@@ -21,6 +21,46 @@ export function calculateHoursDifference(start: string, end: string): number {
   return diffMs > 0 ? diffMs / (1000 * 60 * 60) : 0
 }
 
+export function formatHoursToHHMM(decimalHours: number): string {
+  if (isNaN(decimalHours)) return '0:00'
+  const isNegative = decimalHours < 0
+  const absoluteHours = Math.abs(decimalHours)
+  const hours = Math.floor(absoluteHours)
+  const minutes = Math.round((absoluteHours - hours) * 60)
+
+  const finalHours = hours + Math.floor(minutes / 60)
+  const finalMinutes = minutes % 60
+
+  const formattedMinutes = finalMinutes.toString().padStart(2, '0')
+  return `${isNegative ? '-' : ''}${finalHours}:${formattedMinutes}`
+}
+
+export function calculateTotalHours(activity: ActivityRecord): number {
+  let total = calculateHoursDifference(activity.meetingStart, activity.meetingEnd)
+
+  if (activity.hasAdditionalDays && activity.additionalDays) {
+    total += activity.additionalDays.reduce(
+      (acc, d) => acc + calculateHoursDifference(d.start, d.end),
+      0,
+    )
+  }
+
+  if (activity.actions && activity.actions.length > 0) {
+    total += activity.actions.reduce((acc, a) => {
+      if (a.periods && a.periods.length > 0) {
+        return (
+          acc + a.periods.reduce((pAcc, p) => pAcc + calculateHoursDifference(p.start, p.end), 0)
+        )
+      }
+      return acc + calculateHoursDifference(a.start || '', a.end || '')
+    }, 0)
+  } else if (activity.hasAction && activity.actionStart && activity.actionEnd) {
+    total += calculateHoursDifference(activity.actionStart, activity.actionEnd)
+  }
+
+  return total
+}
+
 export function parseSemicolonList(text: string): string[] {
   if (!text) return []
   return text
@@ -209,7 +249,7 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
       </style>
     </head>
     <body>
-      <div style="text-align: center;">
+      <div id="loading" style="text-align: center;">
         <div class="spinner"></div>
         <div style="font-weight: 500;">Preparando visualização segura...</div>
       </div>
@@ -219,11 +259,25 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
   win.document.close()
 
   try {
+    const isImage = doc.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i)
+
+    if (doc.url && doc.url.startsWith('data:')) {
+      const dataHtml = isImage
+        ? `<img src="${doc.url}" style="max-width:100%;max-height:100vh;object-fit:contain;"/>`
+        : `<iframe src="${doc.url}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
+      win.document.body.innerHTML = dataHtml
+      return
+    }
+
     const blob = await getDocumentBlob(doc, activity)
     if (blob) {
       const blobUrl = URL.createObjectURL(blob)
-      win.document.body.innerHTML = `<iframe src="${blobUrl}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000)
+      const dataHtml = isImage
+        ? `<img src="${blobUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;"/>`
+        : `<iframe src="${blobUrl}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
+
+      win.document.body.innerHTML = dataHtml
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 120000)
     } else if (doc.url && !doc.url.startsWith('data:') && !doc.url.startsWith('blob:')) {
       win.location.href = doc.url
     } else {
@@ -273,7 +327,12 @@ export async function downloadDocument(doc: ActivityDocument, activity?: Activit
 export async function printDocument(doc: ActivityDocument, activity?: ActivityRecord) {
   try {
     if (doc.url && doc.url.startsWith('http')) {
-      window.open(doc.url, '_blank', 'noopener,noreferrer')
+      const win = window.open(doc.url, '_blank', 'noopener,noreferrer')
+      if (win) {
+        win.onload = () => {
+          win.print()
+        }
+      }
       return
     }
 
@@ -297,11 +356,11 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
         <!DOCTYPE html>
         <html>
           <head><title>Imprimir - ${doc.name || 'Documento'}</title></head>
-          <body style="margin:0;"><iframe src="${printUrl}" style="width:100%;height:100vh;border:none;"></iframe></body>
+          <body style="margin:0;"><iframe src="${printUrl}" style="width:100%;height:100vh;border:none;" onload="this.contentWindow.print();"></iframe></body>
         </html>
       `)
       win.document.close()
-      setTimeout(() => URL.revokeObjectURL(printUrl), 60000)
+      setTimeout(() => URL.revokeObjectURL(printUrl), 120000)
       return
     }
 
@@ -358,7 +417,7 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
         document.body.removeChild(iframe)
       }
       URL.revokeObjectURL(printUrl)
-    }, 60000)
+    }, 120000)
   } catch (err) {
     console.error('Erro ao imprimir documento:', err)
     alert('Houve um erro ao tentar realizar a impressão.')

@@ -1,5 +1,5 @@
 import { ActivityRecord } from '@/lib/types'
-import { calculateHoursDifference, parseSemicolonList } from '@/lib/utils'
+import { calculateTotalHours, parseSemicolonList } from '@/lib/utils'
 
 export interface DashboardStats {
   overview: {
@@ -24,6 +24,7 @@ export interface DashboardStats {
     topPf: { names: string[]; count: number }
     topPj: { names: string[]; count: number }
     pfStats: { mean: number; median: number; mode: number[] }
+    pjStats: { mean: number; median: number; mode: number[] }
   }
   productivity: {
     totalDeliberations: number
@@ -48,29 +49,16 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
   const allPj: string[] = []
   const allDocs: string[] = []
   const pfCountsPerEvent: number[] = []
+  const pjCountsPerEvent: number[] = []
 
   records.forEach((r) => {
-    totalHours += calculateHoursDifference(r.meetingStart, r.meetingEnd)
-
-    if (r.hasAdditionalDays && r.additionalDays) {
-      r.additionalDays.forEach((d) => {
-        totalHours += calculateHoursDifference(d.start, d.end)
-      })
-    }
+    totalHours += calculateTotalHours(r)
 
     if (r.actions && r.actions.length > 0) {
-      r.actions.forEach((a) => {
-        if (a.periods && a.periods.length > 0) {
-          a.periods.forEach((p) => {
-            totalHours += calculateHoursDifference(p.start, p.end)
-          })
-        } else if (a.start && a.end) {
-          totalHours += calculateHoursDifference(a.start, a.end)
-        }
+      r.actions.forEach(() => {
         actionsGenerated++
       })
     } else if (r.hasAction && r.actionStart && r.actionEnd) {
-      totalHours += calculateHoursDifference(r.actionStart, r.actionEnd)
       actionsGenerated++
     }
 
@@ -88,6 +76,7 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     allPf.push(...pfs)
     allPj.push(...pjs)
     pfCountsPerEvent.push(pfs.length)
+    pjCountsPerEvent.push(pjs.length)
 
     if (r.documents) {
       r.documents.forEach((d) => {
@@ -98,24 +87,37 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     totalDeliberations += parseSemicolonList(r.deliberations).length
   })
 
-  const pfStats = { mean: 0, median: 0, mode: [] as number[] }
-  if (pfCountsPerEvent.length > 0) {
-    pfStats.mean = pfCountsPerEvent.reduce((a, b) => a + b, 0) / pfCountsPerEvent.length
-    const sorted = [...pfCountsPerEvent].sort((a, b) => a - b)
-    const mid = Math.floor(sorted.length / 2)
-    pfStats.median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
-    const countsMap = sorted.reduce(
-      (acc, val) => {
-        acc[val] = (acc[val] || 0) + 1
-        return acc
-      },
-      {} as Record<number, number>,
-    )
-    const maxCount = Math.max(...Object.values(countsMap))
-    pfStats.mode = Object.keys(countsMap)
-      .filter((k) => countsMap[Number(k)] === maxCount)
-      .map(Number)
+  function getStats(countsArray: number[]) {
+    const stats = { mean: 0, median: 0, mode: [] as number[] }
+    if (countsArray.length > 0) {
+      stats.mean = countsArray.reduce((a, b) => a + b, 0) / countsArray.length
+      const sorted = [...countsArray].sort((a, b) => a - b)
+      const mid = Math.floor(sorted.length / 2)
+      stats.median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2
+
+      const countsMap = sorted.reduce(
+        (acc, val) => {
+          acc[val] = (acc[val] || 0) + 1
+          return acc
+        },
+        {} as Record<number, number>,
+      )
+      const maxCount = Math.max(...Object.values(countsMap))
+      const allCountsSame = Object.values(countsMap).every((c) => c === maxCount)
+
+      if (allCountsSame && Object.keys(countsMap).length > 1) {
+        stats.mode = []
+      } else {
+        stats.mode = Object.keys(countsMap)
+          .filter((k) => countsMap[Number(k)] === maxCount)
+          .map(Number)
+      }
+    }
+    return stats
   }
+
+  const pfStats = getStats(pfCountsPerEvent)
+  const pjStats = getStats(pjCountsPerEvent)
 
   const eventsByType = Object.entries(eventTypeCount)
     .map(([name, value]) => ({ name, value }))
@@ -205,6 +207,7 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
       topPf: getRanking(allPf.map((n) => n.trim().toUpperCase())),
       topPj: getRanking(allPj.map((n) => n.trim().toUpperCase())),
       pfStats,
+      pjStats,
     },
     productivity: {
       totalDeliberations,

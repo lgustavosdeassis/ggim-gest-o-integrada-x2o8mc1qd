@@ -6,7 +6,13 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Clock } from 'lucide-react'
-import { formatDateTime, parseSemicolonList, calculateHoursDifference } from '@/lib/utils'
+import {
+  formatDateTime,
+  parseSemicolonList,
+  calculateHoursDifference,
+  formatHoursToHHMM,
+  calculateTotalHours,
+} from '@/lib/utils'
 import { ActivityRecord } from '@/lib/types'
 import { DocumentList } from '@/components/historico/DocumentList'
 
@@ -72,13 +78,32 @@ export function ViewDialog({
                   {formatDateTime(viewActivity.meetingEnd)})
                 </span>
                 <span className="font-mono font-bold text-foreground bg-muted px-2 py-1 rounded">
-                  {calculateHoursDifference(
-                    viewActivity.meetingStart,
-                    viewActivity.meetingEnd,
-                  ).toFixed(1)}
-                  h
+                  {formatHoursToHHMM(
+                    calculateHoursDifference(viewActivity.meetingStart, viewActivity.meetingEnd),
+                  )}
                 </span>
               </div>
+
+              {viewActivity.hasAdditionalDays &&
+                viewActivity.additionalDays &&
+                viewActivity.additionalDays.length > 0 && (
+                  <div className="pt-2 space-y-2">
+                    {viewActivity.additionalDays.map((d, i) => (
+                      <div
+                        key={i}
+                        className="flex justify-between items-center text-sm bg-card p-3 rounded-xl border border-border"
+                      >
+                        <span className="font-medium text-muted-foreground">
+                          Dia Adicional #{i + 1} ({formatDateTime(d.start).substring(0, 5)} a{' '}
+                          {formatDateTime(d.end).substring(0, 5)})
+                        </span>
+                        <span className="font-mono font-bold text-secondary">
+                          +{formatHoursToHHMM(calculateHoursDifference(d.start, d.end))}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
               {viewActivity.actions && viewActivity.actions.length > 0 && (
                 <div className="pt-2 space-y-2">
@@ -88,11 +113,11 @@ export function ViewDialog({
                       className="flex justify-between items-center text-sm bg-card p-3 rounded-xl border border-border"
                     >
                       <span className="font-medium text-muted-foreground">
-                        Ação Extra #{i + 1} ({formatDateTime(a.start).substring(0, 5)} a{' '}
-                        {formatDateTime(a.end).substring(0, 5)})
+                        Ação Extra #{i + 1} ({formatDateTime(a.start || '').substring(0, 5)} a{' '}
+                        {formatDateTime(a.end || '').substring(0, 5)})
                       </span>
                       <span className="font-mono font-bold text-primary">
-                        +{calculateHoursDifference(a.start, a.end).toFixed(1)}h
+                        +{formatHoursToHHMM(calculateHoursDifference(a.start || '', a.end || ''))}
                       </span>
                     </div>
                   ))}
@@ -104,14 +129,7 @@ export function ViewDialog({
                   Horas Dedicadas (Soma):
                 </span>
                 <span className="text-xl font-black text-primary">
-                  {(
-                    calculateHoursDifference(viewActivity.meetingStart, viewActivity.meetingEnd) +
-                    (viewActivity.actions || []).reduce(
-                      (acc, a) => acc + calculateHoursDifference(a.start, a.end),
-                      0,
-                    )
-                  ).toFixed(1)}
-                  h
+                  {formatHoursToHHMM(calculateTotalHours(viewActivity))}
                 </span>
               </div>
             </div>

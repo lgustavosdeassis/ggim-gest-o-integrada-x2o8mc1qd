@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { CheckCircle2, Trash } from 'lucide-react'
-import { calculateHoursDifference } from '@/lib/utils'
+import { calculateHoursDifference, formatHoursToHHMM } from '@/lib/utils'
 import { FormValues } from './schema'
 
 function ActionItem({
@@ -47,7 +47,7 @@ function ActionItem({
           {actionIndex + 1}
         </span>
         <span className="text-xs font-black bg-[#eab308]/20 text-[#0f172a] px-3 py-1 rounded-full uppercase tracking-widest border border-[#eab308]/50">
-          Duração: {actionTotal.toFixed(1)}h
+          Duração: {formatHoursToHHMM(actionTotal)}
         </span>
       </div>
       <div className="space-y-4">
@@ -176,7 +176,7 @@ export function DuracaoCard() {
     <Card className="border-2 border-[#0f172a]/10 shadow-sm bg-white rounded-2xl overflow-hidden relative">
       <div className="absolute top-0 right-0 p-4 pt-5 pr-6 hidden sm:block">
         <div className="text-xs font-black bg-[#eab308] text-[#0f172a] px-4 py-2 rounded-xl shadow-sm uppercase tracking-widest border border-[#0f172a]/10">
-          Total de Horas: <span className="text-lg ml-1">{totalHours.toFixed(1)}h</span>
+          Total de Horas: <span className="text-lg ml-1">{formatHoursToHHMM(totalHours)}</span>
         </div>
       </div>
       <div className="bg-slate-50 px-6 py-4 border-b border-[#0f172a]/10 flex items-center gap-3">
@@ -185,7 +185,7 @@ export function DuracaoCard() {
       </div>
       <CardContent className="p-6 md:p-8">
         <div className="sm:hidden mb-6 text-center text-xs font-black bg-[#eab308] text-[#0f172a] px-4 py-3 rounded-xl shadow-sm uppercase tracking-widest border border-[#0f172a]/10">
-          Total Dedicado: <span className="text-base ml-1">{totalHours.toFixed(1)}h</span>
+          Total Dedicado: <span className="text-base ml-1">{formatHoursToHHMM(totalHours)}</span>
         </div>
 
         <div className="border-2 border-[#0f172a]/10 rounded-2xl mb-8 bg-slate-50/50 relative mt-4">

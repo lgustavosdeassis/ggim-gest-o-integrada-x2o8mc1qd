@@ -103,7 +103,7 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
                     {data.topPj.count}
                   </span>
                   <span className="text-[10px] uppercase tracking-widest font-bold text-secondary-foreground/80 mt-1 block">
-                    Represent.
+                    Vezes
                   </span>
                 </div>
               </div>
@@ -114,38 +114,77 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
         </Card>
       </div>
 
-      <Card className="border-border shadow-sm bg-muted/30 rounded-2xl">
-        <CardHeader className="pb-4 border-b border-border mb-4">
-          <CardTitle className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
-            <Calculator className="h-4 w-4 text-primary" />
-            Métricas de Público (PF/Evento)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-2 text-center divide-x divide-border">
-            <div className="px-2">
-              <p className="text-2xl font-black text-foreground">{data.pfStats.mean.toFixed(1)}</p>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
-                Média
-              </p>
+      <div className="grid gap-5 grid-cols-1 md:grid-cols-2">
+        <Card className="border-border shadow-sm bg-muted/30 rounded-2xl">
+          <CardHeader className="pb-4 border-b border-border mb-4">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
+              <Calculator className="h-4 w-4 text-primary" />
+              Métricas de Público (PF/Evento)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2 text-center divide-x divide-border">
+              <div className="px-2">
+                <p className="text-2xl font-black text-foreground">
+                  {data.pfStats.mean.toFixed(1)}
+                </p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
+                  Média
+                </p>
+              </div>
+              <div className="px-2">
+                <p className="text-2xl font-black text-foreground">{data.pfStats.median}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
+                  Mediana
+                </p>
+              </div>
+              <div className="px-2">
+                <p className="text-2xl font-black text-foreground line-clamp-1">
+                  {data.pfStats.mode.length > 0 ? data.pfStats.mode.join(', ') : 'N/A'}
+                </p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
+                  Moda
+                </p>
+              </div>
             </div>
-            <div className="px-2">
-              <p className="text-2xl font-black text-foreground">{data.pfStats.median}</p>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
-                Mediana
-              </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border shadow-sm bg-muted/30 rounded-2xl">
+          <CardHeader className="pb-4 border-b border-border mb-4">
+            <CardTitle className="text-xs font-bold uppercase tracking-widest flex items-center gap-2 text-muted-foreground">
+              <Calculator className="h-4 w-4 text-chart-4" />
+              Métricas Institucionais (PJ/Evento)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-2 text-center divide-x divide-border">
+              <div className="px-2">
+                <p className="text-2xl font-black text-foreground">
+                  {data.pjStats.mean.toFixed(1)}
+                </p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
+                  Média
+                </p>
+              </div>
+              <div className="px-2">
+                <p className="text-2xl font-black text-foreground">{data.pjStats.median}</p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
+                  Mediana
+                </p>
+              </div>
+              <div className="px-2">
+                <p className="text-2xl font-black text-foreground line-clamp-1">
+                  {data.pjStats.mode.length > 0 ? data.pjStats.mode.join(', ') : 'N/A'}
+                </p>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
+                  Moda
+                </p>
+              </div>
             </div>
-            <div className="px-2">
-              <p className="text-2xl font-black text-foreground line-clamp-1">
-                {data.pfStats.mode.length > 0 ? data.pfStats.mode.join(', ') : 'N/A'}
-              </p>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
-                Moda
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

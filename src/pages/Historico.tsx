@@ -19,7 +19,12 @@ import {
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { MoreHorizontal, Trash, Eye, Pencil, Clock, FileText } from 'lucide-react'
-import { formatDateTime, parseSemicolonList, calculateHoursDifference } from '@/lib/utils'
+import {
+  formatDateTime,
+  parseSemicolonList,
+  calculateTotalHours,
+  formatHoursToHHMM,
+} from '@/lib/utils'
 import { ActivityRecord } from '@/lib/types'
 import { FilterSection } from '@/components/historico/FilterSection'
 import { ViewDialog } from '@/components/historico/ViewDialog'
@@ -178,18 +183,7 @@ export default function Historico() {
               </TableRow>
             ) : (
               filteredActivities.map((act) => {
-                const mtgDuration = calculateHoursDifference(act.meetingStart, act.meetingEnd)
-                const actDuration =
-                  (act.actions || []).reduce(
-                    (acc, a) => acc + calculateHoursDifference(a.start, a.end),
-                    0,
-                  ) +
-                  (act.hasAction &&
-                  act.actionStart &&
-                  act.actionEnd &&
-                  (!act.actions || act.actions.length === 0)
-                    ? calculateHoursDifference(act.actionStart, act.actionEnd)
-                    : 0)
+                const totalHours = calculateTotalHours(act)
 
                 return (
                   <TableRow
@@ -236,8 +230,7 @@ export default function Historico() {
                         PJ
                       </div>
                       <div className="text-xs text-primary font-bold flex items-center gap-1.5 mt-1.5">
-                        <Clock className="w-3.5 h-3.5" /> {(mtgDuration + actDuration).toFixed(1)}h
-                        Totais
+                        <Clock className="w-3.5 h-3.5" /> {formatHoursToHHMM(totalHours)} Totais
                       </div>
                     </TableCell>
                     <TableCell className="py-4">
