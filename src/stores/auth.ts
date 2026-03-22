@@ -40,12 +40,19 @@ export const useAuthStore = create<AuthState>()(
         try {
           const data = await api.users.list()
           set((state) => {
+            // Guard against malformed data returns from intermittent network issues
+            if (!Array.isArray(data)) {
+              return { isFetching: false }
+            }
+
             const updatedCurrentUser = state.user
               ? data.find((u) => u.id === state.user!.id) || state.user
               : null
+
             return { users: data, user: updatedCurrentUser, isFetching: false }
           })
         } catch (e) {
+          console.warn('Failed to fetch remote users, preserving current auth state', e)
           set({ isFetching: false })
         }
       },

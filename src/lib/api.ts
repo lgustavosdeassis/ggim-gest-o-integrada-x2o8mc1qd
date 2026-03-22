@@ -121,27 +121,39 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
         throw new Error(`HTTP Error: ${res.status}`)
       }
 
-      return await res.json()
+      const rawText = await res.text()
+      if (!rawText) {
+        return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+      }
+      return JSON.parse(rawText)
     } catch (e) {
       if (retries > 0) {
         await new Promise((resolve) => setTimeout(resolve, 800))
         return doFetch(retries - 1)
       }
-      throw e
+      // Instead of throwing, we gracefully catch the exception to prevent UI crashes
+      // when the network is offline, providing a resilient fallback mechanism.
+      console.warn(
+        'Cloud DB fetch completely failed due to network error, utilizing offline memory state.',
+        e,
+      )
+      return memoryDb
+        ? JSON.parse(JSON.stringify(memoryDb))
+        : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
     }
   }
 
   const p = doFetch()
     .then((data) => {
       // Only update memory if we haven't started a new save during the fetch window
-      if (!isSaving) {
+      if (!isSaving && data) {
         memoryDb = data
       }
       if (fetchPromise === p) fetchPromise = null
-      return JSON.parse(JSON.stringify(data))
+      return data ? JSON.parse(JSON.stringify(data)) : JSON.parse(JSON.stringify(DEFAULT_DB))
     })
     .catch((e) => {
-      console.warn('Cloud DB fetch failed after retries, utilizing active memory state', e)
+      console.warn('Cloud DB fetch outer promise failed', e)
       if (fetchPromise === p) fetchPromise = null
       return memoryDb
         ? JSON.parse(JSON.stringify(memoryDb))
@@ -169,7 +181,7 @@ export async function atomicUpdate(updater: (db: any) => void) {
       db.updatedAt = Date.now()
       memoryDb = JSON.parse(JSON.stringify(db)) // Optimistically update memory instantly
 
-      const doUpdate = async (retries = 2): Promise<Response> => {
+      const doUpdate = async (retries = 2): Promise<Response | null> => {
         try {
           const res = await fetch(`${JSONBLOB_API}/${id}`, {
             method: 'PUT',
@@ -183,27 +195,32 @@ export async function atomicUpdate(updater: (db: any) => void) {
             await new Promise((r) => setTimeout(r, 1000))
             return doUpdate(retries - 1)
           }
-          throw e
+          console.warn('Network request failed during atomic update sync', e)
+          return null // Return null gracefully instead of breaking the chain
         }
       }
 
       const res = await doUpdate()
 
-      if (!res.ok && res.status === 404) {
-        // DB got deleted or expired, recreate it and update the ID globally
-        const createRes = await fetch(JSONBLOB_API, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(db),
-        })
-        const location = createRes.headers.get('Location')
-        if (location) {
-          const newId = location.split('/').pop() || id
-          localStorage.setItem(SYNC_KEY, newId)
+      if (res && !res.ok && res.status === 404) {
+        try {
+          // DB got deleted or expired, recreate it and update the ID globally
+          const createRes = await fetch(JSONBLOB_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(db),
+          })
+          const location = createRes.headers.get('Location')
+          if (location) {
+            const newId = location.split('/').pop() || id
+            localStorage.setItem(SYNC_KEY, newId)
+          }
+        } catch (createErr) {
+          console.warn('Failed to recreate external database on 404', createErr)
         }
       }
     } catch (e) {
-      console.error('Atomic update failed to sync with central database', e)
+      console.error('Atomic update encountered a critical synchronization failure', e)
     } finally {
       isSaving = false
     }

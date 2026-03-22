@@ -11,12 +11,18 @@ export function GlobalDataSync() {
   useEffect(() => {
     if (!isAuthenticated) return
 
-    const fetchAll = () => {
-      useAppStore.getState().fetchActivities()
-      useAuthStore.getState().fetchUsers()
-      useVideoStore.getState().fetchRecords()
-      useObsStore.getState().fetchRecords()
-      useAuditStore.getState().fetchLogs()
+    const fetchAll = async () => {
+      try {
+        await Promise.allSettled([
+          useAppStore.getState().fetchActivities(),
+          useAuthStore.getState().fetchUsers(),
+          useVideoStore.getState().fetchRecords(),
+          useObsStore.getState().fetchRecords(),
+          useAuditStore.getState().fetchLogs(),
+        ])
+      } catch (err) {
+        console.warn('Global background sync encountered an issue, retrying soon.', err)
+      }
     }
 
     // Initial Load
@@ -28,9 +34,13 @@ export function GlobalDataSync() {
     // Listener for cross-tab or cross-session rapid updates
     window.addEventListener('db_updated', fetchAll)
 
+    // Automatically trigger recovery attempt when network connection is restored
+    window.addEventListener('online', fetchAll)
+
     return () => {
       clearInterval(interval)
       window.removeEventListener('db_updated', fetchAll)
+      window.removeEventListener('online', fetchAll)
     }
   }, [isAuthenticated])
 
