@@ -33,7 +33,7 @@ export function Header() {
       <div className="hidden lg:flex flex-1 items-center justify-center gap-4">
         <div className="flex h-16 shrink-0 items-center justify-center bg-transparent">
           <img
-            src="/b582a9be-a6b1-4f16-ac56-d419b48f654b.webp"
+            src="/logo-ggim.png"
             alt="GGIM Logo"
             className="h-full w-auto object-contain drop-shadow-md bg-transparent"
           />
