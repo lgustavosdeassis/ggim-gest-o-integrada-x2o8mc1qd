@@ -1,17 +1,17 @@
 import { useState } from 'react'
-import { MonitorPlay, Plus } from 'lucide-react'
+import { MonitorPlay, Plus, Calendar as CalendarIcon } from 'lucide-react'
 import { Card } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Calendar } from '@/components/ui/calendar'
+import { cn } from '@/lib/utils'
 import {
   BarChart,
   Bar,
@@ -26,45 +26,29 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { useVideoStore } from '@/stores/video'
 import { VideoFormDialog } from '@/components/video/VideoFormDialog'
 
+const getYYYYMM = (d: Date) => {
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  return `${year}-${month}`
+}
+
 export default function Videomonitoramento() {
   const { records } = useVideoStore()
-  const [filterMonth, setFilterMonth] = useState('2026-02')
-  const [period, setPeriod] = useState('Mensal')
-  const [customStart, setCustomStart] = useState('2026-01')
-  const [customEnd, setCustomEnd] = useState('2026-12')
+  const [period, setPeriod] = useState('Personalizado')
+  const [customStart, setCustomStart] = useState<Date | undefined>(new Date(2026, 0, 1))
+  const [customEnd, setCustomEnd] = useState<Date | undefined>(new Date(2026, 11, 31))
   const [isFormOpen, setIsFormOpen] = useState(false)
 
   const filteredRecords = records.filter((r) => {
     if (period === 'Personalizado') {
       if (customStart && customEnd) {
-        return r.date >= customStart && r.date <= customEnd
+        const startStr = getYYYYMM(customStart)
+        const endStr = getYYYYMM(customEnd)
+        return r.date >= startStr && r.date <= endStr
       }
       return true
     }
-
-    if (!filterMonth) return true
-    const [year] = filterMonth.split('-')
-    const [rYear, rMonth] = r.date.split('-')
-    const rMonthNum = parseInt(rMonth, 10)
-
-    if (period === 'Anual') return rYear === year
-    if (period === '1º semestre') return rYear === year && rMonthNum <= 6
-    if (period === '2º semestre') return rYear === year && rMonthNum >= 7
-    if (period === '1º quadrimestre') return rYear === year && rMonthNum <= 4
-    if (period === '2º quadrimestre') return rYear === year && rMonthNum >= 5 && rMonthNum <= 8
-    if (period === '3º quadrimestre') return rYear === year && rMonthNum >= 9
-    if (period === '1º trimestre') return rYear === year && rMonthNum <= 3
-    if (period === '2º trimestre') return rYear === year && rMonthNum >= 4 && rMonthNum <= 6
-    if (period === '3º trimestre') return rYear === year && rMonthNum >= 7 && rMonthNum <= 9
-    if (period === '4º trimestre') return rYear === year && rMonthNum >= 10
-    if (period === '1º bimestre') return rYear === year && rMonthNum <= 2
-    if (period === '2º bimestre') return rYear === year && rMonthNum >= 3 && rMonthNum <= 4
-    if (period === '3º bimestre') return rYear === year && rMonthNum >= 5 && rMonthNum <= 6
-    if (period === '4º bimestre') return rYear === year && rMonthNum >= 7 && rMonthNum <= 8
-    if (period === '5º bimestre') return rYear === year && rMonthNum >= 9 && rMonthNum <= 10
-    if (period === '6º bimestre') return rYear === year && rMonthNum >= 11
-
-    return r.date === filterMonth
+    return true
   })
 
   const record = filteredRecords.reduce(
@@ -105,93 +89,82 @@ export default function Videomonitoramento() {
             Materiais
           </p>
         </div>
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 w-full xl:w-auto mt-4 xl:mt-0">
+        <div className="flex flex-col md:flex-row flex-wrap items-stretch md:items-center justify-end gap-4 w-full xl:w-auto mt-4 xl:mt-0">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-full md:w-48 h-12 rounded-xl bg-background border-border text-foreground font-bold">
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Mensal">Mensal</SelectItem>
-              <SelectGroup>
-                <SelectLabel className="text-xs uppercase text-muted-foreground">
-                  Bimestre
-                </SelectLabel>
-                <SelectItem value="1º bimestre">1º Bimestre</SelectItem>
-                <SelectItem value="2º bimestre">2º Bimestre</SelectItem>
-                <SelectItem value="3º bimestre">3º Bimestre</SelectItem>
-                <SelectItem value="4º bimestre">4º Bimestre</SelectItem>
-                <SelectItem value="5º bimestre">5º Bimestre</SelectItem>
-                <SelectItem value="6º bimestre">6º Bimestre</SelectItem>
-              </SelectGroup>
-              <SelectGroup>
-                <SelectLabel className="text-xs uppercase text-muted-foreground">
-                  Trimestre
-                </SelectLabel>
-                <SelectItem value="1º trimestre">1º Trimestre</SelectItem>
-                <SelectItem value="2º trimestre">2º Trimestre</SelectItem>
-                <SelectItem value="3º trimestre">3º Trimestre</SelectItem>
-                <SelectItem value="4º trimestre">4º Trimestre</SelectItem>
-              </SelectGroup>
-              <SelectGroup>
-                <SelectLabel className="text-xs uppercase text-muted-foreground">
-                  Quadrimestre
-                </SelectLabel>
-                <SelectItem value="1º quadrimestre">1º Quadrimestre</SelectItem>
-                <SelectItem value="2º quadrimestre">2º Quadrimestre</SelectItem>
-                <SelectItem value="3º quadrimestre">3º Quadrimestre</SelectItem>
-              </SelectGroup>
-              <SelectGroup>
-                <SelectLabel className="text-xs uppercase text-muted-foreground">
-                  Semestre
-                </SelectLabel>
-                <SelectItem value="1º semestre">1º Semestre</SelectItem>
-                <SelectItem value="2º semestre">2º Semestre</SelectItem>
-              </SelectGroup>
-              <SelectGroup>
-                <SelectLabel className="text-xs uppercase text-muted-foreground">Anual</SelectLabel>
-                <SelectItem value="Anual">Anual</SelectItem>
-              </SelectGroup>
               <SelectItem
                 value="Personalizado"
-                className="data-[state=checked]:bg-[#eab308] data-[state=checked]:text-[#0f172a] focus:bg-[#eab308]/80 focus:text-[#0f172a] font-bold mt-1"
+                className="data-[state=checked]:bg-[#eab308] data-[state=checked]:text-[#0f172a] focus:bg-[#eab308]/80 focus:text-[#0f172a] font-bold"
               >
                 Personalizado
               </SelectItem>
             </SelectContent>
           </Select>
 
-          {period === 'Personalizado' ? (
+          {period === 'Personalizado' && (
             <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto mt-1 md:mt-0">
               <div className="relative flex-1 md:flex-none">
-                <span className="absolute -top-2.5 left-3 bg-background px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                <span className="absolute -top-2.5 left-3 bg-background px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10">
                   Data Inicial
                 </span>
-                <Input
-                  type="month"
-                  value={customStart}
-                  onChange={(e) => setCustomStart(e.target.value)}
-                  className="w-full md:w-36 bg-background border-border h-12 rounded-xl text-foreground font-bold"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-full md:w-[170px] h-12 justify-start text-left font-bold rounded-xl border-border bg-background',
+                        !customStart && 'text-muted-foreground',
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {customStart ? (
+                        customStart.toLocaleDateString('pt-BR')
+                      ) : (
+                        <span>Selecione</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={customStart}
+                      onSelect={setCustomStart}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
               <div className="relative flex-1 md:flex-none">
-                <span className="absolute -top-2.5 left-3 bg-background px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                <span className="absolute -top-2.5 left-3 bg-background px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10">
                   Data Final
                 </span>
-                <Input
-                  type="month"
-                  value={customEnd}
-                  onChange={(e) => setCustomEnd(e.target.value)}
-                  className="w-full md:w-36 bg-background border-border h-12 rounded-xl text-foreground font-bold"
-                />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        'w-full md:w-[170px] h-12 justify-start text-left font-bold rounded-xl border-border bg-background',
+                        !customEnd && 'text-muted-foreground',
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {customEnd ? customEnd.toLocaleDateString('pt-BR') : <span>Selecione</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={customEnd}
+                      onSelect={setCustomEnd}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
-          ) : (
-            <Input
-              type="month"
-              value={filterMonth}
-              onChange={(e) => setFilterMonth(e.target.value)}
-              className="w-full md:w-48 bg-background border-border h-12 rounded-xl text-foreground font-bold"
-            />
           )}
 
           <Button
@@ -227,17 +200,8 @@ export default function Videomonitoramento() {
               Perfil dos Solicitantes
               <br />
               <span className="text-sm text-muted-foreground font-semibold">
-                (
-                {period === 'Personalizado'
-                  ? `${customStart.split('-').reverse().join('/')} a ${customEnd.split('-').reverse().join('/')}`
-                  : period === 'Mensal'
-                    ? filterMonth
-                      ? filterMonth.split('-').reverse().join('/')
-                      : 'Período'
-                    : period === 'Anual'
-                      ? filterMonth.split('-')[0]
-                      : `${period} de ${filterMonth.split('-')[0]}`}
-                )
+                ({customStart ? customStart.toLocaleDateString('pt-BR') : '...'} a{' '}
+                {customEnd ? customEnd.toLocaleDateString('pt-BR') : '...'})
               </span>
             </h3>
             <ChartContainer config={chartConfig} className="h-[320px] w-full">
@@ -312,7 +276,11 @@ export default function Videomonitoramento() {
         </div>
       </Card>
 
-      <VideoFormDialog open={isFormOpen} onOpenChange={setIsFormOpen} initialDate={filterMonth} />
+      <VideoFormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        initialDate={getYYYYMM(customStart || new Date())}
+      />
     </div>
   )
 }
