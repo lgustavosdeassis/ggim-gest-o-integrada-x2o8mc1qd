@@ -100,17 +100,21 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
   if (!forceFresh && fetchPromise) return fetchPromise
 
   const id = await getCloudDbId()
-  const fetchUrl = `${JSONBLOB_API}/${id}?_t=${Date.now()}` // Cache buster
+  const fetchUrl = `${JSONBLOB_API}/${id}`
 
   const p = fetch(fetchUrl, {
+    method: 'GET',
     headers: {
-      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-      Pragma: 'no-cache',
+      Accept: 'application/json',
     },
+    // Using native fetch caching strategies eliminates the need for custom headers
+    // like 'Cache-Control' which can trigger CORS preflight failures on some external APIs.
+    cache: 'no-store',
   })
     .then(async (res) => {
       if (!res.ok) {
-        if (res.status === 404) return { ...DEFAULT_DB, updatedAt: Date.now() }
+        if (res.status === 404)
+          return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
         throw new Error(`HTTP Error: ${res.status}`)
       }
       return res.json()
@@ -126,7 +130,9 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
     .catch((e) => {
       console.warn('Cloud DB fetch failed, utilizing active memory state', e)
       if (fetchPromise === p) fetchPromise = null
-      return memoryDb || DEFAULT_DB
+      return memoryDb
+        ? JSON.parse(JSON.stringify(memoryDb))
+        : JSON.parse(JSON.stringify(DEFAULT_DB))
     })
 
   if (!forceFresh || !fetchPromise) {
