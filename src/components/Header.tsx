@@ -12,7 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import logoGgim from '@/assets/logo-ggim.svg'
 
 export function Header() {
   const { user, logout } = useAuthStore()
@@ -32,11 +31,11 @@ export function Header() {
 
       {/* Center section: GGIM Logo and Title */}
       <div className="hidden lg:flex flex-1 items-center justify-center gap-4">
-        <div className="flex h-16 shrink-0 items-center justify-center">
+        <div className="flex h-16 shrink-0 items-center justify-center bg-transparent">
           <img
-            src={logoGgim}
+            src="/b582a9be-a6b1-4f16-ac56-d419b48f654b.webp"
             alt="GGIM Logo"
-            className="h-full w-auto object-contain drop-shadow-md"
+            className="h-full w-auto object-contain drop-shadow-md bg-transparent"
           />
         </div>
         <h1 className="text-base lg:text-lg font-bold tracking-tight text-center">
