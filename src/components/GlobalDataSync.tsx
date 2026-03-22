@@ -13,13 +13,20 @@ export function GlobalDataSync() {
 
     const fetchAll = async () => {
       try {
-        await Promise.allSettled([
+        const results = await Promise.allSettled([
           useAppStore.getState().fetchActivities(),
           useAuthStore.getState().fetchUsers(),
           useVideoStore.getState().fetchRecords(),
           useObsStore.getState().fetchRecords(),
           useAuditStore.getState().fetchLogs(),
         ])
+
+        // Safely evaluate rejected promises to prevent silent failures or white screens
+        results.forEach((result, index) => {
+          if (result.status === 'rejected') {
+            console.warn(`Data sync promise at index ${index} failed:`, result.reason)
+          }
+        })
       } catch (err) {
         console.warn('Global background sync encountered an issue, retrying soon.', err)
       }

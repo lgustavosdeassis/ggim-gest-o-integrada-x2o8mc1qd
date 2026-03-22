@@ -24,9 +24,11 @@ export const useAuditStore = create<AuditState>()((set, get) => ({
     set({ isFetching: true })
     try {
       const data = await api.audit.list()
-      set({ logs: data, isFetching: false })
+      // Fallback to empty array to ensure robust initialization even if network fails
+      set({ logs: Array.isArray(data) ? data : [], isFetching: false })
     } catch (e) {
-      set({ isFetching: false })
+      console.warn('Audit logs fetch failed, utilizing empty fallback to prevent interruption', e)
+      set({ logs: [], isFetching: false })
     }
   },
   addLog: async (log) => {

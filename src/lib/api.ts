@@ -107,18 +107,30 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
   // or "Failed to fetch" TypeErrors on certain browsers/proxies.
   const doFetch = async (retries = 3): Promise<any> => {
     try {
-      const res = await fetch(fetchUrl, {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-        },
-      })
+      let res: Response | undefined
+
+      try {
+        res = await fetch(fetchUrl, {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+          },
+        })
+      } catch (err: any) {
+        // Specifically catch and handle "Failed to fetch" to prevent unhandled rejections
+        throw new Error(err.message?.includes('Failed to fetch') ? 'Failed to fetch' : 'HTTP N/A')
+      }
+
+      if (!res) {
+        throw new Error('HTTP N/A')
+      }
 
       if (!res.ok) {
         if (res.status === 404) {
           return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
         }
-        throw new Error(`HTTP Error: ${res.status}`)
+        // Prevent "HTTP N/A" error from propagating by supplying a clear status code
+        throw new Error(`HTTP Error: ${res.status || 'N/A'}`)
       }
 
       const rawText = await res.text()
@@ -126,7 +138,7 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
         return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
       }
       return JSON.parse(rawText)
-    } catch (e) {
+    } catch (e: any) {
       if (retries > 0) {
         await new Promise((resolve) => setTimeout(resolve, 800))
         return doFetch(retries - 1)
@@ -188,7 +200,7 @@ export async function atomicUpdate(updater: (db: any) => void) {
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body: JSON.stringify(db),
           })
-          if (!res.ok && res.status !== 404) throw new Error(`HTTP Error: ${res.status}`)
+          if (!res.ok && res.status !== 404) throw new Error(`HTTP Error: ${res.status || 'N/A'}`)
           return res
         } catch (e) {
           if (retries > 0) {
@@ -262,7 +274,10 @@ export const api = {
     },
   },
   audit: {
-    list: async (forceFresh = false) => (await fetchCloudDb(forceFresh)).auditLogs || [],
+    list: async (forceFresh = false) => {
+      const db = await fetchCloudDb(forceFresh)
+      return db?.auditLogs || []
+    },
     syncUpdate: async (updater: (data: AuditLog[]) => AuditLog[]) => {
       await atomicUpdate((db) => {
         db.auditLogs = updater(db.auditLogs || [])
