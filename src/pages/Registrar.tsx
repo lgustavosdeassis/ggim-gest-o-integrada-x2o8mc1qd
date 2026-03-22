@@ -90,6 +90,7 @@ export default function Registrar() {
       })
       return {
         ...defaultActivity,
+        eventName: defaultActivity.eventName || '',
         meetingStart: formatForDatetimeLocal(defaultActivity.meetingStart),
         meetingEnd: formatForDatetimeLocal(defaultActivity.meetingEnd),
         hasAdditionalDays: defaultActivity.hasAdditionalDays || false,
@@ -120,6 +121,7 @@ export default function Registrar() {
       } as FormValues
     }
     return {
+      eventName: '',
       instance: '',
       eventType: '',
       modality: '',
@@ -176,7 +178,7 @@ export default function Registrar() {
       addLog({
         userName: user?.name || 'Sistema',
         userEmail: user?.email || '',
-        action: `Editou os dados do evento: ${payload.eventType} (${payload.instance})`,
+        action: `Editou os dados do evento: ${payload.eventName ? payload.eventName + ' - ' : ''}${payload.eventType} (${payload.instance})`,
       })
       toast({ title: 'Atividade atualizada com sucesso.' })
     } else {
@@ -184,7 +186,7 @@ export default function Registrar() {
       addLog({
         userName: user?.name || 'Sistema',
         userEmail: user?.email || '',
-        action: `Registrou uma nova atividade: ${payload.eventType} (${payload.instance})`,
+        action: `Registrou uma nova atividade: ${payload.eventName ? payload.eventName + ' - ' : ''}${payload.eventType} (${payload.instance})`,
       })
       toast({ title: 'Atividade registrada com sucesso.' })
     }

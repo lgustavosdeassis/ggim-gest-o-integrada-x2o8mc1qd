@@ -24,6 +24,29 @@ export function IdentificacaoCard() {
         <h3 className="text-lg font-bold text-[#0f172a]">Identificação do Evento</h3>
       </div>
       <CardContent className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="md:col-span-2">
+          <FormField
+            control={control}
+            name="eventName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
+                  NOME / IDENTIFICAÇÃO DO EVENTO (OPCIONAL)
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="Ex: Primeira reunião ordinária 2026 / Nome do Seminário"
+                    {...field}
+                    value={field.value || ''}
+                    disabled={isViewer}
+                    className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] placeholder:text-[#0f172a]/40 focus-visible:ring-[#eab308]"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <FormField
           control={control}
           name="instance"

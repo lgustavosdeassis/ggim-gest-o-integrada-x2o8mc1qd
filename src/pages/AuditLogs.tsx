@@ -2,6 +2,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAuditStore } from '@/stores/audit'
 import { Navigate } from 'react-router-dom'
 import { Card } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   Table,
   TableBody,
@@ -10,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ScrollText, Clock } from 'lucide-react'
+import { ScrollText, Clock, Download, FileText } from 'lucide-react'
 
 export default function AuditLogs() {
   const { user } = useAuthStore()
@@ -35,14 +36,32 @@ export default function AuditLogs() {
 
   return (
     <div className="flex flex-col gap-8 max-w-5xl mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-4xl font-black tracking-tight text-foreground mb-2 flex items-center gap-3">
-          <ScrollText className="w-10 h-10 text-primary" /> Logs de Auditoria
-        </h1>
-        <p className="text-muted-foreground text-base font-medium">
-          Monitoramento de atividades e modificações realizadas na plataforma. Acesso exclusivo para
-          Proprietários.
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-2">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
+            <ScrollText className="w-10 h-10 text-primary" /> Logs de Auditoria
+          </h1>
+          <p className="text-muted-foreground text-base font-medium mt-2">
+            Monitoramento de atividades e modificações realizadas na plataforma. Acesso exclusivo
+            para Proprietários.
+          </p>
+        </div>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            variant="outline"
+            className="h-11 px-5 rounded-xl font-bold shadow-sm flex-1 sm:flex-none"
+            onClick={() => alert('Funcionalidade de exportação para Excel em desenvolvimento.')}
+          >
+            <Download className="w-4 h-4 mr-2" /> Exportar Excel
+          </Button>
+          <Button
+            variant="outline"
+            className="h-11 px-5 rounded-xl font-bold shadow-sm flex-1 sm:flex-none"
+            onClick={() => alert('Funcionalidade de exportação para PDF em desenvolvimento.')}
+          >
+            <FileText className="w-4 h-4 mr-2" /> Exportar PDF
+          </Button>
+        </div>
       </div>
 
       <Card className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">

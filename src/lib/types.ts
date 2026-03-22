@@ -20,6 +20,7 @@ export interface ActivityAction {
 
 export interface ActivityRecord {
   id: string
+  eventName?: string
   instance: string
   eventType: string
   modality: string

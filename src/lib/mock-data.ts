@@ -3,6 +3,7 @@ import { ActivityRecord } from './types'
 export const mockActivities: ActivityRecord[] = [
   {
     id: '1',
+    eventName: 'Reunião Ordinária Trimestral',
     instance: 'CMTEC-PVCM/CMDM',
     eventType: 'Reunião Ordinária',
     modality: 'Híbrida',
@@ -19,6 +20,7 @@ export const mockActivities: ActivityRecord[] = [
   },
   {
     id: '2',
+    eventName: 'Seminário de Inovação',
     instance: 'Eventos Institucionais',
     eventType: 'Palestra',
     modality: 'Presencial',

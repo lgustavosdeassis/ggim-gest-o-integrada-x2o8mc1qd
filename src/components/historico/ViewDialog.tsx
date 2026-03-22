@@ -39,6 +39,14 @@ export function ViewDialog({
         </DialogHeader>
         <div className="p-6 space-y-8">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-y-6 gap-x-6">
+            {viewActivity.eventName && (
+              <div className="col-span-2 sm:col-span-4">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
+                  Nome / Identificação do Evento
+                </span>
+                <p className="font-bold text-foreground text-lg">{viewActivity.eventName}</p>
+              </div>
+            )}
             <div>
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block mb-1">
                 Instância

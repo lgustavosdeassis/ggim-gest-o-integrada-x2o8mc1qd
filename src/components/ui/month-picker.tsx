@@ -5,6 +5,7 @@ import { ptBR } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 
 interface MonthPickerProps {
   value: string
@@ -80,13 +81,36 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
         align="start"
       >
         <div className="flex flex-col space-y-3">
-          <div className="bg-muted p-1.5 rounded-md">
+          <div className="flex items-center bg-muted p-1.5 rounded-md">
             <input
               type="number"
-              className="bg-transparent text-foreground border-none text-center font-bold text-sm w-full outline-none focus:ring-0 h-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className="flex-1 bg-transparent text-foreground border-none text-center font-bold text-sm outline-none focus:ring-0 h-6 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ml-6"
               value={yearInput}
               onChange={handleYearChange}
             />
+            <Select
+              value={yearInput}
+              onValueChange={(val) => {
+                setYearInput(val)
+                setDisplayDate(new Date(parseInt(val), displayDate.getMonth(), 1))
+              }}
+            >
+              <SelectTrigger className="w-6 h-6 border-none bg-transparent shadow-none p-0 focus:ring-0 [&>span]:hidden flex justify-center items-center hover:bg-background/50"></SelectTrigger>
+              <SelectContent className="min-w-[100px] max-h-48" align="end">
+                {Array.from({ length: 21 }).map((_, i) => {
+                  const y = new Date().getFullYear() - 10 + i
+                  return (
+                    <SelectItem
+                      key={y}
+                      value={y.toString()}
+                      className="cursor-pointer justify-center font-medium py-2"
+                    >
+                      {y}
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid grid-cols-4 gap-2">
             {months.map((month, index) => {

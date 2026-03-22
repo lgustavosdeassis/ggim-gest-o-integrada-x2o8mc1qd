@@ -1,6 +1,7 @@
 import * as z from 'zod'
 
 export const formSchema = z.object({
+  eventName: z.string().optional(),
   instance: z.string().min(1, 'Obrigatório'),
   eventType: z.string().min(1, 'Obrigatório'),
   modality: z.string().min(1, 'Obrigatório'),

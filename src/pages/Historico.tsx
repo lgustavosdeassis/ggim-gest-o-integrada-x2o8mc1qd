@@ -55,7 +55,8 @@ export default function Historico() {
       !s ||
       act.instance.toLowerCase().includes(s) ||
       act.eventType.toLowerCase().includes(s) ||
-      act.location.toLowerCase().includes(s)
+      act.location.toLowerCase().includes(s) ||
+      (act.eventName && act.eventName.toLowerCase().includes(s))
 
     let matchesDate = true
     if (startDate || endDate) {
@@ -212,6 +213,11 @@ export default function Historico() {
                     )}
                     <TableCell className="py-4">
                       <div className="font-bold text-foreground text-sm mb-1">{act.instance}</div>
+                      {act.eventName && (
+                        <div className="text-xs font-semibold text-primary/80 uppercase tracking-widest mb-1.5">
+                          {act.eventName}
+                        </div>
+                      )}
                       <div className="text-xs text-muted-foreground font-medium line-clamp-1">
                         <span className="text-primary font-semibold">
                           {formatDateTime(act.meetingStart).substring(0, 10)}
