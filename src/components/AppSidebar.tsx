@@ -44,13 +44,13 @@ export function AppSidebar() {
   return (
     <Sidebar variant="sidebar" className="border-r border-border bg-sidebar z-40">
       <SidebarHeader className="h-20 flex items-center px-4 border-b border-border justify-center bg-sidebar">
-        {/* CMTecs Brand Adjustment: circular container fully filled without visible white background area */}
+        {/* CMTecs Brand Adjustment: modified the container to fill the circle completely with no background gaps */}
         <div className="flex items-center gap-3 w-full justify-center">
-          <div className="h-11 w-11 rounded-full overflow-hidden bg-white shadow-sm border border-border flex-shrink-0 flex items-center justify-center p-0">
+          <div className="h-11 w-11 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center p-0 border-none bg-transparent">
             <img
               src="https://img.usecurling.com/i?q=shield&color=black&shape=fill"
               alt="CMTecs"
-              className="w-full h-full object-cover scale-110"
+              className="w-full h-full object-cover scale-[1.2]"
             />
           </div>
           <div className="flex flex-col truncate">

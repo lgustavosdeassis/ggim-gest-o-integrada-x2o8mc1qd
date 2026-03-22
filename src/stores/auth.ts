@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { api } from '@/lib/api'
+import { toast } from 'sonner'
 
 export type Role = 'owner' | 'editor' | 'viewer'
 
@@ -40,19 +41,14 @@ export const useAuthStore = create<AuthState>()(
         try {
           const data = await api.users.list()
           set((state) => {
-            // Guard against malformed data returns from intermittent network issues
-            if (!Array.isArray(data)) {
-              return { isFetching: false }
-            }
-
+            if (!Array.isArray(data)) return { isFetching: false }
             const updatedCurrentUser = state.user
               ? data.find((u) => u.id === state.user!.id) || state.user
               : null
-
             return { users: data, user: updatedCurrentUser, isFetching: false }
           })
         } catch (e) {
-          console.warn('Failed to fetch remote users, preserving current auth state', e)
+          console.warn('Failed to fetch remote users', e)
           set({ isFetching: false })
         }
       },
@@ -63,32 +59,52 @@ export const useAuthStore = create<AuthState>()(
         if (!state.user) return
         const updatedUser = { ...state.user, avatarUrl: url }
 
-        set({ user: updatedUser })
-        await api.users.syncUpdate((list) =>
-          list.map((u) => (u.id === state.user!.id ? updatedUser : u)),
-        )
-        get().fetchUsers()
+        try {
+          await api.users.syncUpdate((list) =>
+            list.map((u) => (u.id === state.user!.id ? updatedUser : u)),
+          )
+          set({ user: updatedUser })
+          get().fetchUsers()
+        } catch (e) {
+          toast.error('Erro de Comunicação', { description: 'Falha ao sincronizar o avatar.' })
+        }
       },
       updateProfile: async (data) => {
         const state = get()
         if (!state.user) return
         const updatedUser = { ...state.user, ...data }
 
-        set({ user: updatedUser })
-        await api.users.syncUpdate((list) =>
-          list.map((u) => (u.id === state.user!.id ? updatedUser : u)),
-        )
-        get().fetchUsers()
+        try {
+          await api.users.syncUpdate((list) =>
+            list.map((u) => (u.id === state.user!.id ? updatedUser : u)),
+          )
+          set({ user: updatedUser })
+          get().fetchUsers()
+        } catch (e) {
+          toast.error('Erro de Comunicação', {
+            description: 'Falha ao sincronizar o perfil na nuvem.',
+          })
+        }
       },
       addUser: async (newUser) => {
-        set((state) => ({ users: [...state.users, newUser] }))
-        await api.users.syncUpdate((list) => [...list, newUser])
-        get().fetchUsers()
+        try {
+          await api.users.syncUpdate((list) => [...list, newUser])
+          set((state) => ({ users: [...state.users, newUser] }))
+        } catch (e) {
+          toast.error('Erro de Comunicação', {
+            description: 'Não foi possível cadastrar o usuário na nuvem.',
+          })
+          throw e
+        }
       },
       removeUser: async (id) => {
-        set((state) => ({ users: state.users.filter((u) => u.id !== id) }))
-        await api.users.syncUpdate((list) => list.filter((u) => u.id !== id))
-        get().fetchUsers()
+        try {
+          await api.users.syncUpdate((list) => list.filter((u) => u.id !== id))
+          set((state) => ({ users: state.users.filter((u) => u.id !== id) }))
+        } catch (e) {
+          toast.error('Erro de Comunicação', { description: 'Não foi possível excluir o usuário.' })
+          throw e
+        }
       },
     }),
     {

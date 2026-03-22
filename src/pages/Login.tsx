@@ -30,7 +30,8 @@ export default function Login() {
         await new Promise((resolve) => setTimeout(resolve, 800))
       }
 
-      // Always fetch the freshest users from the centralized API to authenticate globally
+      // Always fetch the freshest users from the centralized API to authenticate globally.
+      // This is resilient and won't crash if the connection completely drops.
       const usersList = await api.users.list(true)
 
       const user = usersList.find(
@@ -60,28 +61,30 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 relative">
-      <Card className="w-full max-w-[420px] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border-0 bg-white z-10 rounded-[2rem] overflow-hidden">
-        <CardHeader className="space-y-5 flex flex-col items-center text-center pb-6 pt-10">
-          {/* Institutional Branding Update: Navy Blue frame for the logo container */}
-          <div className="w-[120px] h-[120px] flex items-center justify-center shadow-xl bg-[#0f172a] rounded-[2rem] overflow-hidden border-2 border-[#1e293b] p-0">
-            <GgimHexLogo className="w-[100%] h-[100%] object-contain scale-[1.05]" />
+    <div className="min-h-screen flex items-center justify-center bg-[#020617] p-4 relative overflow-hidden">
+      {/* Decorative dark background gradient for the new visual identity */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0f172a] via-[#020617] to-[#020617] z-0 pointer-events-none opacity-80" />
+
+      <Card className="w-full max-w-[440px] shadow-2xl border border-white/5 bg-[#0f172a]/95 backdrop-blur-xl z-10 rounded-[2.5rem] overflow-hidden text-white transition-all duration-500 hover:shadow-[0_0_40px_rgba(234,179,8,0.05)]">
+        <CardHeader className="space-y-6 flex flex-col items-center text-center pb-6 pt-12 relative">
+          <div className="w-[180px] h-[180px] flex items-center justify-center p-0 transition-transform hover:scale-105 duration-500 ease-out">
+            <GgimHexLogo className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]" />
           </div>
-          <div className="space-y-1">
-            <CardTitle className="text-3xl font-black tracking-tight text-[#0f172a]">
+          <div className="space-y-1.5 z-10">
+            <CardTitle className="text-3xl font-black tracking-tight text-white drop-shadow-sm">
               GGIM Foz
             </CardTitle>
-            <CardDescription className="text-xs text-[#0f172a]/60 font-bold uppercase tracking-widest mt-1">
+            <CardDescription className="text-xs text-white/50 font-bold uppercase tracking-widest mt-1">
               Plataforma de Gestão Integrada
             </CardDescription>
           </div>
         </CardHeader>
-        <CardContent className="p-8 pt-0">
+        <CardContent className="p-8 pt-0 relative z-10">
           <form onSubmit={handleLogin} className="space-y-5">
             <div className="space-y-2">
               <Label
                 htmlFor="email"
-                className="text-xs font-bold text-[#0f172a] uppercase tracking-widest ml-1"
+                className="text-xs font-bold text-white uppercase tracking-widest ml-1"
               >
                 E-mail de Acesso
               </Label>
@@ -91,7 +94,7 @@ export default function Login() {
                 placeholder="Digite seu e-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="bg-[#f1f5f9] border-transparent hover:border-slate-300 h-14 rounded-xl text-[#0f172a] px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#eab308] focus-visible:border-transparent focus-visible:bg-white shadow-inner transition-all"
+                className="bg-white/5 border-transparent hover:border-white/20 h-14 rounded-xl text-white px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#eab308] focus-visible:border-transparent focus-visible:bg-white/10 shadow-inner transition-all placeholder:text-white/20"
                 required
               />
             </div>
@@ -99,7 +102,7 @@ export default function Login() {
               <div className="flex items-center justify-between ml-1">
                 <Label
                   htmlFor="password"
-                  className="text-xs font-bold text-[#0f172a] uppercase tracking-widest"
+                  className="text-xs font-bold text-white uppercase tracking-widest"
                 >
                   Senha
                 </Label>
@@ -110,39 +113,39 @@ export default function Login() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-[#f1f5f9] border-transparent hover:border-slate-300 h-14 rounded-xl text-[#0f172a] px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#eab308] focus-visible:border-transparent focus-visible:bg-white tracking-widest shadow-inner transition-all"
+                className="bg-white/5 border-transparent hover:border-white/20 h-14 rounded-xl text-white px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#eab308] focus-visible:border-transparent focus-visible:bg-white/10 tracking-widest shadow-inner transition-all placeholder:text-white/20"
                 required
               />
             </div>
 
-            <div className="space-y-2 pt-3 border-t border-slate-100 mt-2">
+            <div className="space-y-2 pt-4 border-t border-white/10 mt-4">
               <Label
                 htmlFor="syncId"
-                className="text-xs font-bold text-[#0f172a]/60 uppercase tracking-widest ml-1"
+                className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1"
               >
                 Código Cloud Sync (Opcional)
               </Label>
               <Input
                 id="syncId"
                 type="text"
-                placeholder="ID para restaurar dados de outro PC..."
+                placeholder="ID para restaurar dados da nuvem..."
                 value={syncId}
                 onChange={(e) => setSyncId(e.target.value)}
-                className="bg-[#f1f5f9] border-transparent hover:border-slate-300 h-12 rounded-xl text-[#0f172a] px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#eab308] focus-visible:border-transparent focus-visible:bg-white shadow-inner transition-all text-sm"
+                className="bg-white/5 border-transparent hover:border-white/20 h-12 rounded-xl text-white px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#eab308] focus-visible:border-transparent focus-visible:bg-white/10 shadow-inner transition-all text-sm placeholder:text-white/20"
               />
             </div>
 
             <Button
               type="submit"
-              className="w-full h-14 font-black text-lg bg-[#eab308] text-[#0f172a] hover:bg-[#ca8a04] shadow-xl transition-all mt-8 rounded-xl flex items-center justify-center gap-2 group border border-[#ca8a04]/20"
+              className="w-full h-14 font-black text-lg bg-[#eab308] text-[#020617] hover:bg-[#ca8a04] shadow-xl transition-all mt-8 rounded-2xl flex items-center justify-center gap-2 group border border-[#ca8a04]/20 hover:scale-[1.02]"
               disabled={isLoading}
             >
               {isLoading ? (
-                <Loader2 className="h-6 w-6 animate-spin text-[#0f172a]" />
+                <Loader2 className="h-6 w-6 animate-spin text-[#020617]" />
               ) : (
                 <>
-                  Entrar
-                  <ArrowRight className="h-5 w-5 text-[#0f172a] opacity-90 group-hover:translate-x-1 transition-transform" />
+                  Entrar no Sistema
+                  <ArrowRight className="h-5 w-5 text-[#020617] opacity-90 group-hover:translate-x-1.5 transition-transform" />
                 </>
               )}
             </Button>

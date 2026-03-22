@@ -1,55 +1,71 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAppStore } from '@/stores/main'
 import { useAuthStore } from '@/stores/auth'
 import { useVideoStore } from '@/stores/video'
 import { useObsStore } from '@/stores/obs'
 import { useAuditStore } from '@/stores/audit'
+import { Loader2 } from 'lucide-react'
 
-export function GlobalDataSync() {
+export function GlobalDataSync({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const [initialLoad, setInitialLoad] = useState(true)
 
   useEffect(() => {
     if (!isAuthenticated) return
 
+    let isMounted = true
+
     const fetchAll = async () => {
       try {
-        const results = await Promise.allSettled([
+        await Promise.allSettled([
           useAppStore.getState().fetchActivities(),
           useAuthStore.getState().fetchUsers(),
           useVideoStore.getState().fetchRecords(),
           useObsStore.getState().fetchRecords(),
           useAuditStore.getState().fetchLogs(),
         ])
-
-        // Safely evaluate rejected promises to prevent silent failures or white screens
-        results.forEach((result, index) => {
-          if (result.status === 'rejected') {
-            console.warn(`Data sync promise at index ${index} failed:`, result.reason)
-          }
-        })
       } catch (err) {
-        console.warn('Global background sync encountered an issue, retrying soon.', err)
+        console.warn('Sync issues', err)
+      } finally {
+        if (isMounted && initialLoad) {
+          setInitialLoad(false)
+        }
       }
     }
 
-    // Initial Load
+    // Initial Load ensures everything is fetched correctly before interaction
     fetchAll()
 
-    // Real-time synchronization via periodic polling (10s)
+    // Real-time synchronization polling (10s)
     const interval = setInterval(fetchAll, 10000)
 
     // Listener for cross-tab or cross-session rapid updates
     window.addEventListener('db_updated', fetchAll)
 
-    // Automatically trigger recovery attempt when network connection is restored
+    // Trigger recovery automatically when network is back
     window.addEventListener('online', fetchAll)
 
     return () => {
+      isMounted = false
       clearInterval(interval)
       window.removeEventListener('db_updated', fetchAll)
       window.removeEventListener('online', fetchAll)
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, initialLoad])
 
-  return null
+  if (isAuthenticated && initialLoad) {
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#020617] text-white">
+        <Loader2 className="h-16 w-16 animate-spin text-[#eab308] mb-6" />
+        <h2 className="text-2xl font-black tracking-tight mb-2 drop-shadow-sm text-center">
+          Sincronizando Sistema Central
+        </h2>
+        <p className="text-white/60 font-medium max-w-sm text-center">
+          Estabelecendo comunicação com a nuvem e obtendo os registros mais recentes...
+        </p>
+      </div>
+    )
+  }
+
+  return <>{children}</>
 }

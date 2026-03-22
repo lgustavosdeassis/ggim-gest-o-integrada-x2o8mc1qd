@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { api } from '@/lib/api'
+import { toast } from 'sonner'
 
 export interface VideoRecord {
   id: string
@@ -32,19 +33,31 @@ export const useVideoStore = create<VideoState>()((set, get) => ({
   },
   addRecord: async (record) => {
     const newId = Math.random().toString(36).substr(2, 9)
-    await api.video.syncUpdate((list) => {
-      const existingIndex = list.findIndex((r) => r.date === record.date)
-      if (existingIndex >= 0) {
-        const updated = [...list]
-        updated[existingIndex] = { ...record, id: list[existingIndex].id }
-        return updated
-      }
-      return [...list, { ...record, id: newId }]
-    })
-    get().fetchRecords()
+    try {
+      await api.video.syncUpdate((list) => {
+        const existingIndex = list.findIndex((r) => r.date === record.date)
+        if (existingIndex >= 0) {
+          const updated = [...list]
+          updated[existingIndex] = { ...record, id: list[existingIndex].id }
+          return updated
+        }
+        return [...list, { ...record, id: newId }]
+      })
+      get().fetchRecords()
+    } catch (e) {
+      toast.error('Erro de Comunicação', {
+        description: 'Falha ao sincronizar registro de vídeo na nuvem.',
+      })
+      throw e
+    }
   },
   deleteRecord: async (id) => {
-    await api.video.syncUpdate((list) => list.filter((r) => r.id !== id))
-    get().fetchRecords()
+    try {
+      await api.video.syncUpdate((list) => list.filter((r) => r.id !== id))
+      get().fetchRecords()
+    } catch (e) {
+      toast.error('Erro de Comunicação', { description: 'Falha ao excluir registro de vídeo.' })
+      throw e
+    }
   },
 }))

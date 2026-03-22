@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { api } from '@/lib/api'
+import { toast } from 'sonner'
 
 export interface AuditLog {
   id: string
@@ -24,10 +25,8 @@ export const useAuditStore = create<AuditState>()((set, get) => ({
     set({ isFetching: true })
     try {
       const data = await api.audit.list()
-      // Fallback to empty array to ensure robust initialization even if network fails
       set({ logs: Array.isArray(data) ? data : [], isFetching: false })
     } catch (e) {
-      console.warn('Audit logs fetch failed, utilizing empty fallback to prevent interruption', e)
       set({ logs: [], isFetching: false })
     }
   },
@@ -37,11 +36,20 @@ export const useAuditStore = create<AuditState>()((set, get) => ({
       id: Math.random().toString(36).substring(2, 9),
       timestamp: new Date().toISOString(),
     }
-    await api.audit.syncUpdate((list) => [newLog, ...list])
-    get().fetchLogs()
+    try {
+      await api.audit.syncUpdate((list) => [newLog, ...list])
+      get().fetchLogs()
+    } catch (e) {
+      console.error('Failed to sync audit log', e)
+    }
   },
   clearLogs: async () => {
-    await api.audit.syncUpdate(() => [])
-    get().fetchLogs()
+    try {
+      await api.audit.syncUpdate(() => [])
+      get().fetchLogs()
+    } catch (e) {
+      toast.error('Erro de Comunicação', { description: 'Falha ao limpar histórico de auditoria.' })
+      throw e
+    }
   },
 }))

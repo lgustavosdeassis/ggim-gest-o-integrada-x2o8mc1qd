@@ -36,8 +36,9 @@ export default function App() {
           path="/"
           element={
             <ProtectedRoute>
-              <GlobalDataSync />
-              <Layout />
+              <GlobalDataSync>
+                <Layout />
+              </GlobalDataSync>
             </ProtectedRoute>
           }
         >

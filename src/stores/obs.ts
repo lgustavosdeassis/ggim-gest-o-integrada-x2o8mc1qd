@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { api } from '@/lib/api'
+import { toast } from 'sonner'
 
 export interface ObsRecord {
   id: string
@@ -34,19 +35,33 @@ export const useObsStore = create<ObsState>()((set, get) => ({
   },
   addRecord: async (record) => {
     const newId = Math.random().toString(36).substr(2, 9)
-    await api.obs.syncUpdate((list) => {
-      const existingIndex = list.findIndex((r) => r.date === record.date)
-      if (existingIndex >= 0) {
-        const updated = [...list]
-        updated[existingIndex] = { ...record, id: list[existingIndex].id }
-        return updated
-      }
-      return [...list, { ...record, id: newId }]
-    })
-    get().fetchRecords()
+    try {
+      await api.obs.syncUpdate((list) => {
+        const existingIndex = list.findIndex((r) => r.date === record.date)
+        if (existingIndex >= 0) {
+          const updated = [...list]
+          updated[existingIndex] = { ...record, id: list[existingIndex].id }
+          return updated
+        }
+        return [...list, { ...record, id: newId }]
+      })
+      get().fetchRecords()
+    } catch (e) {
+      toast.error('Erro de Comunicação', {
+        description: 'Falha ao sincronizar registro do observatório.',
+      })
+      throw e
+    }
   },
   deleteRecord: async (id) => {
-    await api.obs.syncUpdate((list) => list.filter((r) => r.id !== id))
-    get().fetchRecords()
+    try {
+      await api.obs.syncUpdate((list) => list.filter((r) => r.id !== id))
+      get().fetchRecords()
+    } catch (e) {
+      toast.error('Erro de Comunicação', {
+        description: 'Falha ao excluir registro do observatório.',
+      })
+      throw e
+    }
   },
 }))
