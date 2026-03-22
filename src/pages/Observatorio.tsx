@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -32,25 +34,27 @@ export default function Observatorio() {
     }
 
     if (!filterMonth) return true
-    const [year, month] = filterMonth.split('-')
+    const [year] = filterMonth.split('-')
     const [rYear, rMonth] = r.date.split('-')
+    const rMonthNum = parseInt(rMonth, 10)
 
     if (period === 'Anual') return rYear === year
-    if (period === 'Semestral') {
-      const isFirstHalf = parseInt(month, 10) <= 6
-      const rIsFirstHalf = parseInt(rMonth, 10) <= 6
-      return rYear === year && isFirstHalf === rIsFirstHalf
-    }
-    if (period === 'Trimestral') {
-      const q = Math.ceil(parseInt(month, 10) / 3)
-      const rQ = Math.ceil(parseInt(rMonth, 10) / 3)
-      return rYear === year && q === rQ
-    }
-    if (period === 'Bimestral') {
-      const b = Math.ceil(parseInt(month, 10) / 2)
-      const rB = Math.ceil(parseInt(rMonth, 10) / 2)
-      return rYear === year && b === rB
-    }
+    if (period === '1º semestre') return rYear === year && rMonthNum <= 6
+    if (period === '2º semestre') return rYear === year && rMonthNum >= 7
+    if (period === '1º quadrimestre') return rYear === year && rMonthNum <= 4
+    if (period === '2º quadrimestre') return rYear === year && rMonthNum >= 5 && rMonthNum <= 8
+    if (period === '3º quadrimestre') return rYear === year && rMonthNum >= 9
+    if (period === '1º trimestre') return rYear === year && rMonthNum <= 3
+    if (period === '2º trimestre') return rYear === year && rMonthNum >= 4 && rMonthNum <= 6
+    if (period === '3º trimestre') return rYear === year && rMonthNum >= 7 && rMonthNum <= 9
+    if (period === '4º trimestre') return rYear === year && rMonthNum >= 10
+    if (period === '1º bimestre') return rYear === year && rMonthNum <= 2
+    if (period === '2º bimestre') return rYear === year && rMonthNum >= 3 && rMonthNum <= 4
+    if (period === '3º bimestre') return rYear === year && rMonthNum >= 5 && rMonthNum <= 6
+    if (period === '4º bimestre') return rYear === year && rMonthNum >= 7 && rMonthNum <= 8
+    if (period === '5º bimestre') return rYear === year && rMonthNum >= 9 && rMonthNum <= 10
+    if (period === '6º bimestre') return rYear === year && rMonthNum >= 11
+
     return r.date === filterMonth
   })
 
@@ -92,17 +96,50 @@ export default function Observatorio() {
         </div>
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4 w-full xl:w-auto mt-4 xl:mt-0">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-full md:w-40 h-12 rounded-xl bg-background border-border text-foreground font-bold">
+            <SelectTrigger className="w-full md:w-48 h-12 rounded-xl bg-background border-border text-foreground font-bold">
               <SelectValue placeholder="Período" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Semanal">Semanal</SelectItem>
-              <SelectItem value="Quinzenal">Quinzenal</SelectItem>
               <SelectItem value="Mensal">Mensal</SelectItem>
-              <SelectItem value="Bimestral">Bimestral</SelectItem>
-              <SelectItem value="Trimestral">Trimestral</SelectItem>
-              <SelectItem value="Semestral">Semestral</SelectItem>
-              <SelectItem value="Anual">Anual</SelectItem>
+              <SelectGroup>
+                <SelectLabel className="text-xs uppercase text-muted-foreground">
+                  Bimestre
+                </SelectLabel>
+                <SelectItem value="1º bimestre">1º Bimestre</SelectItem>
+                <SelectItem value="2º bimestre">2º Bimestre</SelectItem>
+                <SelectItem value="3º bimestre">3º Bimestre</SelectItem>
+                <SelectItem value="4º bimestre">4º Bimestre</SelectItem>
+                <SelectItem value="5º bimestre">5º Bimestre</SelectItem>
+                <SelectItem value="6º bimestre">6º Bimestre</SelectItem>
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel className="text-xs uppercase text-muted-foreground">
+                  Trimestre
+                </SelectLabel>
+                <SelectItem value="1º trimestre">1º Trimestre</SelectItem>
+                <SelectItem value="2º trimestre">2º Trimestre</SelectItem>
+                <SelectItem value="3º trimestre">3º Trimestre</SelectItem>
+                <SelectItem value="4º trimestre">4º Trimestre</SelectItem>
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel className="text-xs uppercase text-muted-foreground">
+                  Quadrimestre
+                </SelectLabel>
+                <SelectItem value="1º quadrimestre">1º Quadrimestre</SelectItem>
+                <SelectItem value="2º quadrimestre">2º Quadrimestre</SelectItem>
+                <SelectItem value="3º quadrimestre">3º Quadrimestre</SelectItem>
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel className="text-xs uppercase text-muted-foreground">
+                  Semestre
+                </SelectLabel>
+                <SelectItem value="1º semestre">1º Semestre</SelectItem>
+                <SelectItem value="2º semestre">2º Semestre</SelectItem>
+              </SelectGroup>
+              <SelectGroup>
+                <SelectLabel className="text-xs uppercase text-muted-foreground">Anual</SelectLabel>
+                <SelectItem value="Anual">Anual</SelectItem>
+              </SelectGroup>
               <SelectItem
                 value="Personalizado"
                 className="data-[state=checked]:bg-[#eab308] data-[state=checked]:text-[#0f172a] focus:bg-[#eab308]/80 focus:text-[#0f172a] font-bold mt-1"
@@ -162,12 +199,16 @@ export default function Observatorio() {
               Estatísticas de Trânsito
               <br />
               <span className="text-sm text-muted-foreground font-semibold normal-case tracking-normal">
-                ({period} -{' '}
+                (
                 {period === 'Personalizado'
                   ? `${customStart.split('-').reverse().join('/')} a ${customEnd.split('-').reverse().join('/')}`
-                  : filterMonth
-                    ? filterMonth.split('-').reverse().join('/')
-                    : 'Período'}
+                  : period === 'Mensal'
+                    ? filterMonth
+                      ? filterMonth.split('-').reverse().join('/')
+                      : 'Período'
+                    : period === 'Anual'
+                      ? filterMonth.split('-')[0]
+                      : `${period} de ${filterMonth.split('-')[0]}`}
                 )
               </span>
             </h3>
