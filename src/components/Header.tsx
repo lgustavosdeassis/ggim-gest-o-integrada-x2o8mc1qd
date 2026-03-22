@@ -31,12 +31,27 @@ export function Header() {
 
       {/* Center section: GGIM Logo and Title */}
       <div className="hidden lg:flex flex-1 items-center justify-center gap-4">
-        <div className="flex h-16 shrink-0 items-center justify-center bg-transparent">
-          <img
-            src="/logo-ggim.png"
-            alt="GGIM Logo"
-            className="h-full w-auto object-contain drop-shadow-md bg-transparent"
-          />
+        <div className="flex h-14 shrink-0 items-center justify-center bg-transparent">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 100 100"
+            className="h-full w-auto drop-shadow-md"
+            aria-label="GGIM Logo"
+          >
+            <polygon points="50,5 90,27.5 90,72.5 50,95 10,72.5 10,27.5" fill="#eab308" />
+            <polygon points="50,12 84,31.5 84,68.5 50,88 16,68.5 16,31.5" fill="#ffffff" />
+            <text
+              x="50"
+              y="56"
+              fontSize="22"
+              fontWeight="900"
+              textAnchor="middle"
+              fill="#0f172a"
+              fontFamily="sans-serif"
+            >
+              GGIM
+            </text>
+          </svg>
         </div>
         <h1 className="text-base lg:text-lg font-bold tracking-tight text-center">
           Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)

@@ -48,19 +48,47 @@ export default function AuditLogs() {
   }
 
   const handleExportExcel = () => {
-    const headers = ['Usuário', 'Email', 'Ação Realizada', 'Data e Hora']
-    const rows = filteredLogs.map((log) => {
-      const d = new Date(log.timestamp)
-      const date = d.toLocaleDateString('pt-BR')
-      const time = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-      return `"${log.userName}","${log.userEmail}","${log.action}","${date} ${time}"`
-    })
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const htmlTable = `
+      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head><meta charset="UTF-8"></head>
+      <body>
+        <table border="1">
+          <thead>
+            <tr>
+              <th style="background-color: #f3f4f6;">Usuário</th>
+              <th style="background-color: #f3f4f6;">Email</th>
+              <th style="background-color: #f3f4f6;">Ação Realizada</th>
+              <th style="background-color: #f3f4f6;">Data e Hora</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredLogs
+              .map((log) => {
+                const d = new Date(log.timestamp)
+                const dateTime = d.toLocaleString('pt-BR', {
+                  dateStyle: 'short',
+                  timeStyle: 'short',
+                })
+                return `
+                <tr>
+                  <td>${log.userName}</td>
+                  <td>${log.userEmail}</td>
+                  <td>${log.action}</td>
+                  <td>${dateTime}</td>
+                </tr>
+              `
+              })
+              .join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `
+    const blob = new Blob([htmlTable], { type: 'application/vnd.ms-excel' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `logs_auditoria_${new Date().toISOString().split('T')[0]}.csv`
+    a.download = `logs_auditoria_${new Date().toISOString().split('T')[0]}.xls`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -78,13 +106,14 @@ export default function AuditLogs() {
       <!DOCTYPE html>
       <html>
       <head>
+        <meta charset="UTF-8">
         <title>Logs de Auditoria - GGIM</title>
         <style>
           body { font-family: sans-serif; padding: 20px; color: #333; }
           .header { text-align: center; margin-bottom: 30px; }
           h2 { margin: 0 0 10px 0; color: #111; }
           .meta { font-size: 14px; color: #666; margin-bottom: 20px; }
-          table { w-full; border-collapse: collapse; margin-top: 20px; font-size: 13px; width: 100%; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 13px; }
           th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
           th { background-color: #f4f4f4; font-weight: bold; text-transform: uppercase; }
           tr:nth-child(even) { background-color: #fafafa; }
@@ -190,15 +219,15 @@ export default function AuditLogs() {
         <div className="flex gap-2 w-full sm:w-auto mt-2 sm:mt-0">
           <Button
             variant="outline"
-            className="h-11 px-5 rounded-xl font-bold shadow-sm flex-1 sm:flex-none bg-background"
+            className="h-11 px-5 rounded-xl font-bold shadow-sm flex-1 sm:flex-none bg-background text-foreground"
             onClick={handleExportExcel}
             disabled={filteredLogs.length === 0}
           >
-            <Download className="w-4 h-4 mr-2" /> Exportar Excel
+            <Download className="w-4 h-4 mr-2" /> Exportar para Excel
           </Button>
           <Button
             variant="outline"
-            className="h-11 px-5 rounded-xl font-bold shadow-sm flex-1 sm:flex-none bg-background"
+            className="h-11 px-5 rounded-xl font-bold shadow-sm flex-1 sm:flex-none bg-background text-foreground"
             onClick={handleExportPDF}
             disabled={filteredLogs.length === 0}
           >
