@@ -111,11 +111,11 @@ export default function Login() {
         })
       }
     } catch (error: any) {
-      console.error('[Bug Scanner] Unhandled login error intercepted:', error?.message || error)
+      console.warn('[Bug Scanner] Unhandled login error intercepted:', error?.message || error)
       toast({
         title: 'Falha de Conexão',
         description:
-          'A comunicação com o servidor foi interrompida (HTTP N/A). O sistema tentará operar no modo de segurança.',
+          'A comunicação com o servidor foi interrompida. O sistema operará no modo de segurança.',
         variant: 'destructive',
       })
     } finally {

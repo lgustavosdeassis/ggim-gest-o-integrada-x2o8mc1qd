@@ -26,8 +26,15 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     // Incorporate a controlled delay enforcing graceful initialization
     // avoiding runtime crashes when network latency stalls the global state hydration
     // Extended timeout to 1000ms ensures API retries complete without triggering loops
-    const timer = setTimeout(() => setIsReady(true), 1000)
-    return () => clearTimeout(timer)
+    let isMounted = true
+    const timer = setTimeout(() => {
+      if (isMounted) setIsReady(true)
+    }, 1000)
+
+    return () => {
+      isMounted = false
+      clearTimeout(timer)
+    }
   }, [])
 
   if (!isReady) {

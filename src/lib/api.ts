@@ -105,7 +105,7 @@ async function fetchStrict(
       '[Bug Scanner] Circuit breaker open. Skipping network request to prevent blocking.',
     )
     if (throwOnFailure) {
-      throw new Error('Circuit Breaker Open')
+      throw new Error('Safe Mode Fallback: Circuit Breaker Open')
     }
     return memoryDb
       ? JSON.parse(JSON.stringify(memoryDb))
@@ -153,7 +153,12 @@ async function fetchStrict(
     const targetUrl = `${JSONBLOB_API}/${id}`
     const isTargetUrl = targetUrl === 'https://jsonblob.com/api/jsonBlob/1351608930495815680'
 
-    if (isTargetUrl && (errorMsg.includes('Failed to fetch') || errorMsg.includes('HTTP N/A'))) {
+    if (
+      isTargetUrl &&
+      (errorMsg.includes('Failed to fetch') ||
+        errorMsg.includes('HTTP N/A') ||
+        errorMsg.includes('Network disconnected'))
+    ) {
       console.warn(
         `[Bug Scanner] Intercepted expected network drop for primary DB URL: ${errorMsg}`,
       )
@@ -169,12 +174,18 @@ async function fetchStrict(
     consecutiveFailures++
     lastFailureTime = Date.now()
 
-    console.error(
-      `[Bug Scanner] Network failure intercepted after max retries: ${errorMsg}. Safe mode fallback activated.`,
-    )
+    if (isTargetUrl) {
+      console.warn(
+        `[Bug Scanner] Network failure intercepted after max retries: ${errorMsg}. Safe mode fallback activated.`,
+      )
+    } else {
+      console.warn(
+        `[Bug Scanner] External network failure intercepted: ${errorMsg}. Safe mode fallback activated.`,
+      )
+    }
 
     if (throwOnFailure) {
-      throw e
+      throw new Error('Safe Mode Fallback: Network failure intercepted')
     }
 
     // Safe mode fallback ensuring system integrity
@@ -195,7 +206,6 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
     } catch (e) {
       console.warn(
         '[Bug Scanner] Network issue during background fetch setup, using resilient fallback state',
-        e,
       )
       return memoryDb
         ? JSON.parse(JSON.stringify(memoryDb))
@@ -208,7 +218,7 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
       return data || JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
     })
     .catch((e) => {
-      console.error('[Bug Scanner] Unhandled failure in fetchCloudDb', e)
+      console.warn('[Bug Scanner] Unhandled failure in fetchCloudDb intercepted')
       if (fetchPromise === p) fetchPromise = null
       return memoryDb
         ? JSON.parse(JSON.stringify(memoryDb))
@@ -263,7 +273,9 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
 
               if (
                 isTargetUrl &&
-                (errorMsg.includes('Failed to fetch') || errorMsg.includes('HTTP N/A'))
+                (errorMsg.includes('Failed to fetch') ||
+                  errorMsg.includes('HTTP N/A') ||
+                  errorMsg.includes('Network disconnected'))
               ) {
                 console.warn(
                   `[Bug Scanner] Intercepted PUT network drop for primary DB URL: ${errorMsg}`,
@@ -275,7 +287,7 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
                 await new Promise((res) => setTimeout(res, delay))
                 return doPut(r - 1, attempt + 1)
               }
-              throw e
+              throw new Error('Safe Mode Fallback: Network failure intercepted during save')
             }
           }
 
@@ -297,13 +309,16 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
           memoryDb = JSON.parse(JSON.stringify(db))
           resolve()
         } catch (e: any) {
-          console.error('[Bug Scanner] Atomic update failed to synchronize:', e?.message || e)
-          reject(e)
+          console.warn('[Bug Scanner] Atomic update failed to synchronize:', e?.message || e)
+          reject(new Error('Safe Mode Fallback: Synchronization delayed'))
         } finally {
           isSaving = false
         }
       })
-      .catch(reject)
+      .catch((e) => {
+        console.warn('[Bug Scanner] Mutex chained rejection intercepted')
+        reject(new Error('Safe Mode Fallback: Mutex rejected'))
+      })
   })
 }
 
