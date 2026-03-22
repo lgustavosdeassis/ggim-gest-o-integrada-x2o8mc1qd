@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Loader2, ArrowRight } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import logoGgim from '@/assets/logo-ggim.svg'
 
 export default function Login() {
   const { login, users } = useAuthStore()
@@ -23,7 +22,12 @@ export default function Login() {
     setIsLoading(true)
 
     setTimeout(() => {
-      const user = users.find((u) => u.email === email && u.password === password)
+      // Improved authentication logic to be case-insensitive and ignore trailing spaces
+      const user = users.find(
+        (u) =>
+          u.email.toLowerCase().trim() === email.toLowerCase().trim() && u.password === password,
+      )
+
       if (user) {
         login(user)
         navigate('/')
@@ -47,8 +51,8 @@ export default function Login() {
         <CardHeader className="space-y-6 flex flex-col items-center text-center pb-8 pt-12 border-b border-[#0f172a]/10 bg-slate-50/50">
           <div className="flex items-center gap-6 relative">
             <div className="absolute inset-0 bg-[#eab308]/20 blur-2xl rounded-full scale-150 z-0" />
-            <div className="w-32 h-32 z-10 flex items-center justify-center drop-shadow-xl">
-              <img src={logoGgim} alt="GGIM Logo" className="w-full h-full object-contain" />
+            <div className="w-32 h-32 z-10 flex items-center justify-center drop-shadow-xl bg-[#0f172a] rounded-2xl p-3 border border-[#1e293b]/50">
+              <img src="/logo-ggim.png" alt="GGIM Logo" className="w-full h-full object-contain" />
             </div>
           </div>
           <div className="space-y-2 z-10">
@@ -62,24 +66,6 @@ export default function Login() {
         </CardHeader>
         <CardContent className="p-8">
           <form onSubmit={handleLogin} className="space-y-6">
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 font-medium">
-              <p className="mb-2 font-bold text-sm">Credenciais de Acesso (Teste):</p>
-              <div className="space-y-1">
-                <p>
-                  Proprietário: <span className="font-bold">admin@ggim.foz.br</span> /{' '}
-                  <span className="font-bold">admin</span>
-                </p>
-                <p>
-                  Editor: <span className="font-bold">editor@ggim.foz.br</span> /{' '}
-                  <span className="font-bold">editor</span>
-                </p>
-                <p>
-                  Visualizador: <span className="font-bold">viewer@ggim.foz.br</span> /{' '}
-                  <span className="font-bold">viewer</span>
-                </p>
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label
                 htmlFor="email"
@@ -118,15 +104,15 @@ export default function Login() {
             </div>
             <Button
               type="submit"
-              className="w-full h-14 font-black text-base bg-[#0f172a] text-white hover:bg-[#1e293b] shadow-xl transition-all mt-4 rounded-xl flex items-center justify-center gap-2 group"
+              className="w-full h-14 font-black text-base bg-[#0f172a] text-[#eab308] hover:bg-[#1e293b] hover:text-[#facc15] shadow-xl transition-all mt-4 rounded-xl flex items-center justify-center gap-2 group border border-[#eab308]/20"
               disabled={isLoading}
             >
               {isLoading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className="h-6 w-6 animate-spin text-[#eab308]" />
               ) : (
                 <>
                   Entrar
-                  <ArrowRight className="h-5 w-5 opacity-70 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="h-5 w-5 opacity-80 group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </Button>
