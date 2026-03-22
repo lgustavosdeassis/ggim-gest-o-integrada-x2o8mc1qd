@@ -60,16 +60,14 @@ const DEFAULT_DB = {
 }
 
 // Global Centralized Database Implementation using JSONBlob to ensure real-time cross-device sync
+// Dependency on localStorage for business data is eliminated to prevent local session silos.
 const JSONBLOB_API = 'https://jsonblob.com/api/jsonBlob'
 const SYNC_KEY = 'ggim_cloud_sync_id'
 const PRIMARY_DB_ID = import.meta.env.VITE_GLOBAL_SYNC_ID || '1351608930495815680'
 
-let lastFetchTime = 0
-let cachedDb: any = null
-let fetchPromise: Promise<any> | null = null
-
 let isSaving = false
-let saveQueue: any[] = []
+let memoryDb: any = null
+let fetchPromise: Promise<any> | null = null
 
 export async function getCloudDbId(): Promise<string> {
   let id = localStorage.getItem(SYNC_KEY)
@@ -83,138 +81,98 @@ export async function getCloudDbId(): Promise<string> {
 export function setCloudDbId(id: string) {
   if (id) localStorage.setItem(SYNC_KEY, id)
   else localStorage.setItem(SYNC_KEY, PRIMARY_DB_ID)
-  cachedDb = null
-  window.dispatchEvent(new Event('db_updated'))
-}
-
-function getLocalFallback() {
-  const data = localStorage.getItem('ggim_local_cache')
-  if (data) return JSON.parse(data)
-  return DEFAULT_DB
-}
-
-function saveLocalFallback(data: any) {
-  localStorage.setItem('ggim_local_cache', JSON.stringify(data))
-}
-
-async function processSaveQueue() {
-  if (isSaving || saveQueue.length === 0) return
-  isSaving = true
-  const id = await getCloudDbId()
-
-  while (saveQueue.length > 0) {
-    const data = saveQueue.pop() // Take the most recent snapshot
-    saveQueue = [] // Clear intermediate snapshots
-
-    try {
-      const res = await fetch(`${JSONBLOB_API}/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (!res.ok) {
-        if (res.status === 404) {
-          const createRes = await fetch(JSONBLOB_API, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify(data),
-          })
-          const location = createRes.headers.get('Location')
-          if (location) {
-            const newId = location.split('/').pop() || id
-            localStorage.setItem(SYNC_KEY, newId)
-          }
-        } else {
-          throw new Error(`HTTP Error: ${res.status}`)
-        }
-      }
-      saveLocalFallback(data)
-    } catch (e) {
-      console.error('Failed to save to cloud DB', e)
-      saveLocalFallback(data)
-    }
-  }
-  isSaving = false
-}
-
-async function saveCloudDb(data: any): Promise<void> {
-  data.updatedAt = Date.now()
-  cachedDb = JSON.parse(JSON.stringify(data))
-  saveLocalFallback(cachedDb)
-
-  saveQueue.push(cachedDb)
-  processSaveQueue()
-
+  memoryDb = null // Force a fresh network fetch on next load
   window.dispatchEvent(new Event('db_updated'))
 }
 
 async function fetchCloudDb(forceFresh = false): Promise<any> {
-  const id = await getCloudDbId()
-  const now = Date.now()
-
-  // If we have pending saves, return the local cache immediately to prevent overwriting local state
-  if (isSaving || saveQueue.length > 0) {
-    return JSON.parse(JSON.stringify(cachedDb || getLocalFallback()))
+  // Prevent background polling from overriding the memory state while an optimistic save is in progress.
+  // This solves the "reverting" bug during rapid updates.
+  if (isSaving && memoryDb) {
+    return JSON.parse(JSON.stringify(memoryDb))
   }
 
-  // Throttle network requests to batch concurrent loads
-  if (!forceFresh && cachedDb && now - lastFetchTime < 2000) {
-    return JSON.parse(JSON.stringify(cachedDb))
+  // Use fast in-memory state if we are not forcing a fresh network request
+  if (!forceFresh && memoryDb) {
+    return JSON.parse(JSON.stringify(memoryDb))
   }
 
   if (!forceFresh && fetchPromise) return fetchPromise
 
-  const fetchUrl = `${JSONBLOB_API}/${id}?_t=${now}`
+  const id = await getCloudDbId()
+  const fetchUrl = `${JSONBLOB_API}/${id}?_t=${Date.now()}` // Cache buster
 
-  const newPromise = fetch(fetchUrl, {
+  const p = fetch(fetchUrl, {
     headers: {
-      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
       Pragma: 'no-cache',
-      Expires: '0',
     },
   })
     .then(async (res) => {
       if (!res.ok) {
-        if (res.status === 404) {
-          return { ...DEFAULT_DB, updatedAt: Date.now() }
-        }
-        throw new Error('Cloud DB not found')
+        if (res.status === 404) return { ...DEFAULT_DB, updatedAt: Date.now() }
+        throw new Error(`HTTP Error: ${res.status}`)
       }
       return res.json()
     })
     .then((data) => {
-      if (!isSaving && saveQueue.length === 0) {
-        cachedDb = data
-        lastFetchTime = Date.now()
-        saveLocalFallback(data)
+      // Only update memory if we haven't started a new save during the fetch window
+      if (!isSaving) {
+        memoryDb = data
       }
-      if (fetchPromise === newPromise) fetchPromise = null
+      if (fetchPromise === p) fetchPromise = null
       return JSON.parse(JSON.stringify(data))
     })
     .catch((e) => {
-      console.warn('Cloud DB fetch failed, using local fallback', e)
-      if (fetchPromise === newPromise) fetchPromise = null
-      return cachedDb || getLocalFallback()
+      console.warn('Cloud DB fetch failed, utilizing active memory state', e)
+      if (fetchPromise === p) fetchPromise = null
+      return memoryDb || DEFAULT_DB
     })
 
   if (!forceFresh || !fetchPromise) {
-    fetchPromise = newPromise
+    fetchPromise = p
   }
 
-  return newPromise
+  return p
 }
 
 let updateMutex = Promise.resolve()
 
-// Guaranteed atomic sequential update to avoid data loss due to race conditions
+// Guaranteed atomic sequential update directly to the centralized database
 export async function atomicUpdate(updater: (db: any) => void) {
   updateMutex = updateMutex.then(async () => {
+    isSaving = true
     try {
+      const id = await getCloudDbId()
       const db = await fetchCloudDb(true)
+
       updater(db)
-      await saveCloudDb(db)
+      db.updatedAt = Date.now()
+      memoryDb = JSON.parse(JSON.stringify(db)) // Optimistically update memory instantly
+
+      const res = await fetch(`${JSONBLOB_API}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(db),
+      })
+
+      if (!res.ok && res.status === 404) {
+        // DB got deleted or expired, recreate it and update the ID globally
+        const createRes = await fetch(JSONBLOB_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify(db),
+        })
+        const location = createRes.headers.get('Location')
+        if (location) {
+          const newId = location.split('/').pop() || id
+          localStorage.setItem(SYNC_KEY, newId)
+        }
+      }
     } catch (e) {
-      console.error('Atomic update failed', e)
+      console.error('Atomic update failed to sync with central database', e)
+    } finally {
+      isSaving = false
     }
   })
   return updateMutex

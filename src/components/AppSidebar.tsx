@@ -1,123 +1,120 @@
 import { Link, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  FilePlus2,
-  Upload,
-  History,
-  Settings,
-  Users,
-  MonitorPlay,
-  ShieldAlert,
-  ScrollText,
-} from 'lucide-react'
-import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
+  SidebarGroup,
+  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
+  SidebarHeader,
 } from '@/components/ui/sidebar'
-import cmtLogo from '@/assets/logo-cmtecs-a4c2e.jpeg'
+import {
+  LayoutDashboard,
+  FilePlus2,
+  History,
+  MonitorPlay,
+  BarChart3,
+  Users,
+  ShieldAlert,
+  UploadCloud,
+} from 'lucide-react'
 import { useAuthStore } from '@/stores/auth'
-
-const getItems = (isOwner: boolean) => {
-  const base = [
-    { title: 'Dashboard BI', url: '/', icon: LayoutDashboard },
-    { title: 'Registrar Atividade', url: '/registrar', icon: FilePlus2 },
-    { title: 'Importar / Migrar', url: '/importar', icon: Upload },
-    { title: 'Histórico Completo', url: '/historico', icon: History },
-    { title: 'Videomonitoramento', url: '/videomonitoramento', icon: MonitorPlay },
-    { title: 'Observatório (OMSP)', url: '/observatorio', icon: ShieldAlert },
-  ]
-  if (isOwner) {
-    base.push({ title: 'Gestão de Usuários', url: '/usuarios', icon: Users })
-    base.push({ title: 'Logs de Auditoria', url: '/audit-logs', icon: ScrollText })
-  }
-  return base
-}
+import { cn } from '@/lib/utils'
 
 export function AppSidebar() {
-  const location = useLocation()
-  const user = useAuthStore((state) => state.user)
+  const { pathname } = useLocation()
+  const { user } = useAuthStore()
   const isOwner = user?.role === 'owner'
 
-  const items = getItems(isOwner)
+  const menuItems = [
+    { title: 'Painel Gerencial', path: '/', icon: LayoutDashboard },
+    { title: 'Registrar Atividade', path: '/registrar', icon: FilePlus2 },
+    { title: 'Importar Lote', path: '/importar', icon: UploadCloud },
+    { title: 'Acervo Histórico', path: '/historico', icon: History },
+    { title: 'Videomonitoramento', path: '/videomonitoramento', icon: MonitorPlay },
+    { title: 'Observatório', path: '/observatorio', icon: BarChart3 },
+  ]
+
+  const adminItems = [
+    { title: 'Usuários', path: '/usuarios', icon: Users },
+    { title: 'Auditoria', path: '/audit-logs', icon: ShieldAlert },
+  ]
 
   return (
-    <Sidebar className="border-r border-sidebar-border shadow-xl no-print bg-sidebar">
-      <SidebarHeader className="border-b border-sidebar-border py-6 px-6 bg-sidebar">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full overflow-hidden border border-primary/10 shadow-md bg-white">
-            <img src={cmtLogo} alt="CMTecs" className="h-full w-full object-cover scale-[1.15]" />
+    <Sidebar variant="sidebar" className="border-r border-border bg-sidebar z-40">
+      <SidebarHeader className="h-20 flex items-center px-4 border-b border-border justify-center bg-sidebar">
+        {/* CMTecs Brand Adjustment: circular container fully filled without visible white background area */}
+        <div className="flex items-center gap-3 w-full justify-center">
+          <div className="h-11 w-11 rounded-full overflow-hidden bg-white shadow-sm border border-border flex-shrink-0 flex items-center justify-center p-0">
+            <img
+              src="https://img.usecurling.com/i?q=shield&color=black&shape=fill"
+              alt="CMTecs"
+              className="w-full h-full object-cover scale-110"
+            />
           </div>
-          <div className="flex flex-col flex-1 truncate">
-            <span className="truncate font-black text-[22px] tracking-tight text-sidebar-foreground">
-              CMTecs
+          <div className="flex flex-col truncate">
+            <span className="font-black text-lg tracking-tight text-sidebar-foreground truncate leading-none">
+              CMTECS
+            </span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/60 truncate mt-0.5">
+              Gestão Integrada
             </span>
           </div>
         </div>
       </SidebarHeader>
-      <SidebarContent className="px-4 pt-6">
+      <SidebarContent className="py-4">
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[11px] uppercase tracking-widest text-sidebar-foreground/50 mb-4 px-2 font-bold">
-            Menu Principal
-          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu className="gap-2">
-              {items.map((item) => {
-                const isActive = location.pathname === item.url
-                return (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isActive}
-                      className={`h-12 rounded-xl transition-all duration-200 ${
-                        isActive
-                          ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-sm'
-                          : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50 font-medium'
-                      }`}
-                    >
-                      <Link to={item.url} className="flex items-center gap-3 px-2">
-                        <item.icon
-                          className={`h-5 w-5 ${isActive ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/50'}`}
-                        />
-                        <span className="text-sm">{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )
-              })}
+            <SidebarMenu className="gap-2 px-2">
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.path}
+                    className={cn(
+                      'h-11 rounded-xl px-4 transition-all font-bold text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent',
+                      pathname === item.path &&
+                        'bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground shadow-sm',
+                    )}
+                  >
+                    <Link to={item.path}>
+                      <item.icon className="w-5 h-5 mr-3" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {isOwner && (
+                <>
+                  <div className="mt-8 mb-2 px-4 text-[10px] font-black uppercase tracking-widest text-sidebar-foreground/40">
+                    Administração Geral
+                  </div>
+                  {adminItems.map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === item.path}
+                        className={cn(
+                          'h-11 rounded-xl px-4 transition-all font-bold text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent',
+                          pathname === item.path &&
+                            'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm',
+                        )}
+                      >
+                        <Link to={item.path}>
+                          <item.icon className="w-5 h-5 mr-3" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4 bg-sidebar">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              isActive={location.pathname === '/profile'}
-              className={`h-12 rounded-xl transition-all duration-200 ${
-                location.pathname === '/profile'
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold shadow-sm'
-                  : 'text-sidebar-foreground/70 hover:text-sidebar-accent-foreground hover:bg-sidebar-accent/50 font-medium'
-              }`}
-            >
-              <Link to="/profile" className="flex items-center gap-3 px-2">
-                <Settings
-                  className={`h-5 w-5 ${location.pathname === '/profile' ? 'text-sidebar-accent-foreground' : 'text-sidebar-foreground/50'}`}
-                />
-                <span className="text-sm">Minha Conta</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
     </Sidebar>
   )
 }

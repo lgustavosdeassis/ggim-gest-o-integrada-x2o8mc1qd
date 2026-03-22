@@ -30,10 +30,10 @@ export function Header() {
         <SidebarTrigger className="-ml-2 h-10 w-10 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors" />
       </div>
 
-      {/* Center section: GGIM Hexagonal Logo and Title */}
+      {/* Center section: GGIM Hexagonal Logo and Title positioned correctly */}
       <div className="hidden lg:flex flex-1 items-center justify-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center">
-          <GgimHexLogo className="w-full h-full object-contain drop-shadow-md" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-[#0f172a] rounded-xl overflow-hidden shadow-inner border border-primary-foreground/10 p-0">
+          <GgimHexLogo className="w-[110%] h-[110%] object-contain drop-shadow-md" />
         </div>
         <h1 className="text-base lg:text-lg font-bold tracking-tight text-center">
           Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)

@@ -51,7 +51,7 @@ export default function Login() {
     } catch (error) {
       toast({
         title: 'Erro de Conexão',
-        description: 'Não foi possível contatar o servidor central.',
+        description: 'Não foi possível contatar o banco de dados central.',
         variant: 'destructive',
       })
     } finally {
@@ -61,10 +61,11 @@ export default function Login() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 relative">
-      <Card className="w-full max-w-[400px] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border-0 bg-white z-10 rounded-[2rem] overflow-hidden">
-        <CardHeader className="space-y-4 flex flex-col items-center text-center pb-6 pt-10">
-          <div className="w-[120px] h-[120px] flex items-center justify-center shadow-xl bg-[#0f172a] rounded-[2rem] overflow-hidden border-2 border-[#1e293b] p-3">
-            <GgimHexLogo className="w-full h-full object-contain drop-shadow-md" />
+      <Card className="w-full max-w-[420px] shadow-[0_8px_30px_rgb(0,0,0,0.08)] border-0 bg-white z-10 rounded-[2rem] overflow-hidden">
+        <CardHeader className="space-y-5 flex flex-col items-center text-center pb-6 pt-10">
+          {/* Institutional Branding Update: Navy Blue frame for the logo container */}
+          <div className="w-[120px] h-[120px] flex items-center justify-center shadow-xl bg-[#0f172a] rounded-[2rem] overflow-hidden border-2 border-[#1e293b] p-0">
+            <GgimHexLogo className="w-[100%] h-[100%] object-contain scale-[1.05]" />
           </div>
           <div className="space-y-1">
             <CardTitle className="text-3xl font-black tracking-tight text-[#0f172a]">
