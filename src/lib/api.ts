@@ -63,6 +63,23 @@ let updateMutex = Promise.resolve()
 // Centralized Session Identity strictly isolated from local/session storage to enforce resilience and compliance
 let activeSyncId: string | null = null
 
+// Circuit Breaker to prevent runtime errors and cascading failures
+let consecutiveFailures = 0
+const MAX_FAILURES = 3
+const CIRCUIT_TIMEOUT = 15000
+let lastFailureTime = 0
+
+function isCircuitOpen() {
+  if (consecutiveFailures >= MAX_FAILURES) {
+    if (Date.now() - lastFailureTime > CIRCUIT_TIMEOUT) {
+      consecutiveFailures = 0 // Half-open
+      return false
+    }
+    return true
+  }
+  return false
+}
+
 export async function getCloudDbId(): Promise<string> {
   if (!activeSyncId) {
     activeSyncId = PRIMARY_DB_ID
@@ -83,11 +100,23 @@ async function fetchStrict(
   throwOnFailure = false,
   attempt = 0,
 ): Promise<any> {
+  if (isCircuitOpen()) {
+    console.warn(
+      '[Bug Scanner] Circuit breaker open. Skipping network request to prevent blocking.',
+    )
+    if (throwOnFailure) {
+      throw new Error('Circuit Breaker Open')
+    }
+    return memoryDb
+      ? JSON.parse(JSON.stringify(memoryDb))
+      : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+  }
+
   try {
     let res: Response | undefined
 
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 12000)
+    const timeoutId = setTimeout(() => controller.abort(), 8000)
 
     try {
       res = await fetch(`${JSONBLOB_API}/${id}`, {
@@ -108,31 +137,37 @@ async function fetchStrict(
 
     if (!res || !res.ok) {
       const status = res ? res.status : 'N/A'
-      if (status === 404)
+      if (status === 404) {
+        consecutiveFailures = 0
         return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
-      throw new Error(`HTTP ${status === 'N/A' ? 'N/A' : `Error: ${status}`}`)
+      }
+      throw new Error(`HTTP Error: ${status}`)
     }
 
     const text = await res.text()
+    consecutiveFailures = 0 // Reset circuit breaker on success
     return text
       ? JSON.parse(text)
       : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
   } catch (e: any) {
     // Intelligent Backoff: At least 3 automatic retry attempts with exponential backoff strategy
     if (retries > 0) {
-      const delay = 1000 * Math.pow(2, attempt)
+      const delay = 1000 * Math.pow(1.5, attempt)
       await new Promise((r) => setTimeout(r, delay))
       return fetchStrict(id, retries - 1, throwOnFailure, attempt + 1)
     }
+
+    consecutiveFailures++
+    lastFailureTime = Date.now()
+
+    console.error(
+      `[Bug Scanner] Network failure intercepted: ${e?.message || 'Unknown error'}. Safe mode fallback activated.`,
+    )
 
     if (throwOnFailure) {
       throw e
     }
 
-    console.warn(
-      `Network issue intercepted by fetchStrict [${e?.message || 'Unknown'}], returning resilient fallback state`,
-      e,
-    )
     return memoryDb
       ? JSON.parse(JSON.stringify(memoryDb))
       : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
@@ -148,7 +183,10 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
       const id = await getCloudDbId()
       return await fetchStrict(id, 3, false)
     } catch (e) {
-      console.warn('Network issue during background fetch setup, using resilient fallback state', e)
+      console.warn(
+        '[Bug Scanner] Network issue during background fetch setup, using resilient fallback state',
+        e,
+      )
       return memoryDb
         ? JSON.parse(JSON.stringify(memoryDb))
         : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
@@ -160,7 +198,7 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
       return data || JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
     })
     .catch((e) => {
-      console.error('Unhandled failure in fetchCloudDb', e)
+      console.error('[Bug Scanner] Unhandled failure in fetchCloudDb', e)
       if (fetchPromise === p) fetchPromise = null
       return memoryDb
         ? JSON.parse(JSON.stringify(memoryDb))
@@ -193,8 +231,8 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
                   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                   body: JSON.stringify(db),
                 })
-              } catch (e) {
-                throw new Error('Network error during PUT')
+              } catch (e: any) {
+                throw new Error(`Network error during PUT: ${e?.message}`)
               }
               if (!putRes || (!putRes.ok && putRes.status !== 404)) {
                 throw new Error(`HTTP ${putRes ? putRes.status : 'N/A'}`)
@@ -226,8 +264,8 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
 
           memoryDb = JSON.parse(JSON.stringify(db))
           resolve()
-        } catch (e) {
-          console.error('Atomic update failed to synchronize', e)
+        } catch (e: any) {
+          console.error('[Bug Scanner] Atomic update failed to synchronize:', e?.message || e)
           reject(e)
         } finally {
           isSaving = false

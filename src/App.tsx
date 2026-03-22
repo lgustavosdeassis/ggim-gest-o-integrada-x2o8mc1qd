@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Layout } from '@/components/Layout'
 import { GlobalDataSync } from '@/components/GlobalDataSync'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -20,6 +20,7 @@ import { useState, useEffect } from 'react'
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated, user, logout } = useAuthStore()
   const [isReady, setIsReady] = useState(false)
+  const location = useLocation()
 
   useEffect(() => {
     // Incorporate a controlled delay enforcing graceful initialization
@@ -43,8 +44,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   // Verify strict authentication and ensure old sessions without a role are logged out
   if (!isAuthenticated || (isAuthenticated && !user?.role)) {
-    if (isAuthenticated) logout()
-    return <Navigate to="/login" replace />
+    if (isAuthenticated) {
+      // Prevents redirect loop and ensures safe state reset without breaking UI
+      setTimeout(() => logout(), 0)
+    }
+    return <Navigate to="/login" state={{ from: location }} replace />
   }
 
   return <ErrorBoundary>{children}</ErrorBoundary>
