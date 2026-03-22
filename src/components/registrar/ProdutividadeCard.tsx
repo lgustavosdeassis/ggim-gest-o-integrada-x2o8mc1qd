@@ -232,7 +232,7 @@ export function ProdutividadeCard() {
                       </FormLabel>
                       <Select
                         onValueChange={typeField.onChange}
-                        value={typeField.value || undefined}
+                        value={typeField.value || ''}
                         disabled={isViewer}
                       >
                         <FormControl>

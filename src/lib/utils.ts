@@ -283,33 +283,85 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
       return
     }
 
+    const isPdf = blob?.type === 'application/pdf' || doc.name?.toLowerCase().endsWith('.pdf')
+
+    // For PDFs, we open them safely in a new tab. Trying to call print() on an iframe
+    // containing a PDF triggers cross-origin errors because the browser's PDF viewer
+    // extension takes over the frame.
+    if (isPdf) {
+      const win = window.open(printUrl, '_blank')
+      if (!win) {
+        alert('Por favor, permita pop-ups no seu navegador para imprimir o documento.')
+      }
+      if (isObjectUrl) {
+        setTimeout(() => URL.revokeObjectURL(printUrl), 60000)
+      }
+      return
+    }
+
+    // For images and other documents, we create a hidden iframe and inject the content safely
+    // using document.write, avoiding cross-origin issues completely.
     const iframe = document.createElement('iframe')
     iframe.style.display = 'none'
-    iframe.src = printUrl
     document.body.appendChild(iframe)
 
-    iframe.onload = () => {
+    const iframeDoc = iframe.contentWindow?.document
+    if (!iframeDoc) {
+      window.open(printUrl, '_blank')
+      return
+    }
+
+    const isImage =
+      blob?.type.startsWith('image/') || doc.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+
+    iframeDoc.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Imprimir Anexo</title>
+          <style>
+            body { margin: 0; display: flex; justify-content: center; font-family: sans-serif; }
+            img { max-width: 100%; height: auto; }
+            pre { white-space: pre-wrap; padding: 20px; width: 100%; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          ${
+            isImage
+              ? `<img src="${printUrl}" onload="window.print();" onerror="window.print();" />`
+              : `<pre id="content"></pre>`
+          }
+        </body>
+      </html>
+    `)
+    iframeDoc.close()
+
+    // If it's text/plain fallback, populate it and trigger print manually
+    if (!isImage) {
+      const text = blob ? await blob.text() : 'Documento pronto para impressão.'
+      const contentEl = iframeDoc.getElementById('content')
+      if (contentEl) contentEl.textContent = text
       setTimeout(() => {
         try {
-          if (iframe.contentWindow) {
-            iframe.contentWindow.print()
-          }
+          iframe.contentWindow?.print()
         } catch (e) {
-          console.error('Print failed', e)
+          console.error('Print falhou:', e)
           window.open(printUrl, '_blank')
         }
-        setTimeout(() => {
-          if (document.body.contains(iframe)) {
-            document.body.removeChild(iframe)
-          }
-          if (isObjectUrl) {
-            URL.revokeObjectURL(printUrl)
-          }
-        }, 60000)
       }, 500)
     }
+
+    // Cleanup resources
+    setTimeout(() => {
+      if (document.body.contains(iframe)) {
+        document.body.removeChild(iframe)
+      }
+      if (isObjectUrl) {
+        URL.revokeObjectURL(printUrl)
+      }
+    }, 60000)
   } catch (err) {
     console.error('Erro ao imprimir documento:', err)
-    alert('Houve um erro ao tentar imprimir o documento.')
+    alert('Houve um erro ao tentar realizar a impressão.')
   }
 }

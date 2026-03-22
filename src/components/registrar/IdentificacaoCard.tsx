@@ -32,11 +32,7 @@ export function IdentificacaoCard() {
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
                 INSTÂNCIA
               </FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value || undefined}
-                disabled={isViewer}
-              >
+              <Select onValueChange={field.onChange} value={field.value || ''} disabled={isViewer}>
                 <FormControl>
                   <SelectTrigger className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] focus:ring-[#eab308]">
                     <SelectValue placeholder="Selecione a instância" />
@@ -66,11 +62,7 @@ export function IdentificacaoCard() {
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
                 TIPO DO EVENTO
               </FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value || undefined}
-                disabled={isViewer}
-              >
+              <Select onValueChange={field.onChange} value={field.value || ''} disabled={isViewer}>
                 <FormControl>
                   <SelectTrigger className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] focus:ring-[#eab308]">
                     <SelectValue placeholder="Selecione a tipologia" />
@@ -100,11 +92,7 @@ export function IdentificacaoCard() {
               <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
                 MODALIDADE
               </FormLabel>
-              <Select
-                onValueChange={field.onChange}
-                value={field.value || undefined}
-                disabled={isViewer}
-              >
+              <Select onValueChange={field.onChange} value={field.value || ''} disabled={isViewer}>
                 <FormControl>
                   <SelectTrigger className="bg-white border-[#0f172a]/20 h-12 rounded-xl text-[#0f172a] focus:ring-[#eab308]">
                     <SelectValue placeholder="Como ocorreu?" />
