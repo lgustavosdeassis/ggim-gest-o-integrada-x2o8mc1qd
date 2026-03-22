@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { GgimLogo } from '@/components/GgimLogo'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +33,7 @@ export function Header() {
       {/* Center section: GGIM Logo and Title */}
       <div className="hidden lg:flex flex-1 items-center justify-center gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center bg-[#0f172a] rounded-xl p-1 shadow-md border border-[#1e293b]">
-          <img src="/logo-ggim.png" alt="GGIM Logo" className="w-full h-full object-contain" />
+          <GgimLogo className="w-full h-full object-contain" />
         </div>
         <h1 className="text-base lg:text-lg font-bold tracking-tight text-center">
           Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
