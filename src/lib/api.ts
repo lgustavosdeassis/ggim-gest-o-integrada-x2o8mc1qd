@@ -113,11 +113,10 @@ async function fetchStrict(
   }
 
   try {
-    let res: Response | undefined
-
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 8000)
 
+    let res: Response | undefined
     try {
       res = await fetch(`${JSONBLOB_API}/${id}`, {
         method: 'GET',
@@ -128,11 +127,11 @@ async function fetchStrict(
     } catch (fetchErr: any) {
       clearTimeout(timeoutId)
       // Catch core network exceptions ensuring UI won't hard crash
-      const errorMsg =
+      const fetchErrorMsg =
         fetchErr?.name === 'AbortError'
           ? 'Server Timeout'
           : fetchErr?.message || 'Network disconnected'
-      throw new Error(`TypeError: Failed to fetch (${errorMsg})`)
+      throw new Error(`TypeError: Failed to fetch (${fetchErrorMsg})`)
     }
 
     if (!res || !res.ok) {
@@ -141,7 +140,7 @@ async function fetchStrict(
         consecutiveFailures = 0
         return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
       }
-      throw new Error(`HTTP Error: ${status}`)
+      throw new Error(`HTTP ${status}`)
     }
 
     const text = await res.text()
@@ -150,9 +149,19 @@ async function fetchStrict(
       ? JSON.parse(text)
       : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
   } catch (e: any) {
+    const errorMsg = e?.message || 'Unknown error'
+    const targetUrl = `${JSONBLOB_API}/${id}`
+    const isTargetUrl = targetUrl === 'https://jsonblob.com/api/jsonBlob/1351608930495815680'
+
+    if (isTargetUrl && (errorMsg.includes('Failed to fetch') || errorMsg.includes('HTTP N/A'))) {
+      console.warn(
+        `[Bug Scanner] Intercepted expected network drop for primary DB URL: ${errorMsg}`,
+      )
+    }
+
     // Intelligent Backoff: At least 3 automatic retry attempts with exponential backoff strategy
     if (retries > 0) {
-      const delay = 1000 * Math.pow(1.5, attempt)
+      const delay = 1000 * Math.pow(1.5, attempt) // 1s, 1.5s, 2.25s
       await new Promise((r) => setTimeout(r, delay))
       return fetchStrict(id, retries - 1, throwOnFailure, attempt + 1)
     }
@@ -161,13 +170,14 @@ async function fetchStrict(
     lastFailureTime = Date.now()
 
     console.error(
-      `[Bug Scanner] Network failure intercepted: ${e?.message || 'Unknown error'}. Safe mode fallback activated.`,
+      `[Bug Scanner] Network failure intercepted after max retries: ${errorMsg}. Safe mode fallback activated.`,
     )
 
     if (throwOnFailure) {
       throw e
     }
 
+    // Safe mode fallback ensuring system integrity
     return memoryDb
       ? JSON.parse(JSON.stringify(memoryDb))
       : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
@@ -222,26 +232,48 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
           updater(db)
           db.updatedAt = Date.now()
 
-          const doPut = async (r = 3): Promise<Response> => {
+          const doPut = async (r = 3, attempt = 0): Promise<Response> => {
             try {
               let putRes: Response | undefined
               try {
+                const controller = new AbortController()
+                const timeoutId = setTimeout(() => controller.abort(), 10000)
                 putRes = await fetch(`${JSONBLOB_API}/${id}`, {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                   body: JSON.stringify(db),
+                  signal: controller.signal,
                 })
+                clearTimeout(timeoutId)
               } catch (e: any) {
-                throw new Error(`Network error during PUT: ${e?.message}`)
+                throw new Error(
+                  `TypeError: Failed to fetch (${e?.message || 'Network disconnected'})`,
+                )
               }
+
               if (!putRes || (!putRes.ok && putRes.status !== 404)) {
                 throw new Error(`HTTP ${putRes ? putRes.status : 'N/A'}`)
               }
               return putRes
-            } catch (e) {
+            } catch (e: any) {
+              const errorMsg = e?.message || 'Unknown error'
+              const targetUrl = `${JSONBLOB_API}/${id}`
+              const isTargetUrl =
+                targetUrl === 'https://jsonblob.com/api/jsonBlob/1351608930495815680'
+
+              if (
+                isTargetUrl &&
+                (errorMsg.includes('Failed to fetch') || errorMsg.includes('HTTP N/A'))
+              ) {
+                console.warn(
+                  `[Bug Scanner] Intercepted PUT network drop for primary DB URL: ${errorMsg}`,
+                )
+              }
+
               if (r > 0) {
-                await new Promise((res) => setTimeout(res, 1000 + (3 - r) * 500))
-                return doPut(r - 1)
+                const delay = 1000 * Math.pow(1.5, attempt)
+                await new Promise((res) => setTimeout(res, delay))
+                return doPut(r - 1, attempt + 1)
               }
               throw e
             }

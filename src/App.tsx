@@ -25,7 +25,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Incorporate a controlled delay enforcing graceful initialization
     // avoiding runtime crashes when network latency stalls the global state hydration
-    const timer = setTimeout(() => setIsReady(true), 250)
+    // Extended timeout to 1000ms ensures API retries complete without triggering loops
+    const timer = setTimeout(() => setIsReady(true), 1000)
     return () => clearTimeout(timer)
   }, [])
 
@@ -34,8 +35,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       <div className="min-h-screen flex items-center justify-center bg-[#020617] text-white">
         <div className="flex flex-col items-center">
           <div className="w-10 h-10 border-4 border-[#eab308] border-t-transparent rounded-full animate-spin mb-5" />
-          <p className="text-white/60 font-bold text-xs uppercase tracking-[0.2em]">
-            Carregando Módulo Seguro...
+          <p className="text-white/60 font-bold text-xs uppercase tracking-[0.2em] animate-pulse">
+            Sincronizando Módulo Seguro...
           </p>
         </div>
       </div>

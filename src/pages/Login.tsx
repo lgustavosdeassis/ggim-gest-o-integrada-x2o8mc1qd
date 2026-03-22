@@ -25,7 +25,7 @@ export default function Login() {
     // guaranteeing rendering will not be interrupted by potential network latency
     api.users.list(true).catch((err) => {
       console.warn(
-        '[Bug Scanner] Prefetch network issue intercepted, UI remains stable:',
+        '[Bug Scanner] Prefetch network issue intercepted, UI remains fully available and stable:',
         err?.message,
       )
     })
@@ -49,14 +49,19 @@ export default function Login() {
         usersList = await Promise.race([
           api.users.list(true),
           new Promise<any>((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout na sincronização')), 4000),
+            setTimeout(() => reject(new Error('Timeout na sincronização')), 8000),
           ),
         ])
       } catch (apiErr: any) {
         console.warn(
-          '[Bug Scanner] Network/Timeout issue during login, using resilient fallback state',
+          '[Bug Scanner] Network/Timeout issue during login, using resilient fallback state:',
           apiErr?.message,
         )
+        toast({
+          title: 'Modo de Segurança Ativado',
+          description: 'A rede apresenta instabilidade. Operando com dados offline.',
+          variant: 'default',
+        })
         usersList = useAuthStore.getState().users
       }
 
@@ -106,11 +111,11 @@ export default function Login() {
         })
       }
     } catch (error: any) {
-      console.error('[Bug Scanner] Unhandled login error:', error?.message || error)
+      console.error('[Bug Scanner] Unhandled login error intercepted:', error?.message || error)
       toast({
-        title: 'Modo de Segurança',
+        title: 'Falha de Conexão',
         description:
-          'Não foi possível contatar o banco de dados central. Operando em modo offline.',
+          'A comunicação com o servidor foi interrompida (HTTP N/A). O sistema tentará operar no modo de segurança.',
         variant: 'destructive',
       })
     } finally {
