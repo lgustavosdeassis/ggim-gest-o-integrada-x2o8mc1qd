@@ -11,8 +11,9 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { FileDown, Filter, X } from 'lucide-react'
-import logoGgim from '@/assets/logo-ggim-texto-preto-sem-fundo-4ad89.jpeg'
 import { formatDateTime } from '@/lib/utils'
+
+const logoGgim = 'https://img.usecurling.com/i?q=hexagon%20globe&color=multicolor&shape=fill'
 
 const INSTANCIAS = [
   'Colegiado Pleno',

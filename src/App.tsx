@@ -10,6 +10,7 @@ import NotFound from '@/pages/NotFound'
 import Profile from '@/pages/Profile'
 import Login from '@/pages/Login'
 import Usuarios from '@/pages/Usuarios'
+import AuditLogs from '@/pages/AuditLogs'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
 
@@ -46,6 +47,7 @@ export default function App() {
           <Route path="observatorio" element={<Observatorio />} />
           <Route path="profile" element={<Profile />} />
           <Route path="usuarios" element={<Usuarios />} />
+          <Route path="audit-logs" element={<AuditLogs />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAppStore } from '@/stores/main'
 import { useAuthStore } from '@/stores/auth'
+import { useAuditStore } from '@/stores/audit'
 import { Button } from '@/components/ui/button'
 import { Form } from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
@@ -31,7 +32,9 @@ export default function Registrar() {
   const { toast } = useToast()
 
   const { activities, addActivity, updateActivity } = useAppStore()
-  const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
+  const { user } = useAuthStore()
+  const isViewer = user?.role === 'viewer'
+  const addLog = useAuditStore((state) => state.addLog)
 
   const defaultActivity = useMemo(() => {
     return editId ? activities.find((a) => a.id === editId) : null
@@ -170,9 +173,19 @@ export default function Registrar() {
     } as any
     if (editId) {
       updateActivity(editId, payload)
+      addLog({
+        userName: user?.name || 'Sistema',
+        userEmail: user?.email || '',
+        action: `Editou os dados do evento: ${payload.eventType} (${payload.instance})`,
+      })
       toast({ title: 'Atividade atualizada com sucesso.' })
     } else {
       addActivity(payload)
+      addLog({
+        userName: user?.name || 'Sistema',
+        userEmail: user?.email || '',
+        action: `Registrou uma nova atividade: ${payload.eventType} (${payload.instance})`,
+      })
       toast({ title: 'Atividade registrada com sucesso.' })
     }
     navigate('/historico')

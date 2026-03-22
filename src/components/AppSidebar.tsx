@@ -8,6 +8,7 @@ import {
   Users,
   MonitorPlay,
   ShieldAlert,
+  ScrollText,
 } from 'lucide-react'
 import {
   Sidebar,
@@ -35,6 +36,7 @@ const getItems = (isOwner: boolean) => {
   ]
   if (isOwner) {
     base.push({ title: 'Gestão de Usuários', url: '/usuarios', icon: Users })
+    base.push({ title: 'Logs de Auditoria', url: '/audit-logs', icon: ScrollText })
   }
   return base
 }

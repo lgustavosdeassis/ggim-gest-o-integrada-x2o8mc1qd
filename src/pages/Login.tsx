@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import logoGgim from '@/assets/logo-ggim-texto-preto-sem-fundo-4ad89.jpeg'
 import { Loader2, ArrowRight } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+
+const logoGgim = 'https://img.usecurling.com/i?q=hexagon%20globe&color=multicolor&shape=fill'
 
 export default function Login() {
   const { login, users } = useAuthStore()

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
+import { useAuditStore } from '@/stores/audit'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -63,6 +64,7 @@ const formSchema = z.object({
 
 export default function Usuarios() {
   const { user: currentUser, users, addUser, removeUser } = useAuthStore()
+  const addLog = useAuditStore((state) => state.addLog)
   const [isOpen, setIsOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -86,6 +88,11 @@ export default function Usuarios() {
           : values.role === 'editor'
             ? 'Editor'
             : 'Visualizador',
+    })
+    addLog({
+      userName: currentUser?.name || 'Sistema',
+      userEmail: currentUser?.email || '',
+      action: `Cadastrou o novo usuário: ${values.email} (${values.role})`,
     })
     toast.success('Usuário registrado com sucesso!')
     setIsOpen(false)
@@ -345,6 +352,11 @@ export default function Usuarios() {
                             <AlertDialogAction
                               onClick={() => {
                                 removeUser(u.id)
+                                addLog({
+                                  userName: currentUser?.name || 'Sistema',
+                                  userEmail: currentUser?.email || '',
+                                  action: `Revogou o acesso do usuário: ${u.email}`,
+                                })
                                 toast.success('Removido')
                               }}
                               className="rounded-xl font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90"

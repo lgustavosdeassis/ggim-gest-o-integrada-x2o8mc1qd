@@ -1,5 +1,4 @@
 import { SidebarTrigger } from '@/components/ui/sidebar'
-import logoGgim from '@/assets/logo-ggim-texto-preto-sem-fundo-4ad89.jpeg'
 import { Bell, User, LogOut, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Link, useNavigate } from 'react-router-dom'
@@ -13,6 +12,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+
+const logoGgim = 'https://img.usecurling.com/i?q=hexagon%20globe&color=multicolor&shape=fill'
 
 export function Header() {
   const { user, logout } = useAuthStore()

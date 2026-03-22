@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppStore } from '@/stores/main'
 import { useAuthStore } from '@/stores/auth'
+import { useAuditStore } from '@/stores/audit'
 import {
   Table,
   TableBody,
@@ -34,6 +35,7 @@ export default function Historico() {
   const { user } = useAuthStore()
   const isViewer = user?.role === 'viewer'
   const { activities, deleteActivity, bulkDeleteActivities } = useAppStore()
+  const addLog = useAuditStore((state) => state.addLog)
 
   const [searchTerm, setSearchTerm] = useState('')
   const [startDate, setStartDate] = useState<Date | undefined>(undefined)
@@ -92,6 +94,11 @@ export default function Historico() {
       )
     ) {
       bulkDeleteActivities(Array.from(selectedIds))
+      addLog({
+        userName: user?.name || 'Sistema',
+        userEmail: user?.email || '',
+        action: `Excluiu ${selectedIds.size} atividades em lote do histórico`,
+      })
       setSelectedIds(new Set())
     }
   }
@@ -99,6 +106,11 @@ export default function Historico() {
   const handleDelete = (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este registro de forma definitiva?')) {
       deleteActivity(id)
+      addLog({
+        userName: user?.name || 'Sistema',
+        userEmail: user?.email || '',
+        action: `Excluiu permanentemente uma atividade do histórico (ID: ${id})`,
+      })
       const newSelected = new Set(selectedIds)
       newSelected.delete(id)
       setSelectedIds(newSelected)

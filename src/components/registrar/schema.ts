@@ -68,6 +68,7 @@ export const EVENTOS_TIPO = [
   'Reunião Ordinária',
   'Reunião Extraordinária',
   'Reunião Institucional',
+  'Seminário',
   'Treinamento',
   'Curso',
   'Congresso',

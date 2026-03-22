@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useToast } from '@/hooks/use-toast'
 import { useAppStore } from '@/stores/main'
 import { useAuthStore } from '@/stores/auth'
+import { useAuditStore } from '@/stores/audit'
 import { ActivityRecord } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
@@ -15,7 +16,9 @@ export default function Importar() {
   const { toast } = useToast()
 
   const { importActivities } = useAppStore()
-  const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
+  const { user } = useAuthStore()
+  const isViewer = user?.role === 'viewer'
+  const addLog = useAuditStore((state) => state.addLog)
 
   const handleFile = (file: File) => {
     if (isViewer) return
@@ -57,6 +60,11 @@ export default function Importar() {
       }))
 
       importActivities(imported)
+      addLog({
+        userName: user?.name || 'Sistema',
+        userEmail: user?.email || '',
+        action: `Importou ${imported.length} novas atividades via planilha automática`,
+      })
 
       toast({
         title: 'Importação Concluída',
