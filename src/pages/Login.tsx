@@ -32,11 +32,21 @@ export default function Login() {
 
       // Always fetch the freshest users from the centralized API to authenticate globally.
       // This is resilient and won't crash if the connection completely drops.
-      const usersList = await api.users.list(true)
+      let usersList
+      try {
+        usersList = await api.users.list(true)
+      } catch (apiErr) {
+        console.warn('Network issue during login, using resilient fallback state', apiErr)
+        usersList = useAuthStore.getState().users
+      }
+
+      if (!Array.isArray(usersList)) {
+        usersList = []
+      }
 
       const user = usersList.find(
         (u) =>
-          u.email.toLowerCase().trim() === email.toLowerCase().trim() && u.password === password,
+          u?.email?.toLowerCase().trim() === email.toLowerCase().trim() && u?.password === password,
       )
 
       if (user) {
@@ -50,6 +60,7 @@ export default function Login() {
         })
       }
     } catch (error) {
+      console.error('Unhandled login error:', error)
       toast({
         title: 'Erro de Conexão',
         description: 'Não foi possível contatar o banco de dados central.',

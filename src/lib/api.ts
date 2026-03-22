@@ -78,15 +78,25 @@ export function setCloudDbId(id: string) {
 
 async function fetchStrict(id: string, retries = 2, throwOnFailure = false): Promise<any> {
   try {
-    const res = await fetch(`${JSONBLOB_API}/${id}`, {
-      method: 'GET',
-      headers: { Accept: 'application/json' },
-    })
-    if (!res.ok) {
-      if (res.status === 404)
-        return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
-      throw new Error(`HTTP Error: ${res.status}`)
+    let res: Response | undefined
+
+    try {
+      res = await fetch(`${JSONBLOB_API}/${id}`, {
+        method: 'GET',
+        headers: { Accept: 'application/json' },
+      })
+    } catch (fetchErr: any) {
+      // Catch network-related exceptions (e.g., TypeError: Failed to fetch)
+      throw new Error(`TypeError: Failed to fetch (${fetchErr?.message || 'Network disconnected'})`)
     }
+
+    if (!res || !res.ok) {
+      const status = res ? res.status : 'N/A'
+      if (status === 404)
+        return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+      throw new Error(`HTTP ${status === 'N/A' ? 'N/A' : `Error: ${status}`}`)
+    }
+
     const text = await res.text()
     return text
       ? JSON.parse(text)
@@ -122,11 +132,19 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
         ? JSON.parse(JSON.stringify(memoryDb))
         : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
     }
-  })().then((data) => {
-    if (!isSaving && data) memoryDb = data
-    if (fetchPromise === p) fetchPromise = null
-    return data || JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
-  })
+  })()
+    .then((data) => {
+      if (!isSaving && data) memoryDb = data
+      if (fetchPromise === p) fetchPromise = null
+      return data || JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+    })
+    .catch((e) => {
+      console.error('Unhandled failure in fetchCloudDb', e)
+      if (fetchPromise === p) fetchPromise = null
+      return memoryDb
+        ? JSON.parse(JSON.stringify(memoryDb))
+        : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+    })
 
   if (!forceFresh || !fetchPromise) fetchPromise = p
   return p
@@ -147,13 +165,20 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
 
           const doPut = async (r = 2): Promise<Response> => {
             try {
-              const res = await fetch(`${JSONBLOB_API}/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify(db),
-              })
-              if (!res.ok && res.status !== 404) throw new Error(`HTTP ${res.status}`)
-              return res
+              let putRes: Response | undefined
+              try {
+                putRes = await fetch(`${JSONBLOB_API}/${id}`, {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                  body: JSON.stringify(db),
+                })
+              } catch (e) {
+                throw new Error('Network error during PUT')
+              }
+              if (!putRes || (!putRes.ok && putRes.status !== 404)) {
+                throw new Error(`HTTP ${putRes ? putRes.status : 'N/A'}`)
+              }
+              return putRes
             } catch (e) {
               if (r > 0) {
                 await new Promise((res) => setTimeout(res, 800))
