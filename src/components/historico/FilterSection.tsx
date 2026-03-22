@@ -34,7 +34,7 @@ export function FilterSection({
           <Search className="absolute left-3.5 top-3 h-4 w-4 text-[#0f172a]/50" />
           <Input
             type="search"
-            placeholder="Pesquisar instância, tipologia, local ou nome do evento..."
+            placeholder="Pesquisar instância, tipologia, local ou identificação do evento..."
             className="pl-10 border-[#0f172a]/20 bg-white h-11 text-[#0f172a] focus-visible:ring-[#eab308] focus-visible:border-[#eab308]"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}

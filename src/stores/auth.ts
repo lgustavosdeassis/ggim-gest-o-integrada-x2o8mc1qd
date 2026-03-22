@@ -100,3 +100,11 @@ export const useAuthStore = create<AuthState>()(
     },
   ),
 )
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'auth-storage') {
+      useAuthStore.persist.rehydrate()
+    }
+  })
+}

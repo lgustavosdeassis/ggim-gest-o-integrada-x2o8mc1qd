@@ -31,11 +31,11 @@ export function IdentificacaoCard() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-[#0f172a] font-bold uppercase tracking-widest text-xs block">
-                  NOME / IDENTIFICAÇÃO DO EVENTO (OPCIONAL)
+                  IDENTIFICAÇÃO DO EVENTO (OPCIONAL)
                 </FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="Ex: Primeira reunião ordinária 2026 / Nome do Seminário"
+                    placeholder="Ex: Nome do Seminário / Quarto Drone Policial"
                     {...field}
                     value={field.value || ''}
                     disabled={isViewer}

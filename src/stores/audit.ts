@@ -37,3 +37,11 @@ export const useAuditStore = create<AuditState>()(
     },
   ),
 )
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'audit-storage') {
+      useAuditStore.persist.rehydrate()
+    }
+  })
+}

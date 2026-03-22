@@ -55,3 +55,11 @@ export const useObsStore = create<ObsState>()(
     },
   ),
 )
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'obs-storage') {
+      useObsStore.persist.rehydrate()
+    }
+  })
+}

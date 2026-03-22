@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { FileDown, Filter, X } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 
-const logoGgim = 'https://img.usecurling.com/i?q=hexagon%20globe&color=multicolor&shape=fill'
+const logoGgim = '/logo-ggim.png'
 
 const INSTANCIAS = [
   'Colegiado Pleno',

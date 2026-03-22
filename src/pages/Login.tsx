@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Loader2, ArrowRight } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 
-const logoGgim = 'https://img.usecurling.com/i?q=hexagon%20globe&color=multicolor&shape=fill'
+const logoGgim = '/logo-ggim.png'
 
 export default function Login() {
   const { login, users } = useAuthStore()

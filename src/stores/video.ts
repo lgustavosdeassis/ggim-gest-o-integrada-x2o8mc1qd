@@ -51,3 +51,11 @@ export const useVideoStore = create<VideoState>()(
     },
   ),
 )
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'video-storage') {
+      useVideoStore.persist.rehydrate()
+    }
+  })
+}

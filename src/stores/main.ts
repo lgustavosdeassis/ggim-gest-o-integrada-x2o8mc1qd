@@ -59,3 +59,11 @@ export const useAppStore = create<AppState>()(
     },
   ),
 )
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'app-storage') {
+      useAppStore.persist.rehydrate()
+    }
+  })
+}

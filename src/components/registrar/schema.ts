@@ -68,7 +68,7 @@ export const INSTANCIAS = [
 export const EVENTOS_TIPO = [
   'Reunião Ordinária',
   'Reunião Extraordinária',
-  'Reunião Institucional',
+  'Reuniões Institucionais',
   'Seminário',
   'Treinamento',
   'Curso',

@@ -95,7 +95,7 @@ export function MonthPicker({ value, onChange }: MonthPickerProps) {
                 setDisplayDate(new Date(parseInt(val), displayDate.getMonth(), 1))
               }}
             >
-              <SelectTrigger className="w-6 h-6 border-none bg-transparent shadow-none p-0 focus:ring-0 [&>span]:hidden flex justify-center items-center hover:bg-background/50"></SelectTrigger>
+              <SelectTrigger className="w-8 h-8 border-none bg-transparent shadow-none p-0 focus:ring-0 [&>span]:hidden flex justify-center items-center hover:bg-background/50 rounded-md text-foreground"></SelectTrigger>
               <SelectContent className="min-w-[100px] max-h-48" align="end">
                 {Array.from({ length: 21 }).map((_, i) => {
                   const y = new Date().getFullYear() - 10 + i

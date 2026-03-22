@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 
-const logoGgim = 'https://img.usecurling.com/i?q=hexagon%20globe&color=multicolor&shape=fill'
+const logoGgim = '/logo-ggim.png'
 
 export function Header() {
   const { user, logout } = useAuthStore()
@@ -71,14 +71,17 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
-              className="relative h-10 w-10 rounded-full p-0 border border-primary-foreground/20 hover:border-secondary transition-colors"
+              className="relative h-10 w-auto px-1.5 sm:pr-4 rounded-full border border-primary-foreground/20 hover:border-secondary hover:bg-primary-foreground/10 transition-colors flex items-center gap-2.5"
             >
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-8 w-8 shadow-sm">
                 <AvatarImage src={user?.avatarUrl || ''} alt={user?.name || ''} />
-                <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">
-                  {user?.name?.charAt(0) || <User className="h-4 w-4" />}
+                <AvatarFallback className="bg-secondary text-secondary-foreground font-bold text-xs">
+                  {user?.name?.charAt(0) || <User className="h-3.5 w-3.5" />}
                 </AvatarFallback>
               </Avatar>
+              <span className="text-sm font-bold hidden sm:inline-block text-primary-foreground">
+                {user?.name?.split(' ')[0]}
+              </span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent
