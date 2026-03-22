@@ -76,7 +76,7 @@ export function setCloudDbId(id: string) {
   window.dispatchEvent(new Event('db_updated'))
 }
 
-async function fetchStrict(id: string, retries = 2): Promise<any> {
+async function fetchStrict(id: string, retries = 2, throwOnFailure = false): Promise<any> {
   try {
     const res = await fetch(`${JSONBLOB_API}/${id}`, {
       method: 'GET',
@@ -94,9 +94,17 @@ async function fetchStrict(id: string, retries = 2): Promise<any> {
   } catch (e) {
     if (retries > 0) {
       await new Promise((r) => setTimeout(r, 800))
-      return fetchStrict(id, retries - 1)
+      return fetchStrict(id, retries - 1, throwOnFailure)
     }
-    throw e
+
+    if (throwOnFailure) {
+      throw e
+    }
+
+    console.warn('Network issue intercepted by fetchStrict, returning resilient fallback state', e)
+    return memoryDb
+      ? JSON.parse(JSON.stringify(memoryDb))
+      : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
   }
 }
 
@@ -107,17 +115,17 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
   const p = (async () => {
     try {
       const id = await getCloudDbId()
-      return await fetchStrict(id, 2)
+      return await fetchStrict(id, 2, false)
     } catch (e) {
-      console.warn('Network issue during background fetch, using resilient fallback state', e)
+      console.warn('Network issue during background fetch setup, using resilient fallback state', e)
       return memoryDb
         ? JSON.parse(JSON.stringify(memoryDb))
-        : JSON.parse(JSON.stringify(DEFAULT_DB))
+        : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
     }
   })().then((data) => {
     if (!isSaving && data) memoryDb = data
     if (fetchPromise === p) fetchPromise = null
-    return data || JSON.parse(JSON.stringify(DEFAULT_DB))
+    return data || JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
   })
 
   if (!forceFresh || !fetchPromise) fetchPromise = p
@@ -132,7 +140,7 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
         try {
           const id = await getCloudDbId()
           // Strictly fetch latest to prevent overwriting cloud state with a stale memory state
-          const db = await fetchStrict(id, 3)
+          const db = await fetchStrict(id, 3, true)
 
           updater(db)
           db.updatedAt = Date.now()

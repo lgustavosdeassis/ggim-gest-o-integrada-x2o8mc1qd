@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { Layout } from '@/components/Layout'
 import { GlobalDataSync } from '@/components/GlobalDataSync'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import Index from '@/pages/Index'
 import Registrar from '@/pages/Registrar'
 import Importar from '@/pages/Importar'
@@ -24,7 +25,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/login" replace />
   }
 
-  return <>{children}</>
+  return <ErrorBoundary>{children}</ErrorBoundary>
 }
 
 export default function App() {
