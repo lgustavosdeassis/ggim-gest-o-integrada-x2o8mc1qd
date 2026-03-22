@@ -4,6 +4,8 @@ import Index from '@/pages/Index'
 import Registrar from '@/pages/Registrar'
 import Importar from '@/pages/Importar'
 import Historico from '@/pages/Historico'
+import Videomonitoramento from '@/pages/Videomonitoramento'
+import Observatorio from '@/pages/Observatorio'
 import NotFound from '@/pages/NotFound'
 import Profile from '@/pages/Profile'
 import Login from '@/pages/Login'
@@ -40,6 +42,8 @@ export default function App() {
           <Route path="registrar" element={<Registrar />} />
           <Route path="importar" element={<Importar />} />
           <Route path="historico" element={<Historico />} />
+          <Route path="videomonitoramento" element={<Videomonitoramento />} />
+          <Route path="observatorio" element={<Observatorio />} />
           <Route path="profile" element={<Profile />} />
           <Route path="usuarios" element={<Usuarios />} />
         </Route>

@@ -1,5 +1,14 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, FilePlus2, Upload, History, Settings, Users } from 'lucide-react'
+import {
+  LayoutDashboard,
+  FilePlus2,
+  Upload,
+  History,
+  Settings,
+  Users,
+  MonitorPlay,
+  ShieldAlert,
+} from 'lucide-react'
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +30,8 @@ const getItems = (isEditor: boolean) => {
     { title: 'Registrar Atividade', url: '/registrar', icon: FilePlus2 },
     { title: 'Importar / Migrar', url: '/importar', icon: Upload },
     { title: 'Histórico Completo', url: '/historico', icon: History },
+    { title: 'Videomonitoramento', url: '/videomonitoramento', icon: MonitorPlay },
+    { title: 'Observatório (OMSP)', url: '/observatorio', icon: ShieldAlert },
   ]
   if (isEditor) {
     base.push({ title: 'Gestão de Usuários', url: '/usuarios', icon: Users })
@@ -39,11 +50,11 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border shadow-xl no-print bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border py-6 px-6 bg-sidebar">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-sidebar-primary/30 shadow-lg bg-white">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full overflow-hidden border-2 border-sidebar-primary/30 shadow-lg bg-white">
             <img
               src={logoCmtecs}
               alt="CMTecs Logo"
-              className="h-full w-full object-cover scale-110"
+              className="h-full w-full object-cover scale-[1.35]"
             />
           </div>
           <div className="flex flex-col flex-1 truncate">
