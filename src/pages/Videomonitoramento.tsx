@@ -28,9 +28,18 @@ export default function Videomonitoramento() {
   const { records } = useVideoStore()
   const [filterMonth, setFilterMonth] = useState('2026-02')
   const [period, setPeriod] = useState('Mensal')
+  const [customStart, setCustomStart] = useState('2026-01')
+  const [customEnd, setCustomEnd] = useState('2026-12')
   const [isFormOpen, setIsFormOpen] = useState(false)
 
   const filteredRecords = records.filter((r) => {
+    if (period === 'Personalizado') {
+      if (customStart && customEnd) {
+        return r.date >= customStart && r.date <= customEnd
+      }
+      return true
+    }
+
     if (!filterMonth) return true
     const [year, month] = filterMonth.split('-')
     const [rYear, rMonth] = r.date.split('-')
@@ -105,15 +114,49 @@ export default function Videomonitoramento() {
               <SelectItem value="Trimestral">Trimestral</SelectItem>
               <SelectItem value="Semestral">Semestral</SelectItem>
               <SelectItem value="Anual">Anual</SelectItem>
-              <SelectItem value="Personalizado">Personalizado</SelectItem>
+              <SelectItem
+                value="Personalizado"
+                className="data-[state=checked]:bg-[#eab308] data-[state=checked]:text-[#0f172a] focus:bg-[#eab308]/80 focus:text-[#0f172a] font-bold mt-1"
+              >
+                Personalizado
+              </SelectItem>
             </SelectContent>
           </Select>
-          <Input
-            type="month"
-            value={filterMonth}
-            onChange={(e) => setFilterMonth(e.target.value)}
-            className="w-full md:w-48 bg-background border-border h-12 rounded-xl text-foreground font-bold"
-          />
+
+          {period === 'Personalizado' ? (
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3 w-full md:w-auto mt-1 md:mt-0">
+              <div className="relative flex-1 md:flex-none">
+                <span className="absolute -top-2.5 left-3 bg-background px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Data Inicial
+                </span>
+                <Input
+                  type="month"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="w-full md:w-36 bg-background border-border h-12 rounded-xl text-foreground font-bold"
+                />
+              </div>
+              <div className="relative flex-1 md:flex-none">
+                <span className="absolute -top-2.5 left-3 bg-background px-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Data Final
+                </span>
+                <Input
+                  type="month"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="w-full md:w-36 bg-background border-border h-12 rounded-xl text-foreground font-bold"
+                />
+              </div>
+            </div>
+          ) : (
+            <Input
+              type="month"
+              value={filterMonth}
+              onChange={(e) => setFilterMonth(e.target.value)}
+              className="w-full md:w-48 bg-background border-border h-12 rounded-xl text-foreground font-bold"
+            />
+          )}
+
           <Button
             onClick={() => setIsFormOpen(true)}
             className="w-full md:w-auto h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap"
@@ -147,7 +190,13 @@ export default function Videomonitoramento() {
               Perfil dos Solicitantes
               <br />
               <span className="text-sm text-muted-foreground font-semibold">
-                ({period} - {filterMonth ? filterMonth.split('-').reverse().join('/') : 'Período'})
+                ({period} -{' '}
+                {period === 'Personalizado'
+                  ? `${customStart.split('-').reverse().join('/')} a ${customEnd.split('-').reverse().join('/')}`
+                  : filterMonth
+                    ? filterMonth.split('-').reverse().join('/')
+                    : 'Período'}
+                )
               </span>
             </h3>
             <ChartContainer config={chartConfig} className="h-[320px] w-full">
