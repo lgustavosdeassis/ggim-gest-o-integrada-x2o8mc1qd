@@ -68,6 +68,9 @@ let lastFetchTime = 0
 let cachedDb: any = null
 let fetchPromise: Promise<any> | null = null
 
+let isSaving = false
+let saveQueue: any[] = []
+
 export async function getCloudDbId(): Promise<string> {
   let id = localStorage.getItem(SYNC_KEY)
   if (!id) {
@@ -80,7 +83,68 @@ export async function getCloudDbId(): Promise<string> {
 export function setCloudDbId(id: string) {
   if (id) localStorage.setItem(SYNC_KEY, id)
   else localStorage.setItem(SYNC_KEY, PRIMARY_DB_ID)
-  cachedDb = null // Invalidate cache
+  cachedDb = null
+  window.dispatchEvent(new Event('db_updated'))
+}
+
+function getLocalFallback() {
+  const data = localStorage.getItem('ggim_local_cache')
+  if (data) return JSON.parse(data)
+  return DEFAULT_DB
+}
+
+function saveLocalFallback(data: any) {
+  localStorage.setItem('ggim_local_cache', JSON.stringify(data))
+}
+
+async function processSaveQueue() {
+  if (isSaving || saveQueue.length === 0) return
+  isSaving = true
+  const id = await getCloudDbId()
+
+  while (saveQueue.length > 0) {
+    const data = saveQueue.pop() // Take the most recent snapshot
+    saveQueue = [] // Clear intermediate snapshots
+
+    try {
+      const res = await fetch(`${JSONBLOB_API}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) {
+        if (res.status === 404) {
+          const createRes = await fetch(JSONBLOB_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify(data),
+          })
+          const location = createRes.headers.get('Location')
+          if (location) {
+            const newId = location.split('/').pop() || id
+            localStorage.setItem(SYNC_KEY, newId)
+          }
+        } else {
+          throw new Error(`HTTP Error: ${res.status}`)
+        }
+      }
+      saveLocalFallback(data)
+    } catch (e) {
+      console.error('Failed to save to cloud DB', e)
+      saveLocalFallback(data)
+    }
+  }
+  isSaving = false
+}
+
+async function saveCloudDb(data: any): Promise<void> {
+  data.updatedAt = Date.now()
+  cachedDb = JSON.parse(JSON.stringify(data))
+  saveLocalFallback(cachedDb)
+
+  saveQueue.push(cachedDb)
+  processSaveQueue()
+
   window.dispatchEvent(new Event('db_updated'))
 }
 
@@ -88,8 +152,16 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
   const id = await getCloudDbId()
   const now = Date.now()
 
-  // Cache for 2 seconds to batch concurrent module fetches (Activities, Users, Video, etc)
-  if (!forceFresh && cachedDb && now - lastFetchTime < 2000) return cachedDb
+  // If we have pending saves, return the local cache immediately to prevent overwriting local state
+  if (isSaving || saveQueue.length > 0) {
+    return JSON.parse(JSON.stringify(cachedDb || getLocalFallback()))
+  }
+
+  // Throttle network requests to batch concurrent loads
+  if (!forceFresh && cachedDb && now - lastFetchTime < 2000) {
+    return JSON.parse(JSON.stringify(cachedDb))
+  }
+
   if (!forceFresh && fetchPromise) return fetchPromise
 
   const fetchUrl = `${JSONBLOB_API}/${id}?_t=${now}`
@@ -104,26 +176,6 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
     .then(async (res) => {
       if (!res.ok) {
         if (res.status === 404) {
-          // Attempt to PUT to create it at the EXACT hardcoded ID to ensure cross-device consistency
-          const putRes = await fetch(`${JSONBLOB_API}/${id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-            body: JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }),
-          })
-
-          if (!putRes.ok) {
-            // Fallback to POST if PUT doesn't allow creation
-            const createRes = await fetch(JSONBLOB_API, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-              body: JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }),
-            })
-            const location = createRes.headers.get('Location')
-            if (location) {
-              const newId = location.split('/').pop() || id
-              localStorage.setItem(SYNC_KEY, newId)
-            }
-          }
           return { ...DEFAULT_DB, updatedAt: Date.now() }
         }
         throw new Error('Cloud DB not found')
@@ -131,15 +183,18 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
       return res.json()
     })
     .then((data) => {
-      cachedDb = data
-      lastFetchTime = Date.now()
+      if (!isSaving && saveQueue.length === 0) {
+        cachedDb = data
+        lastFetchTime = Date.now()
+        saveLocalFallback(data)
+      }
       if (fetchPromise === newPromise) fetchPromise = null
-      return data
+      return JSON.parse(JSON.stringify(data))
     })
     .catch((e) => {
       console.warn('Cloud DB fetch failed, using local fallback', e)
       if (fetchPromise === newPromise) fetchPromise = null
-      return getLocalFallback()
+      return cachedDb || getLocalFallback()
     })
 
   if (!forceFresh || !fetchPromise) {
@@ -149,90 +204,61 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
   return newPromise
 }
 
-async function saveCloudDb(data: any): Promise<void> {
-  const id = await getCloudDbId()
-  data.updatedAt = Date.now() // Tag with timestamp for consistency checks
-  cachedDb = data
-  lastFetchTime = Date.now()
+let updateMutex = Promise.resolve()
 
-  try {
-    await fetch(`${JSONBLOB_API}/${id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify(data),
-    })
-    saveLocalFallback(data)
-    window.dispatchEvent(new Event('db_updated'))
-  } catch (e) {
-    console.error('Failed to save to cloud DB', e)
-    saveLocalFallback(data)
-  }
-}
-
-function getLocalFallback() {
-  const data = localStorage.getItem('ggim_local_cache')
-  if (data) return JSON.parse(data)
-  return DEFAULT_DB
-}
-
-function saveLocalFallback(data: any) {
-  localStorage.setItem('ggim_local_cache', JSON.stringify(data))
+// Guaranteed atomic sequential update to avoid data loss due to race conditions
+export async function atomicUpdate(updater: (db: any) => void) {
+  updateMutex = updateMutex.then(async () => {
+    try {
+      const db = await fetchCloudDb(true)
+      updater(db)
+      await saveCloudDb(db)
+    } catch (e) {
+      console.error('Atomic update failed', e)
+    }
+  })
+  return updateMutex
 }
 
 export const api = {
   activities: {
-    list: async (forceFresh = false) => {
-      const db = await fetchCloudDb(forceFresh)
-      return db.activities || []
-    },
-    sync: async (data: ActivityRecord[]) => {
-      const db = await fetchCloudDb()
-      db.activities = data
-      await saveCloudDb(db)
+    list: async (forceFresh = false) => (await fetchCloudDb(forceFresh)).activities || [],
+    syncUpdate: async (updater: (data: ActivityRecord[]) => ActivityRecord[]) => {
+      await atomicUpdate((db) => {
+        db.activities = updater(db.activities || [])
+      })
     },
   },
   users: {
-    list: async (forceFresh = false) => {
-      const db = await fetchCloudDb(forceFresh)
-      return db.users || []
-    },
-    sync: async (data: User[]) => {
-      const db = await fetchCloudDb()
-      db.users = data
-      await saveCloudDb(db)
+    list: async (forceFresh = false) => (await fetchCloudDb(forceFresh)).users || [],
+    syncUpdate: async (updater: (data: User[]) => User[]) => {
+      await atomicUpdate((db) => {
+        db.users = updater(db.users || [])
+      })
     },
   },
   video: {
-    list: async (forceFresh = false) => {
-      const db = await fetchCloudDb(forceFresh)
-      return db.videoRecords || []
-    },
-    sync: async (data: VideoRecord[]) => {
-      const db = await fetchCloudDb()
-      db.videoRecords = data
-      await saveCloudDb(db)
+    list: async (forceFresh = false) => (await fetchCloudDb(forceFresh)).videoRecords || [],
+    syncUpdate: async (updater: (data: VideoRecord[]) => VideoRecord[]) => {
+      await atomicUpdate((db) => {
+        db.videoRecords = updater(db.videoRecords || [])
+      })
     },
   },
   obs: {
-    list: async (forceFresh = false) => {
-      const db = await fetchCloudDb(forceFresh)
-      return db.obsRecords || []
-    },
-    sync: async (data: ObsRecord[]) => {
-      const db = await fetchCloudDb()
-      db.obsRecords = data
-      await saveCloudDb(db)
+    list: async (forceFresh = false) => (await fetchCloudDb(forceFresh)).obsRecords || [],
+    syncUpdate: async (updater: (data: ObsRecord[]) => ObsRecord[]) => {
+      await atomicUpdate((db) => {
+        db.obsRecords = updater(db.obsRecords || [])
+      })
     },
   },
   audit: {
-    list: async (forceFresh = false) => {
-      const db = await fetchCloudDb(forceFresh)
-      return db.auditLogs || []
-    },
-    sync: async (data: AuditLog[]) => {
-      const db = await fetchCloudDb()
-      db.auditLogs = data
-      await saveCloudDb(db)
+    list: async (forceFresh = false) => (await fetchCloudDb(forceFresh)).auditLogs || [],
+    syncUpdate: async (updater: (data: AuditLog[]) => AuditLog[]) => {
+      await atomicUpdate((db) => {
+        db.auditLogs = updater(db.auditLogs || [])
+      })
     },
   },
 }

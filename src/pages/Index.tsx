@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { FileDown, Filter, X } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
-import { GgimLogo } from '@/components/GgimLogo'
+import { GgimHexLogo } from '@/components/GgimHexLogo'
 
 const INSTANCIAS = [
   'Colegiado Pleno',
@@ -51,8 +51,8 @@ export default function Index() {
     <div className="flex-1 space-y-8 max-w-[1600px] mx-auto min-h-[calc(100vh-80px)]">
       {/* Print Header */}
       <div className="hidden print:flex items-center gap-4 mb-8 border-b border-border pb-4">
-        <div className="h-16 w-16 drop-shadow-sm bg-black rounded-xl flex items-center justify-center overflow-hidden border border-border">
-          <GgimLogo className="w-full h-full object-contain" />
+        <div className="h-16 w-16 drop-shadow-sm flex items-center justify-center overflow-hidden">
+          <GgimHexLogo className="w-full h-full object-contain" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-foreground">

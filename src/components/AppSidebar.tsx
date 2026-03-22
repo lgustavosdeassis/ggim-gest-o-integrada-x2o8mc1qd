@@ -22,7 +22,7 @@ import {
   SidebarGroupContent,
   SidebarGroupLabel,
 } from '@/components/ui/sidebar'
-import { GgimLogo } from '@/components/GgimLogo'
+import cmtLogo from '@/assets/logo-cmtecs-a4c2e.jpeg'
 import { useAuthStore } from '@/stores/auth'
 
 const getItems = (isOwner: boolean) => {
@@ -52,8 +52,8 @@ export function AppSidebar() {
     <Sidebar className="border-r border-sidebar-border shadow-xl no-print bg-sidebar">
       <SidebarHeader className="border-b border-sidebar-border py-6 px-6 bg-sidebar">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg overflow-hidden border border-sidebar-primary/20 shadow-md bg-black">
-            <GgimLogo className="h-full w-full object-contain" />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full overflow-hidden border border-primary/10 shadow-md bg-white">
+            <img src={cmtLogo} alt="CMTecs" className="h-full w-full object-cover scale-[1.15]" />
           </div>
           <div className="flex flex-col flex-1 truncate">
             <span className="truncate font-black text-[22px] tracking-tight text-sidebar-foreground">

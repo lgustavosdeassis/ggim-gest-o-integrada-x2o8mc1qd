@@ -31,41 +31,50 @@ export const useAppStore = create<AppState>()((set, get) => ({
       id: Math.random().toString(36).substr(2, 9),
       createdAt: new Date().toISOString(),
     } as ActivityRecord
-    const currentServer = await api.activities.list(true)
-    const newActivities = [newActivity, ...currentServer]
-    set({ activities: newActivities })
-    await api.activities.sync(newActivities)
+
+    // Optimistic UI Update
+    set((state) => ({ activities: [newActivity, ...state.activities] }))
+
+    // Atomic Background Sync (No overwriting)
+    await api.activities.syncUpdate((list) => [newActivity, ...list])
+    get().fetchActivities()
   },
   updateActivity: async (id, updated) => {
-    const currentServer = await api.activities.list(true)
-    const newActivities = currentServer.map((a) => (a.id === id ? { ...a, ...updated } : a))
-    set({ activities: newActivities })
-    await api.activities.sync(newActivities)
+    set((state) => ({
+      activities: state.activities.map((a) => (a.id === id ? { ...a, ...updated } : a)),
+    }))
+
+    await api.activities.syncUpdate((list) =>
+      list.map((a) => (a.id === id ? { ...a, ...updated } : a)),
+    )
+    get().fetchActivities()
   },
   deleteActivity: async (id) => {
-    const currentServer = await api.activities.list(true)
-    const newActivities = currentServer.filter((a) => a.id !== id)
-    set({ activities: newActivities })
-    await api.activities.sync(newActivities)
+    set((state) => ({
+      activities: state.activities.filter((a) => a.id !== id),
+    }))
+
+    await api.activities.syncUpdate((list) => list.filter((a) => a.id !== id))
+    get().fetchActivities()
   },
   bulkDeleteActivities: async (ids) => {
-    const currentServer = await api.activities.list(true)
-    const newActivities = currentServer.filter((a) => !ids.includes(a.id))
-    set({ activities: newActivities })
-    await api.activities.sync(newActivities)
+    set((state) => ({
+      activities: state.activities.filter((a) => !ids.includes(a.id)),
+    }))
+
+    await api.activities.syncUpdate((list) => list.filter((a) => !ids.includes(a.id)))
+    get().fetchActivities()
   },
   importActivities: async (newActivities) => {
-    const mapped = newActivities.map(
-      (a) =>
-        ({
-          ...a,
-          id: Math.random().toString(36).substr(2, 9),
-          createdAt: new Date().toISOString(),
-        }) as ActivityRecord,
-    )
-    const currentServer = await api.activities.list(true)
-    const combined = [...mapped, ...currentServer]
-    set({ activities: combined })
-    await api.activities.sync(combined)
+    const mapped = newActivities.map((a) => ({
+      ...a,
+      id: Math.random().toString(36).substr(2, 9),
+      createdAt: new Date().toISOString(),
+    })) as ActivityRecord[]
+
+    set((state) => ({ activities: [...mapped, ...state.activities] }))
+
+    await api.activities.syncUpdate((list) => [...mapped, ...list])
+    get().fetchActivities()
   },
 }))

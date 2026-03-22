@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { GgimLogo } from '@/components/GgimLogo'
+import { GgimHexLogo } from '@/components/GgimHexLogo'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,10 +30,10 @@ export function Header() {
         <SidebarTrigger className="-ml-2 h-10 w-10 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors" />
       </div>
 
-      {/* Center section: GGIM Logo and Title */}
+      {/* Center section: GGIM Hexagonal Logo and Title */}
       <div className="hidden lg:flex flex-1 items-center justify-center gap-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-black rounded-lg shadow-sm border border-primary-foreground/20 overflow-hidden">
-          <GgimLogo className="w-full h-full object-contain" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center">
+          <GgimHexLogo className="w-full h-full object-contain drop-shadow-md" />
         </div>
         <h1 className="text-base lg:text-lg font-bold tracking-tight text-center">
           Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)

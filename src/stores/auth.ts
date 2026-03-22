@@ -55,31 +55,33 @@ export const useAuthStore = create<AuthState>()(
         const state = get()
         if (!state.user) return
         const updatedUser = { ...state.user, avatarUrl: url }
-        const currentServer = await api.users.list(true)
-        const newUsers = currentServer.map((u) => (u.id === state.user!.id ? updatedUser : u))
-        set({ user: updatedUser, users: newUsers })
-        await api.users.sync(newUsers)
+
+        set({ user: updatedUser })
+        await api.users.syncUpdate((list) =>
+          list.map((u) => (u.id === state.user!.id ? updatedUser : u)),
+        )
+        get().fetchUsers()
       },
       updateProfile: async (data) => {
         const state = get()
         if (!state.user) return
         const updatedUser = { ...state.user, ...data }
-        const currentServer = await api.users.list(true)
-        const newUsers = currentServer.map((u) => (u.id === state.user!.id ? updatedUser : u))
-        set({ user: updatedUser, users: newUsers })
-        await api.users.sync(newUsers)
+
+        set({ user: updatedUser })
+        await api.users.syncUpdate((list) =>
+          list.map((u) => (u.id === state.user!.id ? updatedUser : u)),
+        )
+        get().fetchUsers()
       },
       addUser: async (newUser) => {
-        const currentServer = await api.users.list(true)
-        const newUsers = [...currentServer, newUser]
-        set({ users: newUsers })
-        await api.users.sync(newUsers)
+        set((state) => ({ users: [...state.users, newUser] }))
+        await api.users.syncUpdate((list) => [...list, newUser])
+        get().fetchUsers()
       },
       removeUser: async (id) => {
-        const currentServer = await api.users.list(true)
-        const newUsers = currentServer.filter((u) => u.id !== id)
-        set({ users: newUsers })
-        await api.users.sync(newUsers)
+        set((state) => ({ users: state.users.filter((u) => u.id !== id) }))
+        await api.users.syncUpdate((list) => list.filter((u) => u.id !== id))
+        get().fetchUsers()
       },
     }),
     {
