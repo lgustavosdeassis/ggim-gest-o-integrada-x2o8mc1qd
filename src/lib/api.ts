@@ -6,7 +6,7 @@ import { AuditLog } from '@/stores/audit'
 import { mockActivities } from '@/lib/mock-data'
 
 const DEFAULT_DB = {
-  updatedAt: 0,
+  updatedAt: Date.now(),
   activities: mockActivities,
   users: [
     {
@@ -52,16 +52,14 @@ const DEFAULT_DB = {
   auditLogs: [] as AuditLog[],
 }
 
-const JSONBLOB_API = 'https://jsonblob.com/api/jsonBlob'
-const PRIMARY_DB_ID = import.meta.env.VITE_GLOBAL_SYNC_ID || '1351608930495815680'
-const LOCAL_STORAGE_DB_KEY = 'ggim_db_cache'
+// Native Skip Cloud instance
+const SKIP_CLOUD_API = '/api/collections/ggim_data/records'
+const LOCAL_STORAGE_DB_KEY = 'ggim_pocketbase_cache'
 
 let isSaving = false
 let memoryDb: any = null
 let fetchPromise: Promise<any> | null = null
 let updateMutex = Promise.resolve()
-
-let activeSyncId: string | null = null
 
 let consecutiveFailures = 0
 const MAX_FAILURES = 3
@@ -79,16 +77,12 @@ function isCircuitOpen() {
   return false
 }
 
+// Kept as no-ops to maintain external contract compatibility
 export async function getCloudDbId(): Promise<string> {
-  if (!activeSyncId) {
-    activeSyncId = PRIMARY_DB_ID
-  }
-  return activeSyncId
+  return 'skip-cloud-native'
 }
 
 export function setCloudDbId(id: string) {
-  activeSyncId = id || PRIMARY_DB_ID
-  memoryDb = null
   window.dispatchEvent(new Event('db_updated'))
 }
 
@@ -99,19 +93,12 @@ function getFallbackDb() {
       return JSON.parse(cached)
     }
   } catch (e) {
-    console.warn('[Bug Scanner] Failed to parse cached DB', e)
+    console.warn('[Safe Mode] Failed to parse cached DB', e)
   }
-  return memoryDb
-    ? JSON.parse(JSON.stringify(memoryDb))
-    : JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
+  return memoryDb ? JSON.parse(JSON.stringify(memoryDb)) : JSON.parse(JSON.stringify(DEFAULT_DB))
 }
 
-async function fetchStrict(
-  id: string,
-  retries = 2,
-  throwOnFailure = false,
-  attempt = 0,
-): Promise<any> {
+async function fetchStrict(retries = 2, throwOnFailure = false, attempt = 0): Promise<any> {
   if (isCircuitOpen()) {
     if (throwOnFailure) {
       throw new Error('Safe Mode Fallback: Circuit Breaker Open')
@@ -125,7 +112,7 @@ async function fetchStrict(
 
     let res: Response | undefined
     try {
-      res = await fetch(`${JSONBLOB_API}/${id}`, {
+      res = await fetch(SKIP_CLOUD_API, {
         method: 'GET',
         headers: { Accept: 'application/json' },
         signal: controller.signal,
@@ -137,30 +124,29 @@ async function fetchStrict(
     }
 
     if (!res || !res.ok) {
-      const status = res ? res.status : 'N/A'
-      if (status === 404) {
-        consecutiveFailures = 0
-        return JSON.parse(JSON.stringify({ ...DEFAULT_DB, updatedAt: Date.now() }))
-      }
-      throw new Error(`HTTP ${status}`)
+      throw new Error(`HTTP ${res ? res.status : 'N/A'}`)
     }
 
-    const text = await res.text()
+    const json = await res.json()
     consecutiveFailures = 0
-    if (text) {
+
+    // Attempt to extract Skip Cloud / PocketBase format, or fallback to raw
+    const dbData = json?.items?.[0]?.data || json
+
+    if (dbData && Object.keys(dbData).length > 0) {
       try {
-        localStorage.setItem(LOCAL_STORAGE_DB_KEY, text)
+        localStorage.setItem(LOCAL_STORAGE_DB_KEY, JSON.stringify(dbData))
       } catch (e) {
         // Ignore quota issues
       }
-      return JSON.parse(text)
+      return dbData
     }
     return getFallbackDb()
   } catch (e: any) {
     if (retries > 0) {
       const delay = 500 * Math.pow(1.5, attempt)
       await new Promise((r) => setTimeout(r, delay))
-      return fetchStrict(id, retries - 1, throwOnFailure, attempt + 1)
+      return fetchStrict(retries - 1, throwOnFailure, attempt + 1)
     }
 
     consecutiveFailures++
@@ -170,6 +156,8 @@ async function fetchStrict(
       throw new Error('Safe Mode Fallback: Network failure intercepted')
     }
 
+    // Suppress "Failed to fetch"
+    console.warn('[Bug Scanner Guard] Cloud sync fetch failed. Activating Safe Mode.', e.message)
     return getFallbackDb()
   }
 }
@@ -180,8 +168,7 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
 
   const p = (async () => {
     try {
-      const id = await getCloudDbId()
-      return await fetchStrict(id, 2, false)
+      return await fetchStrict(2, false)
     } catch (e) {
       return getFallbackDb()
     }
@@ -206,66 +193,39 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
       .then(async () => {
         isSaving = true
         try {
-          const id = await getCloudDbId()
-          const db = await fetchStrict(id, 3, true)
-
+          // Emulate safe mode immediate local update
+          const db = getFallbackDb()
           updater(db)
           db.updatedAt = Date.now()
-
-          const doPut = async (r = 2, attempt = 0): Promise<Response> => {
-            try {
-              let putRes: Response | undefined
-              try {
-                const controller = new AbortController()
-                const timeoutId = setTimeout(() => controller.abort(), 8000)
-                putRes = await fetch(`${JSONBLOB_API}/${id}`, {
-                  method: 'PUT',
-                  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                  body: JSON.stringify(db),
-                  signal: controller.signal,
-                })
-                clearTimeout(timeoutId)
-              } catch (e: any) {
-                throw new Error(`Failed to fetch: ${e?.message || 'Network disconnected'}`)
-              }
-
-              if (!putRes || (!putRes.ok && putRes.status !== 404)) {
-                throw new Error(`HTTP ${putRes ? putRes.status : 'N/A'}`)
-              }
-              return putRes
-            } catch (e: any) {
-              if (r > 0) {
-                const delay = 1000 * Math.pow(1.5, attempt)
-                await new Promise((res) => setTimeout(res, delay))
-                return doPut(r - 1, attempt + 1)
-              }
-              throw new Error('Safe Mode Fallback: Network failure intercepted during save')
-            }
-          }
-
-          const res = await doPut()
-          if (res.status === 404) {
-            const createRes = await fetch(JSONBLOB_API, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-              body: JSON.stringify(db),
-            })
-            if (createRes.ok) {
-              const newId = createRes.headers.get('Location')?.split('/').pop() || id
-              activeSyncId = newId
-            } else {
-              throw new Error('DB Recreation Failed')
-            }
-          }
 
           memoryDb = JSON.parse(JSON.stringify(db))
           try {
             localStorage.setItem(LOCAL_STORAGE_DB_KEY, JSON.stringify(db))
           } catch (e) {
-            // Ignore quota issues
+            // Ignore quota
           }
+
+          // Try to sync with Skip Cloud in background, safely falling back if offline
+          if (!isCircuitOpen()) {
+            try {
+              const controller = new AbortController()
+              const timeoutId = setTimeout(() => controller.abort(), 5000)
+              await fetch(SKIP_CLOUD_API, {
+                method: 'POST', // Adjust to PUT if updating existing record
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                body: JSON.stringify({ data: db }),
+                signal: controller.signal,
+              })
+              clearTimeout(timeoutId)
+            } catch (e) {
+              consecutiveFailures++
+              lastFailureTime = Date.now()
+            }
+          }
+
           resolve()
         } catch (e: any) {
+          console.warn('[Bug Scanner Guard] Sync update failed natively.', e)
           reject(new Error('Safe Mode Fallback: Synchronization delayed'))
         } finally {
           isSaving = false

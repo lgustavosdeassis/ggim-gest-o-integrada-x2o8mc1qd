@@ -1,12 +1,11 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { useAuthStore } from '@/stores/auth'
-import { getCloudDbId, setCloudDbId } from '@/lib/api'
-import { User, Upload, Check, Pencil, Save, X, Cloud, Copy } from 'lucide-react'
+import { User, Upload, Check, Pencil, Save, X } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function Profile() {
@@ -15,15 +14,6 @@ export default function Profile() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(user?.avatarUrl || null)
   const [isSavingAvatar, setIsSavingAvatar] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
-  const [syncId, setSyncId] = useState('')
-
-  useEffect(() => {
-    getCloudDbId().then((id) => {
-      if (id && id !== 'fallback_local') {
-        setSyncId(id)
-      }
-    })
-  }, [])
 
   const defaultJobTitle =
     user?.role === 'owner' ? 'Proprietário' : user?.role === 'editor' ? 'Editor' : 'Visualizador'
@@ -86,12 +76,6 @@ export default function Profile() {
     updateProfile({ name: formData.name, email: formData.email, jobTitle: formData.jobTitle })
     setIsEditing(false)
     toast.success('Informações atualizadas com sucesso!')
-  }
-
-  const handleSaveSyncId = () => {
-    setCloudDbId(syncId)
-    toast.success('Código aplicado! Sincronizando com a nuvem e recarregando...')
-    setTimeout(() => window.location.reload(), 1500)
   }
 
   const hasAvatarChanges = previewUrl !== user?.avatarUrl && previewUrl !== null
@@ -281,57 +265,6 @@ export default function Profile() {
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-sm border-border bg-card rounded-2xl overflow-hidden mt-8">
-        <CardHeader className="bg-muted/50 border-b border-border pb-6">
-          <CardTitle className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Cloud className="w-5 h-5 text-primary" /> Sincronização em Nuvem (Cross-Device)
-          </CardTitle>
-          <CardDescription className="text-sm font-medium">
-            Utilize o código abaixo para acessar o banco de dados centralizado em outro computador
-            ou navegador.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-8">
-          <div className="space-y-4">
-            <div className="space-y-2.5">
-              <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                Seu Código de Sincronização
-              </Label>
-              <div className="flex flex-col md:flex-row gap-4">
-                <Input
-                  value={syncId}
-                  onChange={(e) => setSyncId(e.target.value)}
-                  placeholder="Seu código aparecerá aqui..."
-                  className="h-12 rounded-xl text-foreground font-mono bg-background border-primary/30 focus-visible:ring-primary shadow-sm flex-1"
-                />
-                <Button
-                  onClick={() => {
-                    navigator.clipboard.writeText(syncId)
-                    toast.success('Código copiado para a área de transferência!')
-                  }}
-                  variant="outline"
-                  className="h-12 px-6 rounded-xl font-bold border-border shadow-sm text-foreground bg-background"
-                >
-                  <Copy className="h-4 w-4 mr-2" /> Copiar
-                </Button>
-                <Button
-                  onClick={handleSaveSyncId}
-                  className="h-12 px-8 rounded-xl font-black bg-[#0f172a] text-white hover:bg-[#1e293b] shadow-md transition-all whitespace-nowrap"
-                >
-                  Aplicar Código
-                </Button>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground font-medium pt-2">
-              <strong className="text-foreground">Dica de Uso:</strong> Copie este código e insira
-              na tela de Login do outro dispositivo. Isso garantirá que todas as atividades,
-              painéis, históricos e usuários permaneçam perfeitamente sincronizados em tempo real,
-              independente da máquina.
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>

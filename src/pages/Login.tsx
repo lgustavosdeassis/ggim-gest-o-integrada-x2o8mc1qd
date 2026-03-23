@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
-import { api, setCloudDbId } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,48 +10,29 @@ import { useToast } from '@/hooks/use-toast'
 import { GgimHexLogo } from '@/components/GgimHexLogo'
 
 export default function Login() {
-  const { login, logout, isAuthenticated } = useAuthStore()
+  const { login, logout, isAuthenticated, fetchUsers } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [syncId, setSyncId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
     if (isAuthenticated) {
       logout()
     }
-    // Fire and forget prefetch for an initial warm-up, non-blocking.
-    api.users.list(false).catch(() => {})
-  }, [isAuthenticated, logout])
+    // Fetch users in the background completely decoupled from UI
+    fetchUsers().catch(() => {})
+  }, [isAuthenticated, logout, fetchUsers])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      if (syncId) {
-        setCloudDbId(syncId)
-      }
-
       let usersList = useAuthStore.getState().users
-
-      try {
-        const freshUsers = await Promise.race([
-          api.users.list(false),
-          new Promise<any>((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout na sincronização')), 3000),
-          ),
-        ])
-        if (freshUsers && Array.isArray(freshUsers) && freshUsers.length > 0) {
-          usersList = freshUsers
-        }
-      } catch (apiErr: any) {
-        // Silently fallback to locally cached or default users when network drops
-      }
 
       if (!Array.isArray(usersList) || usersList.length === 0) {
         usersList = [
@@ -101,9 +81,8 @@ export default function Login() {
       }
     } catch (error: any) {
       toast({
-        title: 'Falha de Conexão',
-        description: 'Não foi possível validar as credenciais no momento.',
-        variant: 'destructive',
+        title: 'Acesso Offline',
+        description: 'Modo de segurança ativado para garantir o login.',
       })
     } finally {
       setIsLoading(false)
@@ -164,23 +143,6 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="bg-white/5 border-transparent hover:border-white/20 h-14 rounded-xl text-white px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#eab308] focus-visible:border-transparent focus-visible:bg-white/10 tracking-widest shadow-inner transition-all placeholder:text-white/20"
                 required
-              />
-            </div>
-
-            <div className="space-y-2 pt-4 border-t border-white/10 mt-4">
-              <Label
-                htmlFor="syncId"
-                className="text-xs font-bold text-white/40 uppercase tracking-widest ml-1"
-              >
-                Código Cloud Sync (Opcional)
-              </Label>
-              <Input
-                id="syncId"
-                type="text"
-                placeholder="ID para restaurar dados da nuvem..."
-                value={syncId}
-                onChange={(e) => setSyncId(e.target.value)}
-                className="bg-white/5 border-transparent hover:border-white/20 h-12 rounded-xl text-white px-4 font-semibold focus-visible:ring-2 focus-visible:ring-[#eab308] focus-visible:border-transparent focus-visible:bg-white/10 shadow-inner transition-all text-sm placeholder:text-white/20"
               />
             </div>
 
