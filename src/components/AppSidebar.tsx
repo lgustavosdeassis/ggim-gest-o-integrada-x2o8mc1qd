@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth'
 import { cn } from '@/lib/utils'
+import sealLogo from '@/assets/logo-cmtecs-fe595.jpg'
 
 export function AppSidebar() {
   const { pathname } = useLocation()
@@ -28,9 +29,9 @@ export function AppSidebar() {
   const isOwner = user?.role === 'owner'
 
   const menuItems = [
-    { title: 'Painel Gerencial', path: '/', icon: LayoutDashboard },
+    { title: 'Dashboard BI', path: '/', icon: LayoutDashboard },
     { title: 'Registrar Atividade', path: '/registrar', icon: FilePlus2 },
-    { title: 'Importar Lote', path: '/importar', icon: UploadCloud },
+    { title: 'Importar Arquivo', path: '/importar', icon: UploadCloud },
     { title: 'Acervo Histórico', path: '/historico', icon: History },
     { title: 'Videomonitoramento', path: '/videomonitoramento', icon: MonitorPlay },
     { title: 'Observatório', path: '/observatorio', icon: BarChart3 },
@@ -44,21 +45,21 @@ export function AppSidebar() {
   return (
     <Sidebar variant="sidebar" className="border-r border-border bg-sidebar z-40">
       <SidebarHeader className="h-20 flex items-center px-4 border-b border-border justify-center bg-sidebar">
-        {/* CMTecs Brand Adjustment: Full circle implementation to eliminate layout gaps and white borders */}
+        {/* Relocated original seal logo, replacing previous branding */}
         <div className="flex items-center gap-3 w-full justify-center">
-          <div className="h-11 w-11 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center p-0 border-none bg-[#020617]">
+          <div className="h-11 w-11 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center p-0 border-none bg-white">
             <img
-              src="https://img.usecurling.com/i?q=shield&color=white&shape=fill"
-              alt="CMTecs"
-              className="w-full h-full object-cover scale-[1.35]"
+              src={sealLogo}
+              alt="GGIM Foz do Iguaçu"
+              className="w-full h-full object-cover scale-[1.15]"
             />
           </div>
           <div className="flex flex-col truncate">
             <span className="font-black text-lg tracking-tight text-sidebar-foreground truncate leading-none">
-              CMTECS
+              GGIM
             </span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/60 truncate mt-0.5">
-              Gestão Integrada
+              Foz do Iguaçu
             </span>
           </div>
         </div>
@@ -67,6 +68,9 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu className="gap-2 px-2">
+              <div className="mt-2 mb-2 px-4 text-[10px] font-black uppercase tracking-widest text-sidebar-foreground/40">
+                Menu Principal
+              </div>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
                   <SidebarMenuButton

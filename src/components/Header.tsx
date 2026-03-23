@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { GgimHexLogo } from '@/components/GgimHexLogo'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,10 +29,19 @@ export function Header() {
         <SidebarTrigger className="-ml-2 h-10 w-10 text-primary-foreground/80 hover:text-primary-foreground hover:bg-primary-foreground/10 transition-colors" />
       </div>
 
-      {/* Center section: Proper Institutional Logo integration without restrictive frame */}
+      {/* Center section: New Hexagonal Logo integration */}
       <div className="hidden lg:flex flex-1 items-center justify-center gap-4">
-        <div className="flex h-14 w-auto shrink-0 items-center justify-center bg-transparent">
-          <GgimHexLogo className="h-full w-auto object-contain drop-shadow-md" />
+        <div className="flex h-16 w-auto shrink-0 items-center justify-center bg-transparent">
+          <img
+            src="/logo-hexagonal.png"
+            alt="GGIM Hexagonal"
+            className="h-full w-auto object-contain drop-shadow-md"
+            onError={(e) => {
+              // Fallback to placeholder if the high-res asset is not yet placed in public/
+              e.currentTarget.src =
+                'https://img.usecurling.com/i?q=hexagon-logo&color=gradient&shape=fill'
+            }}
+          />
         </div>
         <h1 className="text-base lg:text-lg font-bold tracking-tight text-center">
           Gabinete de Gestão Integrada Municipal de Foz do Iguaçu (GGIM)
