@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, ArrowRight } from 'lucide-react'
+import { Loader2, ArrowRight, AlertTriangle } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { GgimHexLogo } from '@/components/GgimHexLogo'
 
@@ -18,6 +18,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -29,9 +30,24 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (isLoading) return // Prevent multiple submissions
+
     setIsLoading(true)
+    setErrorMsg(null)
 
     try {
+      // Simulate network request delay for UX and to allow browser autofill/managers to process
+      await new Promise((resolve) => setTimeout(resolve, 800))
+
+      // Security Policy Check Simulation (Compromised Credentials)
+      if (password === 'compromised' || password === '123456' || password === 'senha') {
+        setErrorMsg(
+          'Sua senha foi classificada como vulnerável ou vazada por nossas políticas de segurança. Por favor, entre em contato com o Administrador para solicitar a redefinição de acesso.',
+        )
+        return
+      }
+
       let usersList = useAuthStore.getState().users
 
       if (!Array.isArray(usersList) || usersList.length === 0) {
@@ -73,6 +89,9 @@ export default function Login() {
         const from = location.state?.from?.pathname || '/'
         navigate(from, { replace: true })
       } else {
+        setErrorMsg(
+          'Login ou Senha incorretos. Verifique as credenciais digitadas e tente novamente.',
+        )
         toast({
           title: 'Acesso Negado',
           description: 'Login ou Senha incorretos. Verifique as credenciais.',
@@ -80,6 +99,9 @@ export default function Login() {
         })
       }
     } catch (error: any) {
+      setErrorMsg(
+        'Ocorreu uma falha de comunicação com o servidor de autenticação. Tente novamente.',
+      )
       toast({
         title: 'Acesso Offline',
         description: 'Modo de segurança ativado para garantir o login.',
@@ -109,6 +131,13 @@ export default function Login() {
         </CardHeader>
         <CardContent className="p-8 pt-0 relative z-10">
           <form onSubmit={handleLogin} className="space-y-5">
+            {errorMsg && (
+              <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+                <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
+                <p className="text-sm font-medium text-red-200 leading-relaxed">{errorMsg}</p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label
                 htmlFor="email"
@@ -119,6 +148,7 @@ export default function Login() {
               <Input
                 id="email"
                 type="email"
+                autoComplete="username"
                 placeholder="Digite seu e-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -138,6 +168,7 @@ export default function Login() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -152,7 +183,10 @@ export default function Login() {
               disabled={isLoading}
             >
               {isLoading ? (
-                <Loader2 className="h-6 w-6 animate-spin text-[#020617]" />
+                <>
+                  <Loader2 className="h-6 w-6 animate-spin text-[#020617]" />
+                  Autenticando...
+                </>
               ) : (
                 <>
                   Entrar no Sistema
