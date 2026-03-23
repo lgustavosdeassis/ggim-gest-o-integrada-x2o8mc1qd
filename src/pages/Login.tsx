@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { api, setCloudDbId } from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -13,31 +13,20 @@ import { GgimHexLogo } from '@/components/GgimHexLogo'
 export default function Login() {
   const { login, logout, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const { toast } = useToast()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [syncId, setSyncId] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [isPrefetching, setIsPrefetching] = useState(true)
 
   useEffect(() => {
     if (isAuthenticated) {
       logout()
     }
-
-    api.users
-      .list(true)
-      .then(() => {
-        setIsPrefetching(false)
-      })
-      .catch((err) => {
-        console.warn(
-          '[Bug Scanner] Prefetch network issue intercepted, UI remains fully available and stable:',
-          err?.message,
-        )
-        setIsPrefetching(false)
-      })
+    // Fire and forget prefetch for an initial warm-up, non-blocking.
+    api.users.list(false).catch(() => {})
   }, [isAuthenticated, logout])
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -47,28 +36,22 @@ export default function Login() {
     try {
       if (syncId) {
         setCloudDbId(syncId)
-        await new Promise((resolve) => setTimeout(resolve, 800))
       }
 
-      let usersList
+      let usersList = useAuthStore.getState().users
+
       try {
-        usersList = await Promise.race([
-          api.users.list(true),
+        const freshUsers = await Promise.race([
+          api.users.list(false),
           new Promise<any>((_, reject) =>
-            setTimeout(() => reject(new Error('Timeout na sincronização')), 8000),
+            setTimeout(() => reject(new Error('Timeout na sincronização')), 3000),
           ),
         ])
+        if (freshUsers && Array.isArray(freshUsers) && freshUsers.length > 0) {
+          usersList = freshUsers
+        }
       } catch (apiErr: any) {
-        console.warn(
-          '[Bug Scanner] Network/Timeout issue during login, using resilient fallback state:',
-          apiErr?.message,
-        )
-        toast({
-          title: 'Modo de Segurança Ativado',
-          description: 'A rede apresenta instabilidade. Operando com dados em cache local.',
-          variant: 'default',
-        })
-        usersList = useAuthStore.getState().users
+        // Silently fallback to locally cached or default users when network drops
       }
 
       if (!Array.isArray(usersList) || usersList.length === 0) {
@@ -107,7 +90,8 @@ export default function Login() {
 
       if (user) {
         login(user)
-        navigate('/')
+        const from = location.state?.from?.pathname || '/'
+        navigate(from, { replace: true })
       } else {
         toast({
           title: 'Acesso Negado',
@@ -116,11 +100,9 @@ export default function Login() {
         })
       }
     } catch (error: any) {
-      console.warn('[Bug Scanner] Unhandled login error intercepted:', error?.message || error)
       toast({
         title: 'Falha de Conexão',
-        description:
-          'A comunicação com o servidor foi interrompida. O sistema operará no modo de segurança.',
+        description: 'Não foi possível validar as credenciais no momento.',
         variant: 'destructive',
       })
     } finally {
@@ -135,12 +117,7 @@ export default function Login() {
       <Card className="w-full max-w-[440px] shadow-2xl border border-white/5 bg-[#0f172a]/95 backdrop-blur-xl z-10 rounded-[2.5rem] overflow-hidden text-white transition-all duration-500 hover:shadow-[0_0_40px_rgba(234,179,8,0.05)]">
         <CardHeader className="space-y-6 flex flex-col items-center text-center pb-6 pt-12 relative">
           <div className="w-[180px] h-[180px] flex items-center justify-center p-0 transition-transform hover:scale-105 duration-500 ease-out relative">
-            {isPrefetching && (
-              <div className="absolute -top-2 -right-2 bg-[#020617] rounded-full p-1 border border-[#eab308]/30 shadow-lg">
-                <Loader2 className="h-4 w-4 animate-spin text-[#eab308]" />
-              </div>
-            )}
-            <GgimHexLogo className="w-full h-full object-contain drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]" />
+            <GgimHexLogo className="w-full h-full drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]" />
           </div>
           <div className="space-y-1.5 z-10">
             <CardTitle className="text-3xl font-black tracking-tight text-white drop-shadow-sm">

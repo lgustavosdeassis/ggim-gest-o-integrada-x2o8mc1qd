@@ -15,43 +15,10 @@ import Usuarios from '@/pages/Usuarios'
 import AuditLogs from '@/pages/AuditLogs'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
-import { useState, useEffect } from 'react'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, user, logout } = useAuthStore()
-  const [isReady, setIsReady] = useState(false)
+  const { isAuthenticated, user } = useAuthStore()
   const location = useLocation()
-
-  useEffect(() => {
-    let isMounted = true
-    const timer = setTimeout(() => {
-      if (isMounted) setIsReady(true)
-    }, 1000)
-
-    return () => {
-      isMounted = false
-      clearTimeout(timer)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (isReady && isAuthenticated && !user?.role) {
-      logout()
-    }
-  }, [isReady, isAuthenticated, user, logout])
-
-  if (!isReady) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[#020617] text-white">
-        <div className="flex flex-col items-center">
-          <div className="w-10 h-10 border-4 border-[#eab308] border-t-transparent rounded-full animate-spin mb-5" />
-          <p className="text-white/60 font-bold text-xs uppercase tracking-[0.2em] animate-pulse">
-            Sincronizando Módulo Seguro...
-          </p>
-        </div>
-      </div>
-    )
-  }
 
   if (!isAuthenticated || !user?.role) {
     return <Navigate to="/login" state={{ from: location }} replace />

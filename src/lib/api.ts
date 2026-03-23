@@ -108,14 +108,11 @@ function getFallbackDb() {
 
 async function fetchStrict(
   id: string,
-  retries = 3,
+  retries = 2,
   throwOnFailure = false,
   attempt = 0,
 ): Promise<any> {
   if (isCircuitOpen()) {
-    console.warn(
-      '[Bug Scanner] Circuit breaker open. Skipping network request to prevent blocking.',
-    )
     if (throwOnFailure) {
       throw new Error('Safe Mode Fallback: Circuit Breaker Open')
     }
@@ -124,7 +121,7 @@ async function fetchStrict(
 
   try {
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 8000)
+    const timeoutId = setTimeout(() => controller.abort(), 3000)
 
     let res: Response | undefined
     try {
@@ -136,11 +133,7 @@ async function fetchStrict(
       clearTimeout(timeoutId)
     } catch (fetchErr: any) {
       clearTimeout(timeoutId)
-      const fetchErrorMsg =
-        fetchErr?.name === 'AbortError'
-          ? 'Server Timeout'
-          : fetchErr?.message || 'Network disconnected'
-      throw new Error(`TypeError: Failed to fetch (${fetchErrorMsg})`)
+      throw new Error(`Failed to fetch: ${fetchErr?.message || 'Network disconnected'}`)
     }
 
     if (!res || !res.ok) {
@@ -164,33 +157,14 @@ async function fetchStrict(
     }
     return getFallbackDb()
   } catch (e: any) {
-    const errorMsg = e?.message || 'Unknown error'
-    const targetUrl = `${JSONBLOB_API}/${id}`
-    const isTargetUrl = targetUrl === 'https://jsonblob.com/api/jsonBlob/1351608930495815680'
-
-    if (
-      isTargetUrl &&
-      (errorMsg.includes('Failed to fetch') ||
-        errorMsg.includes('HTTP N/A') ||
-        errorMsg.includes('Network disconnected'))
-    ) {
-      console.warn(
-        `[Bug Scanner] Intercepted expected network drop for primary DB URL: ${errorMsg}`,
-      )
-    }
-
     if (retries > 0) {
-      const delay = 1000 * Math.pow(1.5, attempt)
+      const delay = 500 * Math.pow(1.5, attempt)
       await new Promise((r) => setTimeout(r, delay))
       return fetchStrict(id, retries - 1, throwOnFailure, attempt + 1)
     }
 
     consecutiveFailures++
     lastFailureTime = Date.now()
-
-    console.warn(
-      `[Bug Scanner] Network failure intercepted after max retries: ${errorMsg}. Safe mode fallback activated.`,
-    )
 
     if (throwOnFailure) {
       throw new Error('Safe Mode Fallback: Network failure intercepted')
@@ -207,11 +181,8 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
   const p = (async () => {
     try {
       const id = await getCloudDbId()
-      return await fetchStrict(id, 3, false)
+      return await fetchStrict(id, 2, false)
     } catch (e) {
-      console.warn(
-        '[Bug Scanner] Network issue during background fetch setup, using resilient fallback state',
-      )
       return getFallbackDb()
     }
   })()
@@ -220,8 +191,7 @@ async function fetchCloudDb(forceFresh = false): Promise<any> {
       if (fetchPromise === p) fetchPromise = null
       return data || getFallbackDb()
     })
-    .catch((e) => {
-      console.warn('[Bug Scanner] Unhandled failure in fetchCloudDb intercepted')
+    .catch(() => {
       if (fetchPromise === p) fetchPromise = null
       return getFallbackDb()
     })
@@ -242,12 +212,12 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
           updater(db)
           db.updatedAt = Date.now()
 
-          const doPut = async (r = 3, attempt = 0): Promise<Response> => {
+          const doPut = async (r = 2, attempt = 0): Promise<Response> => {
             try {
               let putRes: Response | undefined
               try {
                 const controller = new AbortController()
-                const timeoutId = setTimeout(() => controller.abort(), 10000)
+                const timeoutId = setTimeout(() => controller.abort(), 8000)
                 putRes = await fetch(`${JSONBLOB_API}/${id}`, {
                   method: 'PUT',
                   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -256,9 +226,7 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
                 })
                 clearTimeout(timeoutId)
               } catch (e: any) {
-                throw new Error(
-                  `TypeError: Failed to fetch (${e?.message || 'Network disconnected'})`,
-                )
+                throw new Error(`Failed to fetch: ${e?.message || 'Network disconnected'}`)
               }
 
               if (!putRes || (!putRes.ok && putRes.status !== 404)) {
@@ -266,22 +234,6 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
               }
               return putRes
             } catch (e: any) {
-              const errorMsg = e?.message || 'Unknown error'
-              const targetUrl = `${JSONBLOB_API}/${id}`
-              const isTargetUrl =
-                targetUrl === 'https://jsonblob.com/api/jsonBlob/1351608930495815680'
-
-              if (
-                isTargetUrl &&
-                (errorMsg.includes('Failed to fetch') ||
-                  errorMsg.includes('HTTP N/A') ||
-                  errorMsg.includes('Network disconnected'))
-              ) {
-                console.warn(
-                  `[Bug Scanner] Intercepted PUT network drop for primary DB URL: ${errorMsg}`,
-                )
-              }
-
               if (r > 0) {
                 const delay = 1000 * Math.pow(1.5, attempt)
                 await new Promise((res) => setTimeout(res, delay))
@@ -314,14 +266,12 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
           }
           resolve()
         } catch (e: any) {
-          console.warn('[Bug Scanner] Atomic update failed to synchronize:', e?.message || e)
           reject(new Error('Safe Mode Fallback: Synchronization delayed'))
         } finally {
           isSaving = false
         }
       })
-      .catch((e) => {
-        console.warn('[Bug Scanner] Mutex chained rejection intercepted')
+      .catch(() => {
         reject(new Error('Safe Mode Fallback: Mutex rejected'))
       })
   })

@@ -1,29 +1,25 @@
-import { useState } from 'react'
-import { Shield } from 'lucide-react'
-
 export function GgimHexLogo({ className = '' }: { className?: string }) {
-  const [hasError, setHasError] = useState(false)
-
-  if (hasError) {
-    return (
-      <div className={`relative flex items-center justify-center bg-transparent ${className}`}>
-        <Shield
-          className="w-full h-full fill-white/10 text-white/30 absolute z-0"
-          strokeWidth={1.5}
-        />
-        <span className="font-black text-white tracking-widest drop-shadow-lg z-10 text-xs sm:text-base">
-          GGIM
-        </span>
-      </div>
-    )
-  }
-
   return (
-    <img
-      src="/ggim-logo.png"
-      alt="GGIM Foz"
-      className={className}
-      onError={() => setHasError(true)}
-    />
+    <svg viewBox="0 0 100 100" className={className} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M50 5L90 25V75L50 95L10 75V25L50 5Z"
+        fill="rgba(255,255,255,0.05)"
+        stroke="currentColor"
+        strokeWidth="2"
+        className="text-white/30"
+      />
+      <text
+        x="50"
+        y="55"
+        textAnchor="middle"
+        fill="white"
+        fontSize="24"
+        fontWeight="900"
+        letterSpacing="4"
+        style={{ filter: 'drop-shadow(0 0 10px rgba(255,255,255,0.2))' }}
+      >
+        GGIM
+      </text>
+    </svg>
   )
 }
