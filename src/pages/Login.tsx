@@ -33,6 +33,7 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation()
 
     if (isLoading) return // Prevent multiple submissions
 
@@ -138,7 +139,7 @@ export default function Login() {
           </div>
         </CardHeader>
         <CardContent className="p-8 pt-0 relative z-10">
-          <form onSubmit={handleLogin} className="space-y-5">
+          <form method="post" action="#" onSubmit={handleLogin} className="space-y-5">
             {errorMsg && (
               <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
                 <AlertTriangle className="h-5 w-5 text-red-400 shrink-0 mt-0.5" />
@@ -155,8 +156,9 @@ export default function Login() {
               </Label>
               <Input
                 id="email"
+                name="email"
                 type="email"
-                autoComplete="username"
+                autoComplete="username webauthn"
                 placeholder="Digite seu e-mail"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -175,8 +177,9 @@ export default function Login() {
               </div>
               <Input
                 id="password"
+                name="password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="current-password webauthn"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

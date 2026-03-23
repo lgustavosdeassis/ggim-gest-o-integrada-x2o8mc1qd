@@ -60,6 +60,7 @@ let isSaving = false
 let memoryDb: any = null
 let fetchPromise: Promise<any> | null = null
 let updateMutex = Promise.resolve()
+let cloudRecordId: string | null = null
 
 let consecutiveFailures = 0
 const MAX_FAILURES = 3
@@ -79,7 +80,7 @@ function isCircuitOpen() {
 
 // Kept as no-ops to maintain external contract compatibility
 export async function getCloudDbId(): Promise<string> {
-  return 'skip-cloud-native'
+  return cloudRecordId || 'skip-cloud-native'
 }
 
 export function setCloudDbId(id: string) {
@@ -131,7 +132,14 @@ async function fetchStrict(retries = 2, throwOnFailure = false, attempt = 0): Pr
     consecutiveFailures = 0
 
     // Attempt to extract Skip Cloud / PocketBase format, or fallback to raw
-    const dbData = json?.items?.[0]?.data || json
+    let dbData = json
+    if (json?.items && Array.isArray(json.items) && json.items.length > 0) {
+      cloudRecordId = json.items[0].id
+      dbData = json.items[0].data || json.items[0]
+    } else if (json?.id) {
+      cloudRecordId = json.id
+      dbData = json.data || json
+    }
 
     if (dbData && Object.keys(dbData).length > 0) {
       try {
@@ -210,8 +218,12 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
             try {
               const controller = new AbortController()
               const timeoutId = setTimeout(() => controller.abort(), 5000)
-              await fetch(SKIP_CLOUD_API, {
-                method: 'POST', // Adjust to PUT if updating existing record
+
+              const url = cloudRecordId ? `${SKIP_CLOUD_API}/${cloudRecordId}` : SKIP_CLOUD_API
+              const method = cloudRecordId ? 'PATCH' : 'POST'
+
+              await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                 body: JSON.stringify({ data: db }),
                 signal: controller.signal,
