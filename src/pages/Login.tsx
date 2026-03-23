@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
+import { api } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -10,7 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 import { GgimHexLogo } from '@/components/GgimHexLogo'
 
 export default function Login() {
-  const { login, logout, isAuthenticated, fetchUsers } = useAuthStore()
+  const { login, isAuthenticated, fetchUsers } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
@@ -22,11 +23,13 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      logout()
+      const from = location.state?.from?.pathname || '/'
+      navigate(from, { replace: true })
+      return
     }
     // Fetch users in the background completely decoupled from UI
     fetchUsers().catch(() => {})
-  }, [isAuthenticated, logout, fetchUsers])
+  }, [isAuthenticated, fetchUsers, navigate, location])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,15 +43,19 @@ export default function Login() {
       // Simulate network request delay for UX and to allow browser autofill/managers to process
       await new Promise((resolve) => setTimeout(resolve, 800))
 
-      // Security Policy Check Simulation (Compromised Credentials)
-      if (password === 'compromised' || password === '123456' || password === 'senha') {
-        setErrorMsg(
-          'Sua senha foi classificada como vulnerável ou vazada por nossas políticas de segurança. Por favor, entre em contato com o Administrador para solicitar a redefinição de acesso.',
-        )
-        return
-      }
-
       let usersList = useAuthStore.getState().users
+
+      // Attempt to fetch from the data layer if state is empty to ensure PocketBase/Skip Cloud alignment
+      if (!Array.isArray(usersList) || usersList.length === 0) {
+        try {
+          const remoteUsers = await api.users.list()
+          if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
+            usersList = remoteUsers
+          }
+        } catch (err) {
+          console.warn('Could not fetch remote users during login', err)
+        }
+      }
 
       if (!Array.isArray(usersList) || usersList.length === 0) {
         usersList = [
@@ -90,11 +97,11 @@ export default function Login() {
         navigate(from, { replace: true })
       } else {
         setErrorMsg(
-          'Login ou Senha incorretos. Verifique as credenciais digitadas e tente novamente.',
+          'E-mail ou senha incorretos. Verifique as credenciais digitadas e tente novamente.',
         )
         toast({
           title: 'Acesso Negado',
-          description: 'Login ou Senha incorretos. Verifique as credenciais.',
+          description: 'E-mail ou senha incorretos. Verifique as credenciais.',
           variant: 'destructive',
         })
       }
@@ -103,8 +110,9 @@ export default function Login() {
         'Ocorreu uma falha de comunicação com o servidor de autenticação. Tente novamente.',
       )
       toast({
-        title: 'Acesso Offline',
-        description: 'Modo de segurança ativado para garantir o login.',
+        title: 'Falha na Autenticação',
+        description: 'Verifique sua conexão ou tente novamente mais tarde.',
+        variant: 'destructive',
       })
     } finally {
       setIsLoading(false)
