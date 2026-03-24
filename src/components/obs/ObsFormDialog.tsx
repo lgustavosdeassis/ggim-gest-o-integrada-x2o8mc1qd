@@ -66,6 +66,7 @@ export function ObsFormDialog({
       violenciaDomestica: Number(vio) || 0,
       roubos: Number(roubos) || 0,
     })
+    setIsModified(false)
     onOpenChange(false)
   }
 

@@ -58,6 +58,7 @@ export function VideoFormDialog({
       imprensa: Number(imp) || 0,
       operadores: Number(op) || 0,
     })
+    setIsModified(false)
     onOpenChange(false)
   }
 

@@ -36,11 +36,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
     try {
       await api.activities.syncUpdate((list) => [newActivity, ...list])
       set((state) => ({ activities: [newActivity, ...state.activities] }))
+      toast.success('Sucesso', { description: 'Atividade salva e sincronizada.' })
     } catch (e) {
-      toast.error('Erro de Comunicação', {
-        description: 'Não foi possível salvar o registro na nuvem central.',
+      toast('Aviso: Modo Offline', {
+        description: 'Conexão falhou. A atividade foi salva com segurança de forma local.',
       })
-      throw e
     }
   },
   updateActivity: async (id, updated) => {
@@ -51,11 +51,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set((state) => ({
         activities: state.activities.map((a) => (a.id === id ? { ...a, ...updated } : a)),
       }))
+      toast.success('Sucesso', { description: 'Atividade atualizada.' })
     } catch (e) {
-      toast.error('Erro de Comunicação', {
-        description: 'Não foi possível atualizar o registro na nuvem central.',
+      toast('Aviso: Modo Offline', {
+        description: 'Conexão falhou. Atualização salva de forma local.',
       })
-      throw e
     }
   },
   deleteActivity: async (id) => {
@@ -64,11 +64,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set((state) => ({
         activities: state.activities.filter((a) => a.id !== id),
       }))
+      toast.success('Sucesso', { description: 'Atividade excluída.' })
     } catch (e) {
-      toast.error('Erro de Comunicação', {
-        description: 'Não foi possível excluir o registro na nuvem central.',
+      toast('Aviso: Modo Offline', {
+        description: 'Conexão falhou. Exclusão registrada localmente.',
       })
-      throw e
     }
   },
   bulkDeleteActivities: async (ids) => {
@@ -77,11 +77,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set((state) => ({
         activities: state.activities.filter((a) => !ids.includes(a.id)),
       }))
+      toast.success('Sucesso', { description: 'Atividades excluídas em lote.' })
     } catch (e) {
-      toast.error('Erro de Comunicação', {
-        description: 'Não foi possível excluir os registros em lote na nuvem.',
+      toast('Aviso: Modo Offline', {
+        description: 'Exclusão em lote registrada localmente.',
       })
-      throw e
     }
   },
   importActivities: async (newActivities) => {
@@ -94,11 +94,11 @@ export const useAppStore = create<AppState>()((set, get) => ({
     try {
       await api.activities.syncUpdate((list) => [...mapped, ...list])
       set((state) => ({ activities: [...mapped, ...state.activities] }))
+      toast.success('Sucesso', { description: 'Lote de atividades importado e sincronizado.' })
     } catch (e) {
-      toast.error('Erro de Comunicação', {
-        description: 'Falha ao importar o lote de atividades na nuvem central.',
+      toast('Aviso: Modo Offline', {
+        description: 'Conexão falhou. A importação foi concluída com segurança localmente.',
       })
-      throw e
     }
   },
 }))

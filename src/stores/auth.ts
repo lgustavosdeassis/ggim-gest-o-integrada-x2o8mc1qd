@@ -64,9 +64,12 @@ export const useAuthStore = create<AuthState>()(
             list.map((u) => (u.id === state.user!.id ? updatedUser : u)),
           )
           set({ user: updatedUser })
-          get().fetchUsers()
         } catch (e) {
-          toast.error('Erro de Comunicação', { description: 'Falha ao sincronizar o avatar.' })
+          toast('Aviso: Modo Offline', {
+            description: 'Avatar salvo localmente devido a falha na rede.',
+          })
+        } finally {
+          get().fetchUsers()
         }
       },
       updateProfile: async (data) => {
@@ -79,31 +82,33 @@ export const useAuthStore = create<AuthState>()(
             list.map((u) => (u.id === state.user!.id ? updatedUser : u)),
           )
           set({ user: updatedUser })
-          get().fetchUsers()
+          toast.success('Sucesso', { description: 'Perfil sincronizado.' })
         } catch (e) {
-          toast.error('Erro de Comunicação', {
-            description: 'Falha ao sincronizar o perfil na nuvem.',
+          toast('Aviso: Modo Offline', {
+            description: 'Perfil salvo localmente.',
           })
+        } finally {
+          get().fetchUsers()
         }
       },
       addUser: async (newUser) => {
         try {
           await api.users.syncUpdate((list) => [...list, newUser])
           set((state) => ({ users: [...state.users, newUser] }))
+          toast.success('Sucesso', { description: 'Usuário cadastrado com sucesso.' })
         } catch (e) {
-          toast.error('Erro de Comunicação', {
-            description: 'Não foi possível cadastrar o usuário na nuvem.',
+          toast('Aviso: Modo Offline', {
+            description: 'Usuário salvo localmente. Sincronização pendente.',
           })
-          throw e
         }
       },
       removeUser: async (id) => {
         try {
           await api.users.syncUpdate((list) => list.filter((u) => u.id !== id))
           set((state) => ({ users: state.users.filter((u) => u.id !== id) }))
+          toast.success('Sucesso', { description: 'Usuário removido.' })
         } catch (e) {
-          toast.error('Erro de Comunicação', { description: 'Não foi possível excluir o usuário.' })
-          throw e
+          toast('Aviso: Modo Offline', { description: 'Exclusão processada localmente.' })
         }
       },
     }),

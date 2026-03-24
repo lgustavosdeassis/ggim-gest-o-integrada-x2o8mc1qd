@@ -43,21 +43,26 @@ export const useVideoStore = create<VideoState>()((set, get) => ({
         }
         return [...list, { ...record, id: newId }]
       })
-      get().fetchRecords()
+      toast.success('Sucesso', { description: 'Registro de vídeo sincronizado.' })
     } catch (e) {
-      toast.error('Erro de Comunicação', {
-        description: 'Falha ao sincronizar registro de vídeo na nuvem.',
+      toast('Aviso: Modo Offline', {
+        description:
+          'A comunicação com a nuvem falhou. Seus dados foram salvos com segurança de forma local.',
       })
-      throw e
+    } finally {
+      get().fetchRecords()
     }
   },
   deleteRecord: async (id) => {
     try {
       await api.video.syncUpdate((list) => list.filter((r) => r.id !== id))
-      get().fetchRecords()
+      toast.success('Sucesso', { description: 'Registro de vídeo excluído.' })
     } catch (e) {
-      toast.error('Erro de Comunicação', { description: 'Falha ao excluir registro de vídeo.' })
-      throw e
+      toast('Aviso: Modo Offline', {
+        description: 'Exclusão registrada localmente devido a falha de conexão.',
+      })
+    } finally {
+      get().fetchRecords()
     }
   },
 }))

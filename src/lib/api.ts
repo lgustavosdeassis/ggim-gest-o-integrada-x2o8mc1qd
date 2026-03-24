@@ -124,16 +124,20 @@ function getFallbackDb() {
 }
 
 function cleanDb(db: any) {
-  if (db.users) db.users = Array.from(new Map(db.users.map((u: any) => [u.id, u])).values())
-  if (db.auditLogs)
-    db.auditLogs = Array.from(new Map(db.auditLogs.map((l: any) => [l.id, l])).values())
-  if (db.activities)
-    db.activities = Array.from(new Map(db.activities.map((a: any) => [a.id, a])).values())
-  if (db.videoRecords)
-    db.videoRecords = Array.from(new Map(db.videoRecords.map((v: any) => [v.id, v])).values())
-  if (db.obsRecords)
-    db.obsRecords = Array.from(new Map(db.obsRecords.map((o: any) => [o.id, o])).values())
-  return db
+  const cleaned = { ...db }
+  if (cleaned.users)
+    cleaned.users = Array.from(new Map(cleaned.users.map((u: any) => [u.id, u])).values())
+  if (cleaned.auditLogs)
+    cleaned.auditLogs = Array.from(new Map(cleaned.auditLogs.map((l: any) => [l.id, l])).values())
+  if (cleaned.activities)
+    cleaned.activities = Array.from(new Map(cleaned.activities.map((a: any) => [a.id, a])).values())
+  if (cleaned.videoRecords)
+    cleaned.videoRecords = Array.from(
+      new Map(cleaned.videoRecords.map((v: any) => [v.id, v])).values(),
+    )
+  if (cleaned.obsRecords)
+    cleaned.obsRecords = Array.from(new Map(cleaned.obsRecords.map((o: any) => [o.id, o])).values())
+  return cleaned
 }
 
 async function fetchStrict(retries = 2, throwOnFailure = false, attempt = 0): Promise<any> {
@@ -258,27 +262,20 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
               const controller = new AbortController()
               const timeoutId = setTimeout(() => controller.abort(), 8000)
 
-              const payload = { id: GLOBAL_SYNC_ID, data: cleanedDb }
+              const payload = { ...cleanedDb }
+              if (!payload.id) {
+                payload.id = GLOBAL_SYNC_ID
+              }
 
               // Try standard PocketBase PATCH to item endpoint
               let res = await fetch(`${SKIP_CLOUD_API}/${GLOBAL_SYNC_ID}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify({ data: cleanedDb }),
+                body: JSON.stringify(payload),
                 signal: controller.signal,
               }).catch(() => null)
 
-              // If 405 or 404, try PATCH to the collection root (Custom endpoint support)
-              if (!res || res.status === 404 || res.status === 405) {
-                res = await fetch(SKIP_CLOUD_API, {
-                  method: 'PATCH',
-                  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                  body: JSON.stringify(payload),
-                  signal: controller.signal,
-                }).catch(() => null)
-              }
-
-              // Finally, try POST to collection root if the above still yield 405 or 404
+              // If 404 or 405 (in case the item endpoint doesn't support PATCH), try POST to collection root
               if (!res || res.status === 404 || res.status === 405) {
                 res = await fetch(SKIP_CLOUD_API, {
                   method: 'POST',
@@ -293,22 +290,26 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
               if (!res || !res.ok) {
                 throw new Error(`Sync error: ${res ? res.status : 'Network Error'}`)
               }
+              consecutiveFailures = 0
             } catch (e) {
               consecutiveFailures++
               lastFailureTime = Date.now()
+              throw e // cascade error out to trigger safe mode toast
             }
+          } else {
+            throw new Error('Safe Mode Fallback: Circuit Breaker Open')
           }
 
           resolve()
         } catch (e: any) {
           console.warn('[Bug Scanner Guard] Sync update failed natively.', e)
-          reject(new Error('Safe Mode Fallback: Synchronization delayed'))
+          reject(e)
         } finally {
           isSaving = false
         }
       })
-      .catch(() => {
-        reject(new Error('Safe Mode Fallback: Mutex rejected'))
+      .catch((e) => {
+        reject(e)
       })
   })
 }
