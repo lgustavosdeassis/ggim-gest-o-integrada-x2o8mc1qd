@@ -5,7 +5,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { FileText, Plus, Trash, UploadCloud } from 'lucide-react'
+import {
+  FileText,
+  Plus,
+  Trash,
+  UploadCloud,
+  MoreVertical,
+  Eye,
+  Download,
+  Printer,
+} from 'lucide-react'
 import { FormValues, DOC_TYPES } from './schema'
 import {
   Select,
@@ -14,11 +23,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
+import { cn, openDocumentViewer, downloadDocument, printDocument } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export function ProdutividadeCard() {
   const { control } = useFormContext<FormValues>()
   const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
+  const [isDragging, setIsDragging] = useState(false)
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -30,7 +47,11 @@ export function ProdutividadeCard() {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
+    processFiles(files)
+    if (fileRef.current) fileRef.current.value = ''
+  }
 
+  const processFiles = (files: FileList) => {
     Array.from(files).forEach((file) => {
       const reader = new FileReader()
       reader.onload = (event) => {
@@ -42,8 +63,25 @@ export function ProdutividadeCard() {
       }
       reader.readAsDataURL(file)
     })
+  }
 
-    if (fileRef.current) fileRef.current.value = ''
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (!isViewer) setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    if (isViewer) return
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files)
+    }
   }
 
   return (
@@ -75,63 +113,86 @@ export function ProdutividadeCard() {
           )}
         />
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
             <div>
               <h4 className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
                 Gestão de Anexos
               </h4>
               <p className="text-sm text-muted-foreground">
-                Insira arquivos que comprovem a realização do evento.
+                Insira arquivos ou links que comprovem a realização do evento.
               </p>
             </div>
             {!isViewer && (
-              <>
-                <input
-                  type="file"
-                  ref={fileRef}
-                  className="hidden"
-                  multiple
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.mp3,.mp4,.html,text/html"
-                  onChange={handleFileUpload}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileRef.current?.click()}
-                  className="h-11 rounded-xl font-bold border-[#eab308] text-[#eab308] hover:bg-[#eab308]/10"
-                >
-                  <UploadCloud className="h-4 w-4 mr-2" /> Upload de Arquivo
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => append({ name: '', type: '', url: '' })}
-                  className="h-11 rounded-xl font-bold border-[#0f172a]/20 text-[#0f172a] hover:bg-slate-100"
-                >
-                  <Plus className="h-4 w-4 mr-2" /> Adicionar Link Web
-                </Button>
-              </>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => append({ name: '', type: '', url: '' })}
+                className="h-11 rounded-xl font-bold border-[#0f172a]/20 text-[#0f172a] hover:bg-slate-100 shrink-0"
+              >
+                <Plus className="h-4 w-4 mr-2" /> Adicionar Link Web
+              </Button>
             )}
           </div>
 
+          {!isViewer && (
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={cn(
+                'border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center transition-all duration-300',
+                isDragging
+                  ? 'border-[#eab308] bg-[#eab308]/10'
+                  : 'border-[#0f172a]/20 hover:border-[#0f172a]/40 bg-slate-50/50',
+              )}
+            >
+              <UploadCloud
+                className={cn(
+                  'w-10 h-10 mb-4 transition-colors',
+                  isDragging ? 'text-[#eab308]' : 'text-[#0f172a]/40',
+                )}
+              />
+              <h4 className="text-sm font-bold text-[#0f172a]">Arraste arquivos e solte aqui</h4>
+              <p className="text-xs text-muted-foreground mt-1 mb-4">
+                ou utilize o botão abaixo para selecionar do dispositivo
+              </p>
+              <input
+                type="file"
+                ref={fileRef}
+                className="hidden"
+                multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.mp3,.mp4,.html,text/html"
+                onChange={handleFileUpload}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileRef.current?.click()}
+                className="h-11 rounded-xl font-bold border-[#eab308] text-[#eab308] hover:bg-[#eab308]/10 bg-white"
+              >
+                Selecionar Arquivos
+              </Button>
+            </div>
+          )}
+
           {fields.length > 0 && (
-            <div className="space-y-4 mt-4">
-              {fields.map((field, index) => (
+            <div className="space-y-4">
+              {fields.map((fieldItem, index) => (
                 <div
-                  key={field.id}
+                  key={fieldItem.id}
                   className="flex flex-col sm:flex-row gap-4 bg-slate-50 p-4 rounded-xl border border-[#0f172a]/10"
                 >
                   <FormField
                     control={control}
                     name={`documents.${index}.name`}
-                    render={({ field: nameField }) => (
+                    render={({ field }) => (
                       <FormItem className="flex-1">
                         <FormLabel className="text-[10px] font-bold text-[#0f172a] uppercase tracking-widest">
                           Nome do Arquivo / Link
                         </FormLabel>
                         <FormControl>
-                          <Input className="h-11 bg-white" disabled={isViewer} {...nameField} />
+                          <Input className="h-11 bg-white" disabled={isViewer} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -140,14 +201,14 @@ export function ProdutividadeCard() {
                   <FormField
                     control={control}
                     name={`documents.${index}.type`}
-                    render={({ field: typeField }) => (
+                    render={({ field }) => (
                       <FormItem className="w-full sm:w-48">
                         <FormLabel className="text-[10px] font-bold text-[#0f172a] uppercase tracking-widest">
                           Categoria
                         </FormLabel>
                         <Select
-                          onValueChange={typeField.onChange}
-                          value={typeField.value}
+                          onValueChange={field.onChange}
+                          value={field.value}
                           disabled={isViewer}
                         >
                           <FormControl>
@@ -170,35 +231,81 @@ export function ProdutividadeCard() {
                   <FormField
                     control={control}
                     name={`documents.${index}.url`}
-                    render={({ field: urlField }) => (
+                    render={({ field }) => (
                       <FormItem className="flex-1">
                         <FormLabel className="text-[10px] font-bold text-[#0f172a] uppercase tracking-widest">
                           Conteúdo (URL ou Base64)
                         </FormLabel>
                         <FormControl>
                           <Input
-                            className="h-11 bg-white"
+                            className="h-11 bg-white font-mono text-xs"
                             placeholder="https://"
                             disabled={isViewer}
-                            {...urlField}
-                            value={urlField.value || ''}
+                            {...field}
+                            value={field.value || ''}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  {!isViewer && (
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => remove(index)}
-                      className="mb-0.5 rounded-xl h-11 w-11 shrink-0 mt-auto"
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <div className="mt-auto mb-0.5">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          className="rounded-xl h-11 w-11 shrink-0 bg-white border-[#0f172a]/20 hover:bg-slate-100"
+                        >
+                          <MoreVertical className="h-5 w-5 text-[#0f172a]" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-48 rounded-xl p-2 shadow-xl border-[#0f172a]/10"
+                      >
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 rounded-lg"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            openDocumentViewer(fieldItem as any)
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2 text-muted-foreground" /> Visualizar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 rounded-lg"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            downloadDocument(fieldItem as any)
+                          }}
+                        >
+                          <Download className="w-4 h-4 mr-2 text-muted-foreground" /> Baixar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer font-medium py-2 rounded-lg"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            printDocument(fieldItem as any)
+                          }}
+                        >
+                          <Printer className="w-4 h-4 mr-2 text-muted-foreground" /> Imprimir
+                        </DropdownMenuItem>
+                        {!isViewer && (
+                          <>
+                            <div className="h-px bg-border my-1 mx-1" />
+                            <DropdownMenuItem
+                              className="cursor-pointer font-bold py-2 rounded-lg text-destructive focus:text-destructive focus:bg-destructive/10"
+                              onClick={() => remove(index)}
+                            >
+                              <Trash className="w-4 h-4 mr-2" /> Excluir Arquivo
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
               ))}
             </div>

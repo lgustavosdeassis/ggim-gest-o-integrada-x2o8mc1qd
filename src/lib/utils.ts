@@ -235,7 +235,7 @@ export async function getDocumentBlob(
 }
 
 export async function openDocumentViewer(doc: ActivityDocument, activity?: ActivityRecord) {
-  if (doc.url && doc.url.startsWith('http')) {
+  if (doc.url && (doc.url.startsWith('http') || doc.url.startsWith('https'))) {
     window.open(doc.url, '_blank', 'noopener,noreferrer')
     return
   }
@@ -321,6 +321,15 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
 
 export async function downloadDocument(doc: ActivityDocument, activity?: ActivityRecord) {
   try {
+    if (
+      doc.url &&
+      (doc.url.startsWith('http') || doc.url.startsWith('https')) &&
+      !doc.url.startsWith('blob:')
+    ) {
+      window.open(doc.url, '_blank', 'noopener,noreferrer')
+      return
+    }
+
     const blob = await getDocumentBlob(doc, activity)
     let downloadUrl = ''
     let isObjectUrl = false
@@ -352,7 +361,7 @@ export async function downloadDocument(doc: ActivityDocument, activity?: Activit
 
 export async function printDocument(doc: ActivityDocument, activity?: ActivityRecord) {
   try {
-    if (doc.url && doc.url.startsWith('http')) {
+    if (doc.url && (doc.url.startsWith('http') || doc.url.startsWith('https'))) {
       const win = window.open(doc.url, '_blank', 'noopener,noreferrer')
       if (win) {
         win.onload = () => {

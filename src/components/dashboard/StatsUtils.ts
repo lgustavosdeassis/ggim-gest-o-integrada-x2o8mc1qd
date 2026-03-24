@@ -7,7 +7,8 @@ export interface DashboardStats {
     formalMeetings: number
     institutionalEvents: number
     actionsGenerated: number
-    totalHours: number
+    eventHours: number
+    actionHours: number
     eventsByType: { name: string; value: number }[]
     modalityData: { name: string; value: number; fill: string }[]
   }
@@ -35,7 +36,8 @@ export interface DashboardStats {
 }
 
 export function calculateDashboardStats(records: ActivityRecord[]): DashboardStats {
-  let totalHours = 0
+  let eventHours = 0
+  let actionHours = 0
   let formalMeetings = 0
   let institutionalEvents = 0
   let actionsGenerated = 0
@@ -52,15 +54,33 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
   const pjCountsPerEvent: number[] = []
 
   records.forEach((r) => {
-    totalHours += calculateTotalHours(r)
+    let currentEventHours = calculateHoursDifference(r.meetingStart, r.meetingEnd)
+    if (r.hasAdditionalDays && r.additionalDays) {
+      currentEventHours += r.additionalDays.reduce(
+        (acc, d) => acc + calculateHoursDifference(d.start, d.end),
+        0,
+      )
+    }
+    eventHours += currentEventHours
 
+    let currentActionHours = 0
     if (r.actions && r.actions.length > 0) {
-      r.actions.forEach(() => {
-        actionsGenerated++
+      actionsGenerated += r.actions.length
+      r.actions.forEach((a) => {
+        if (a.periods && a.periods.length > 0) {
+          currentActionHours += a.periods.reduce(
+            (pAcc, p) => pAcc + calculateHoursDifference(p.start, p.end),
+            0,
+          )
+        } else {
+          currentActionHours += calculateHoursDifference(a.start || '', a.end || '')
+        }
       })
     } else if (r.hasAction && r.actionStart && r.actionEnd) {
       actionsGenerated++
+      currentActionHours += calculateHoursDifference(r.actionStart, r.actionEnd)
     }
+    actionHours += currentActionHours
 
     if (r.eventType.includes('Reunião Ordinária') || r.eventType.includes('Reunião Extraordinária'))
       formalMeetings++
@@ -133,6 +153,7 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     'Formulário',
     'Imagens',
     'Áudio',
+    'Vídeo',
     'Lista de Presença',
     'Outros',
   ]
@@ -156,6 +177,7 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     else if (upper === 'FORMULÁRIO') mapped = 'Formulário'
     else if (upper === 'IMAGENS' || upper === 'FOTO' || upper === 'FOTOS') mapped = 'Imagens'
     else if (upper === 'ÁUDIO') mapped = 'Áudio'
+    else if (upper === 'VÍDEO' || upper === 'VIDEO') mapped = 'Vídeo'
     else if (upper === 'LISTA DE PRESENÇA') mapped = 'Lista de Presença'
     else if (upper === 'OUTROS') mapped = 'Outros'
     else if (docsByType[t]) mapped = t
@@ -182,7 +204,8 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
       formalMeetings,
       institutionalEvents,
       actionsGenerated,
-      totalHours,
+      eventHours,
+      actionHours,
       eventsByType,
       modalityData: [
         { name: 'Presencial', value: modalityCount.Presencial || 0, fill: 'hsl(var(--chart-1))' },

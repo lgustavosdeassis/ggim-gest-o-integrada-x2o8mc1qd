@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Activity, CalendarDays, CheckCircle2, Clock, Landmark } from 'lucide-react'
+import { Activity, CalendarDays, CheckCircle2, Clock, Landmark, Timer } from 'lucide-react'
 import { Pie, PieChart, ResponsiveContainer, Tooltip, Legend, Cell } from 'recharts'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { DashboardStats } from './StatsUtils'
@@ -21,12 +21,12 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
         <h3 className="text-xl font-bold text-foreground">Visão Geral</h3>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-3 lg:grid-cols-5">
+      <div className="grid gap-5 md:grid-cols-3 lg:grid-cols-6">
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
           <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-1/10 rounded-full blur-2xl group-hover:bg-chart-1/20 transition-colors" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Ocorrências
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Eventos (Únicos)
             </CardTitle>
             <Activity className="h-5 w-5 text-chart-1" />
           </CardHeader>
@@ -38,7 +38,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
           <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-2/10 rounded-full blur-2xl group-hover:bg-chart-2/20 transition-colors" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               Formais
             </CardTitle>
             <CalendarDays className="h-5 w-5 text-chart-2" />
@@ -51,7 +51,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
           <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-3/10 rounded-full blur-2xl group-hover:bg-chart-3/20 transition-colors" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               Institucionais
             </CardTitle>
             <Landmark className="h-5 w-5 text-chart-3" />
@@ -64,7 +64,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
           <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-4/10 rounded-full blur-2xl group-hover:bg-chart-4/20 transition-colors" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
               Ações Geradas
             </CardTitle>
             <CheckCircle2 className="h-5 w-5 text-chart-4" />
@@ -74,17 +74,32 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
           </CardContent>
         </Card>
 
-        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-5/10 rounded-full blur-2xl group-hover:bg-chart-5/20 transition-colors" />
+        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group border-primary/20">
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Horas Dedicadas
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-primary">
+              Horas (Eventos)
             </CardTitle>
-            <Clock className="h-5 w-5 text-chart-5" />
+            <Clock className="h-5 w-5 text-primary" />
           </CardHeader>
           <CardContent className="relative z-10">
             <div className="text-4xl font-black text-foreground">
-              {formatHoursToHHMM(data.totalHours)}
+              {formatHoursToHHMM(data.eventHours)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group border-secondary/20">
+          <div className="absolute -right-6 -top-6 w-24 h-24 bg-secondary/20 rounded-full blur-2xl group-hover:bg-secondary/30 transition-colors" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-secondary-foreground/80">
+              Horas (Ações)
+            </CardTitle>
+            <Timer className="h-5 w-5 text-secondary-foreground/80" />
+          </CardHeader>
+          <CardContent className="relative z-10">
+            <div className="text-4xl font-black text-foreground">
+              {formatHoursToHHMM(data.actionHours)}
             </div>
           </CardContent>
         </Card>
