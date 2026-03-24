@@ -15,7 +15,7 @@ export function ObsFormDialog({
   onOpenChange: (o: boolean) => void
   initialDate: string
 }) {
-  const { addRecord } = useObsStore()
+  const { addRecord, records } = useObsStore()
   const [date, setDate] = useState(initialDate || '')
   const [vitimas, setVitimas] = useState(0)
   const [total, setTotal] = useState(0)
@@ -29,6 +29,27 @@ export function ObsFormDialog({
       setDate(initialDate)
     }
   }, [open, initialDate])
+
+  useEffect(() => {
+    if (open && date) {
+      const existing = records.find((r) => r.date === date)
+      if (existing) {
+        setVitimas(existing.sinistrosVitimas)
+        setTotal(existing.sinistrosTotal)
+        setAutos(existing.autosInfracao)
+        setHom(existing.homicidios)
+        setViol(existing.violenciaDomestica)
+        setRoubos(existing.roubos)
+      } else {
+        setVitimas(0)
+        setTotal(0)
+        setAutos(0)
+        setHom(0)
+        setViol(0)
+        setRoubos(0)
+      }
+    }
+  }, [date, records, open])
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()

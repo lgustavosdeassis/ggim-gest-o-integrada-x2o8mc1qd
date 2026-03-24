@@ -213,6 +213,9 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
             // Ignore quota
           }
 
+          // Force listeners across tabs and local components to recognize updates
+          window.dispatchEvent(new Event('db_updated'))
+
           // Try to sync with Skip Cloud in background, safely falling back if offline
           if (!isCircuitOpen()) {
             try {
@@ -285,4 +288,14 @@ export const api = {
         db.auditLogs = upd(db.auditLogs || [])
       }),
   },
+}
+
+// Ensures that changes applied in one tab are reflected instantly in other open instances.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === LOCAL_STORAGE_DB_KEY) {
+      memoryDb = null
+      window.dispatchEvent(new Event('db_updated'))
+    }
+  })
 }

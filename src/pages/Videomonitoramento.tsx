@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MonitorPlay, Plus, Calendar as CalendarIcon } from 'lucide-react'
+import { MonitorPlay, Plus, Calendar as CalendarIcon, Printer } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -76,7 +76,7 @@ export default function Videomonitoramento() {
 
   return (
     <div className="flex-1 space-y-8 max-w-[1200px] mx-auto min-h-[calc(100vh-80px)] animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 no-print">
         <div>
           <h1 className="text-4xl font-black tracking-tight text-foreground uppercase mb-2">
             Videomonitoramento DITM/DVVSE
@@ -144,15 +144,33 @@ export default function Videomonitoramento() {
             </div>
           </div>
 
-          {!isViewer && (
+          <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
             <Button
-              onClick={() => setIsFormOpen(true)}
-              className="w-full md:w-auto h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap"
+              variant="outline"
+              onClick={() => window.print()}
+              className="flex-1 md:flex-none h-12 px-6 rounded-xl font-bold bg-background border-border text-foreground hover:bg-muted shadow-sm whitespace-nowrap"
             >
-              <Plus className="w-5 h-5 mr-2" /> Lançar Dados
+              <Printer className="w-4 h-4 mr-2" /> Gerar Relatório
             </Button>
-          )}
+            {!isViewer && (
+              <Button
+                onClick={() => setIsFormOpen(true)}
+                className="flex-1 md:flex-none h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap"
+              >
+                <Plus className="w-5 h-5 mr-2" /> Lançar Dados
+              </Button>
+            )}
+          </div>
         </div>
+      </div>
+
+      {/* Print-only header */}
+      <div className="hidden print:block mb-8 pb-4 border-b border-border">
+        <h1 className="text-3xl font-black text-foreground">Relatório Videomonitoramento</h1>
+        <p className="text-lg text-muted-foreground font-medium mt-1">
+          Período: {customStart ? customStart.toLocaleDateString('pt-BR') : '...'} até{' '}
+          {customEnd ? customEnd.toLocaleDateString('pt-BR') : '...'}
+        </p>
       </div>
 
       <Card className="border-border shadow-sm bg-card rounded-2xl overflow-hidden p-6 md:p-10 space-y-10">
@@ -160,7 +178,7 @@ export default function Videomonitoramento() {
           <div className="flex items-center gap-6">
             <div className="flex-1 h-8 bg-muted rounded-md overflow-hidden relative">
               <div
-                className="h-full bg-[#12d3a3] transition-all duration-1000 ease-out"
+                className="h-full bg-[#12d3a3] transition-all duration-1000 ease-out print:bg-muted"
                 style={{ width: `${percSeguranca}%` }}
               />
             </div>
@@ -183,7 +201,7 @@ export default function Videomonitoramento() {
                 {customEnd ? customEnd.toLocaleDateString('pt-BR') : '...'})
               </span>
             </h3>
-            <ChartContainer config={chartConfig} className="h-[320px] w-full">
+            <ChartContainer config={chartConfig} className="h-[320px] w-full print:h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 30, right: 10, left: 10, bottom: 60 }}>
                   <XAxis
@@ -222,7 +240,7 @@ export default function Videomonitoramento() {
           <div className="flex flex-col justify-center space-y-12 pl-0 lg:pl-10">
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center print:border print:border-border">
                   <MonitorPlay className="w-5 h-5 text-primary" />
                 </div>
                 <h4 className="text-lg font-bold text-foreground uppercase tracking-widest">
@@ -234,7 +252,7 @@ export default function Videomonitoramento() {
 
             <div>
               <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 rounded-full bg-[#12d3a3]/20 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-[#12d3a3]/20 flex items-center justify-center print:border print:border-border">
                   <MonitorPlay className="w-5 h-5 text-[#12d3a3]" />
                 </div>
                 <h4 className="text-lg font-bold text-foreground uppercase tracking-widest">

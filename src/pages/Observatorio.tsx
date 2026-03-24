@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Calendar as CalendarIcon } from 'lucide-react'
+import { Plus, Calendar as CalendarIcon, Printer } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -69,7 +69,7 @@ export default function Observatorio() {
 
   return (
     <div className="flex-1 space-y-8 max-w-[1200px] mx-auto min-h-[calc(100vh-80px)] animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 no-print">
         <div>
           <h1 className="text-3xl md:text-4xl font-black tracking-tight text-foreground uppercase mb-2">
             Observatório Municipal de Segurança Pública
@@ -133,15 +133,32 @@ export default function Observatorio() {
             </div>
           </div>
 
-          {!isViewer && (
+          <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
             <Button
-              onClick={() => setIsFormOpen(true)}
-              className="w-full md:w-auto h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap"
+              variant="outline"
+              onClick={() => window.print()}
+              className="flex-1 md:flex-none h-12 px-6 rounded-xl font-bold bg-background border-border text-foreground hover:bg-muted shadow-sm whitespace-nowrap"
             >
-              <Plus className="w-5 h-5 mr-2" /> Lançar Dados
+              <Printer className="w-4 h-4 mr-2" /> Gerar Relatório
             </Button>
-          )}
+            {!isViewer && (
+              <Button
+                onClick={() => setIsFormOpen(true)}
+                className="flex-1 md:flex-none h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap"
+              >
+                <Plus className="w-5 h-5 mr-2" /> Lançar Dados
+              </Button>
+            )}
+          </div>
         </div>
+      </div>
+
+      <div className="hidden print:block mb-8 pb-4 border-b border-border">
+        <h1 className="text-3xl font-black text-foreground">Relatório Observatório de Segurança</h1>
+        <p className="text-lg text-muted-foreground font-medium mt-1">
+          Período: {customStart ? customStart.toLocaleDateString('pt-BR') : '...'} até{' '}
+          {customEnd ? customEnd.toLocaleDateString('pt-BR') : '...'}
+        </p>
       </div>
 
       <Card className="border-border shadow-sm bg-card rounded-2xl overflow-hidden p-6 md:p-10 space-y-10">
@@ -155,7 +172,7 @@ export default function Observatorio() {
                 {customEnd ? customEnd.toLocaleDateString('pt-BR') : '...'})
               </span>
             </h3>
-            <ChartContainer config={chartConfig} className="h-[320px] w-full mt-4">
+            <ChartContainer config={chartConfig} className="h-[320px] w-full mt-4 print:h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData} margin={{ top: 30, right: 20, left: 20, bottom: 30 }}>
                   <XAxis
@@ -184,14 +201,14 @@ export default function Observatorio() {
             </ChartContainer>
           </div>
 
-          <div className="flex flex-col h-full">
-            <div className="flex-1 bg-[#0f172a] rounded-t-xl flex items-center justify-center p-10 relative overflow-hidden group min-h-[200px]">
-              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <span className="text-7xl lg:text-8xl font-black text-white relative z-10 tracking-tighter">
+          <div className="flex flex-col h-full print:border print:border-border print:rounded-xl">
+            <div className="flex-1 bg-[#0f172a] rounded-t-xl flex items-center justify-center p-10 relative overflow-hidden group min-h-[200px] print:bg-white">
+              <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity print:hidden" />
+              <span className="text-7xl lg:text-8xl font-black text-white print:text-foreground relative z-10 tracking-tighter">
                 {record.autosInfracao.toLocaleString('pt-BR')}
               </span>
             </div>
-            <div className="bg-[#eab308] text-[#0f172a] rounded-b-xl py-4 text-center">
+            <div className="bg-[#eab308] text-[#0f172a] rounded-b-xl py-4 text-center print:bg-muted print:text-foreground">
               <h3 className="text-2xl font-black uppercase tracking-widest">Autos de Infração</h3>
             </div>
             <div className="mt-3 text-right">
@@ -212,11 +229,11 @@ export default function Observatorio() {
                 Homicídios
               </span>
             </div>
-            <div className="flex-1 bg-[#0f172a] p-6 flex flex-col md:flex-row items-center justify-center gap-4 text-center md:text-left hover:bg-[#1e293b] transition-colors">
-              <span className="text-5xl lg:text-6xl font-black text-white">
+            <div className="flex-1 bg-[#0f172a] print:bg-white print:border-x print:border-border p-6 flex flex-col md:flex-row items-center justify-center gap-4 text-center md:text-left hover:bg-[#1e293b] transition-colors">
+              <span className="text-5xl lg:text-6xl font-black text-white print:text-foreground">
                 {record.violenciaDomestica}
               </span>
-              <span className="text-xl font-black uppercase text-white leading-none">
+              <span className="text-xl font-black uppercase text-white print:text-muted-foreground leading-none">
                 Violência
                 <br />
                 Doméstica

@@ -124,6 +124,18 @@ export async function getDocumentBlob(
   const lowerName = (name || '').toLowerCase()
   const isPdf = lowerName.endsWith('.pdf')
   const isImg = lowerName.match(/\.(jpg|jpeg|png|gif|webp)$/)
+  const isAudio = lowerName.match(/\.(mp3|wav|ogg)$/)
+  const isVideo = lowerName.match(/\.(mp4|webm|avi)$/)
+  const isHtml = lowerName.match(/\.html$/)
+
+  if (isAudio || isVideo || isHtml) {
+    // Cannot mock a valid video/audio/html dynamically here safely, return fallback text
+    // The main flow uses the real data: url directly so it rarely hits this except for empty urls
+    return new Blob(
+      [`Arquivo: ${name}\n\nNenhum conteudo disponivel ou formato invalido para mock.`],
+      { type: 'text/plain' },
+    )
+  }
 
   const fallbackInst = activity?.instance || 'N/A'
   const fallbackType = activity?.eventType || 'N/A'
@@ -260,11 +272,20 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
 
   try {
     const isImage = doc.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i)
+    const isVideo = doc.name?.toLowerCase().match(/\.(mp4|webm|avi)$/i)
+    const isAudio = doc.name?.toLowerCase().match(/\.(mp3|wav|ogg)$/i)
 
     if (doc.url && doc.url.startsWith('data:')) {
-      const dataHtml = isImage
-        ? `<img src="${doc.url}" style="max-width:100%;max-height:100vh;object-fit:contain;"/>`
-        : `<iframe src="${doc.url}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
+      let dataHtml = ''
+      if (isImage) {
+        dataHtml = `<img src="${doc.url}" style="max-width:100%;max-height:100vh;object-fit:contain;"/>`
+      } else if (isVideo) {
+        dataHtml = `<video src="${doc.url}" controls style="max-width:100%;max-height:100vh;object-fit:contain;"></video>`
+      } else if (isAudio) {
+        dataHtml = `<audio src="${doc.url}" controls></audio>`
+      } else {
+        dataHtml = `<iframe src="${doc.url}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
+      }
       win.document.body.innerHTML = dataHtml
       return
     }
@@ -272,9 +293,16 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
     const blob = await getDocumentBlob(doc, activity)
     if (blob) {
       const blobUrl = URL.createObjectURL(blob)
-      const dataHtml = isImage
-        ? `<img src="${blobUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;"/>`
-        : `<iframe src="${blobUrl}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
+      let dataHtml = ''
+      if (isImage) {
+        dataHtml = `<img src="${blobUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;"/>`
+      } else if (isVideo) {
+        dataHtml = `<video src="${blobUrl}" controls autoplay style="max-width:100%;max-height:100vh;object-fit:contain;"></video>`
+      } else if (isAudio) {
+        dataHtml = `<audio src="${blobUrl}" controls autoplay></audio>`
+      } else {
+        dataHtml = `<iframe src="${blobUrl}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
+      }
 
       win.document.body.innerHTML = dataHtml
       setTimeout(() => URL.revokeObjectURL(blobUrl), 120000)
@@ -375,6 +403,8 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
     }
 
     const isImage = blob.type.startsWith('image/') || doc.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+    const isVideo = blob.type.startsWith('video/') || doc.name?.match(/\.(mp4|webm|avi)$/i)
+    const isAudio = blob.type.startsWith('audio/') || doc.name?.match(/\.(mp3|wav|ogg)$/i)
 
     iframeDoc.write(`
       <!DOCTYPE html>
@@ -382,23 +412,32 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
         <head>
           <title>Imprimir Anexo</title>
           <style>
-            body { margin: 0; display: flex; justify-content: center; font-family: sans-serif; }
+            body { margin: 0; display: flex; justify-content: center; font-family: sans-serif; align-items: center; height: 100vh; }
             img { max-width: 100%; height: auto; }
             pre { white-space: pre-wrap; padding: 20px; width: 100%; font-size: 14px; }
+            .media-msg { padding: 40px; border: 2px dashed #ccc; border-radius: 12px; text-align: center; }
           </style>
         </head>
         <body>
           ${
             isImage
               ? `<img src="${printUrl}" onload="window.print();" onerror="window.print();" />`
-              : `<pre id="content"></pre>`
+              : isVideo || isAudio
+                ? `<div class="media-msg"><h2>Arquivo de Mídia</h2><p>Nome: ${doc.name}</p><p>Arquivos de áudio e vídeo não podem ser impressos diretamente. Por favor, utilize a função de download para este item.</p></div>`
+                : `<pre id="content"></pre>`
           }
         </body>
       </html>
     `)
     iframeDoc.close()
 
-    if (!isImage) {
+    if (isVideo || isAudio) {
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.print()
+        } catch (e) {}
+      }, 500)
+    } else if (!isImage) {
       const text = await blob.text()
       const contentEl = iframeDoc.getElementById('content')
       if (contentEl) contentEl.textContent = text

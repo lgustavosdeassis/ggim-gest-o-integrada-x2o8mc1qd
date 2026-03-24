@@ -15,7 +15,7 @@ export function VideoFormDialog({
   onOpenChange: (o: boolean) => void
   initialDate: string
 }) {
-  const { addRecord } = useVideoStore()
+  const { addRecord, records } = useVideoStore()
   const [date, setDate] = useState(initialDate || '')
   const [part, setPart] = useState(0)
   const [inst, setInst] = useState(0)
@@ -27,6 +27,23 @@ export function VideoFormDialog({
       setDate(initialDate)
     }
   }, [open, initialDate])
+
+  useEffect(() => {
+    if (open && date) {
+      const existing = records.find((r) => r.date === date)
+      if (existing) {
+        setPart(existing.particulares)
+        setInst(existing.instituicoes)
+        setImp(existing.imprensa)
+        setOp(existing.operadores)
+      } else {
+        setPart(0)
+        setInst(0)
+        setImp(0)
+        setOp(0)
+      }
+    }
+  }, [date, records, open])
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
