@@ -14,6 +14,7 @@ import {
   Eye,
   Download,
   Printer,
+  ChevronDown,
 } from 'lucide-react'
 import { FormValues, DOC_TYPES } from './schema'
 import {
@@ -117,22 +118,12 @@ export function ProdutividadeCard() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
             <div>
               <h4 className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                Gestão de Anexos
+                Gestão de Anexos e Links
               </h4>
               <p className="text-sm text-muted-foreground">
                 Insira arquivos ou links que comprovem a realização do evento.
               </p>
             </div>
-            {!isViewer && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => append({ name: '', type: '', url: '' })}
-                className="h-11 rounded-xl font-bold border-[#0f172a]/20 text-[#0f172a] hover:bg-slate-100 shrink-0"
-              >
-                <Plus className="h-4 w-4 mr-2" /> Adicionar Link Web
-              </Button>
-            )}
           </div>
 
           {!isViewer && (
@@ -154,8 +145,8 @@ export function ProdutividadeCard() {
                 )}
               />
               <h4 className="text-sm font-bold text-[#0f172a]">Arraste arquivos e solte aqui</h4>
-              <p className="text-xs text-muted-foreground mt-1 mb-4">
-                ou utilize o botão abaixo para selecionar do dispositivo
+              <p className="text-xs text-muted-foreground mt-1 mb-5 text-center max-w-sm">
+                ou utilize o botão abaixo para selecionar do dispositivo ou adicionar um link web
               </p>
               <input
                 type="file"
@@ -165,14 +156,33 @@ export function ProdutividadeCard() {
                 accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.mp3,.mp4,.html,text/html"
                 onChange={handleFileUpload}
               />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileRef.current?.click()}
-                className="h-11 rounded-xl font-bold border-[#eab308] text-[#eab308] hover:bg-[#eab308]/10 bg-white"
-              >
-                Selecionar Arquivos
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 rounded-xl font-bold border-[#eab308] text-[#eab308] hover:bg-[#eab308]/10 bg-white"
+                  >
+                    Adicionar Anexo ou Link <ChevronDown className="w-4 h-4 ml-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-56 rounded-xl border-[#0f172a]/10">
+                  <DropdownMenuItem
+                    onClick={() => fileRef.current?.click()}
+                    className="cursor-pointer font-medium py-2.5"
+                  >
+                    <UploadCloud className="w-4 h-4 mr-2 text-muted-foreground" />
+                    Do Dispositivo (Arquivo)
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => append({ name: '', type: '', url: '' })}
+                    className="cursor-pointer font-medium py-2.5"
+                  >
+                    <Plus className="w-4 h-4 mr-2 text-muted-foreground" />
+                    Inserir Link Manualmente
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           )}
 
@@ -189,7 +199,7 @@ export function ProdutividadeCard() {
                     render={({ field }) => (
                       <FormItem className="flex-1">
                         <FormLabel className="text-[10px] font-bold text-[#0f172a] uppercase tracking-widest">
-                          Nome do Arquivo / Link
+                          Nome do Arquivo
                         </FormLabel>
                         <FormControl>
                           <Input className="h-11 bg-white" disabled={isViewer} {...field} />
@@ -234,12 +244,12 @@ export function ProdutividadeCard() {
                     render={({ field }) => (
                       <FormItem className="flex-1">
                         <FormLabel className="text-[10px] font-bold text-[#0f172a] uppercase tracking-widest">
-                          Conteúdo (URL ou Base64)
+                          Conteúdo / URL
                         </FormLabel>
                         <FormControl>
                           <Input
                             className="h-11 bg-white font-mono text-xs"
-                            placeholder="https://"
+                            placeholder="https:// ou base64 gerado"
                             disabled={isViewer}
                             {...field}
                             value={field.value || ''}
@@ -299,7 +309,7 @@ export function ProdutividadeCard() {
                               className="cursor-pointer font-bold py-2 rounded-lg text-destructive focus:text-destructive focus:bg-destructive/10"
                               onClick={() => remove(index)}
                             >
-                              <Trash className="w-4 h-4 mr-2" /> Excluir Arquivo
+                              <Trash className="w-4 h-4 mr-2" /> Excluir Item
                             </DropdownMenuItem>
                           </>
                         )}

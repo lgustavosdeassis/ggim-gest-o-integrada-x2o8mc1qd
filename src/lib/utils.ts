@@ -235,7 +235,7 @@ export async function getDocumentBlob(
 }
 
 export async function openDocumentViewer(doc: ActivityDocument, activity?: ActivityRecord) {
-  if (doc.url && (doc.url.startsWith('http') || doc.url.startsWith('https'))) {
+  if (doc.url && (doc.url.startsWith('http://') || doc.url.startsWith('https://'))) {
     window.open(doc.url, '_blank', 'noopener,noreferrer')
     return
   }
@@ -273,21 +273,6 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
     const isVideo = doc.name?.toLowerCase().match(/\.(mp4|webm|avi)$/i)
     const isAudio = doc.name?.toLowerCase().match(/\.(mp3|wav|ogg)$/i)
 
-    if (doc.url && doc.url.startsWith('data:')) {
-      let dataHtml = ''
-      if (isImage) {
-        dataHtml = `<img src="${doc.url}" style="max-width:100%;max-height:100vh;object-fit:contain;"/>`
-      } else if (isVideo) {
-        dataHtml = `<video src="${doc.url}" controls style="max-width:100%;max-height:100vh;object-fit:contain;"></video>`
-      } else if (isAudio) {
-        dataHtml = `<audio src="${doc.url}" controls></audio>`
-      } else {
-        dataHtml = `<iframe src="${doc.url}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
-      }
-      win.document.body.innerHTML = dataHtml
-      return
-    }
-
     const blob = await getDocumentBlob(doc, activity)
     if (blob) {
       const blobUrl = URL.createObjectURL(blob)
@@ -323,7 +308,7 @@ export async function downloadDocument(doc: ActivityDocument, activity?: Activit
   try {
     if (
       doc.url &&
-      (doc.url.startsWith('http') || doc.url.startsWith('https')) &&
+      (doc.url.startsWith('http://') || doc.url.startsWith('https://')) &&
       !doc.url.startsWith('blob:')
     ) {
       window.open(doc.url, '_blank', 'noopener,noreferrer')
@@ -361,7 +346,7 @@ export async function downloadDocument(doc: ActivityDocument, activity?: Activit
 
 export async function printDocument(doc: ActivityDocument, activity?: ActivityRecord) {
   try {
-    if (doc.url && (doc.url.startsWith('http') || doc.url.startsWith('https'))) {
+    if (doc.url && (doc.url.startsWith('http://') || doc.url.startsWith('https://'))) {
       const win = window.open(doc.url, '_blank', 'noopener,noreferrer')
       if (win) {
         win.onload = () => {
@@ -391,7 +376,7 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
         <!DOCTYPE html>
         <html>
           <head><title>Imprimir - ${doc.name || 'Documento'}</title></head>
-          <body style="margin:0;"><iframe src="${printUrl}" style="width:100%;height:100vh;border:none;" onload="this.contentWindow.print();"></iframe></body>
+          <body style="margin:0;"><iframe src="${printUrl}" style="width:100%;height:100vh;border:none;" onload="this.contentWindow.focus(); this.contentWindow.print();"></iframe></body>
         </html>
       `)
       win.document.close()
@@ -452,6 +437,7 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
       if (contentEl) contentEl.textContent = text
       setTimeout(() => {
         try {
+          iframe.contentWindow?.focus()
           iframe.contentWindow?.print()
         } catch (e) {
           console.error('Print falhou:', e)

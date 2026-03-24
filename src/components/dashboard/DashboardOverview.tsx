@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Activity, CalendarDays, CheckCircle2, Clock, Landmark, Timer } from 'lucide-react'
+import { Activity, CalendarDays, CheckCircle2, Clock, Landmark, Timer, Sigma } from 'lucide-react'
 import { Pie, PieChart, ResponsiveContainer, Tooltip, Legend, Cell } from 'recharts'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { DashboardStats } from './StatsUtils'
@@ -14,6 +14,8 @@ import {
 import { formatHoursToHHMM } from '@/lib/utils'
 
 export function DashboardOverview({ data }: { data: DashboardStats['overview'] }) {
+  const consolidatedHours = data.eventHours + data.actionHours
+
   return (
     <div className="space-y-6 print-break-inside-avoid animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center gap-3 mb-2">
@@ -21,88 +23,107 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
         <h3 className="text-xl font-bold text-foreground">Visão Geral</h3>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-3 lg:grid-cols-6">
-        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-1/10 rounded-full blur-2xl group-hover:bg-chart-1/20 transition-colors" />
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Eventos (Únicos)
-            </CardTitle>
-            <Activity className="h-5 w-5 text-chart-1" />
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-foreground">{data.totalEvents}</div>
-          </CardContent>
-        </Card>
+      <div className="space-y-5">
+        <div className="grid gap-5 grid-cols-2 lg:grid-cols-4">
+          <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-1/10 rounded-full blur-2xl group-hover:bg-chart-1/20 transition-colors" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Eventos (Únicos)
+              </CardTitle>
+              <Activity className="h-5 w-5 text-chart-1" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-black text-foreground">{data.totalEvents}</div>
+            </CardContent>
+          </Card>
 
-        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-2/10 rounded-full blur-2xl group-hover:bg-chart-2/20 transition-colors" />
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Formais
-            </CardTitle>
-            <CalendarDays className="h-5 w-5 text-chart-2" />
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-foreground">{data.formalMeetings}</div>
-          </CardContent>
-        </Card>
+          <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-2/10 rounded-full blur-2xl group-hover:bg-chart-2/20 transition-colors" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Formais
+              </CardTitle>
+              <CalendarDays className="h-5 w-5 text-chart-2" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-black text-foreground">{data.formalMeetings}</div>
+            </CardContent>
+          </Card>
 
-        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-3/10 rounded-full blur-2xl group-hover:bg-chart-3/20 transition-colors" />
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Institucionais
-            </CardTitle>
-            <Landmark className="h-5 w-5 text-chart-3" />
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-foreground">{data.institutionalEvents}</div>
-          </CardContent>
-        </Card>
+          <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-3/10 rounded-full blur-2xl group-hover:bg-chart-3/20 transition-colors" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Institucionais
+              </CardTitle>
+              <Landmark className="h-5 w-5 text-chart-3" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-black text-foreground">{data.institutionalEvents}</div>
+            </CardContent>
+          </Card>
 
-        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-4/10 rounded-full blur-2xl group-hover:bg-chart-4/20 transition-colors" />
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Ações Geradas
-            </CardTitle>
-            <CheckCircle2 className="h-5 w-5 text-chart-4" />
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-foreground">{data.actionsGenerated}</div>
-          </CardContent>
-        </Card>
+          <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-4/10 rounded-full blur-2xl group-hover:bg-chart-4/20 transition-colors" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Ações Geradas
+              </CardTitle>
+              <CheckCircle2 className="h-5 w-5 text-chart-4" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-black text-foreground">{data.actionsGenerated}</div>
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group border-primary/20">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-primary">
-              Horas (Eventos)
-            </CardTitle>
-            <Clock className="h-5 w-5 text-primary" />
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-foreground">
-              {formatHoursToHHMM(data.eventHours)}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid gap-5 grid-cols-1 md:grid-cols-3">
+          <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group border-primary/20">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                Horas (Eventos)
+              </CardTitle>
+              <Clock className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-black text-foreground">
+                {formatHoursToHHMM(data.eventHours)}
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group border-secondary/20">
-          <div className="absolute -right-6 -top-6 w-24 h-24 bg-secondary/20 rounded-full blur-2xl group-hover:bg-secondary/30 transition-colors" />
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
-            <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-secondary-foreground/80">
-              Horas (Ações)
-            </CardTitle>
-            <Timer className="h-5 w-5 text-secondary-foreground/80" />
-          </CardHeader>
-          <CardContent className="relative z-10">
-            <div className="text-4xl font-black text-foreground">
-              {formatHoursToHHMM(data.actionHours)}
-            </div>
-          </CardContent>
-        </Card>
+          <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group border-secondary/20">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-secondary/20 rounded-full blur-2xl group-hover:bg-secondary/30 transition-colors" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-secondary-foreground/80">
+                Horas (Ações)
+              </CardTitle>
+              <Timer className="h-5 w-5 text-secondary-foreground/80" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-black text-foreground">
+                {formatHoursToHHMM(data.actionHours)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group border-chart-4/30">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-4/10 rounded-full blur-2xl group-hover:bg-chart-4/20 transition-colors" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-chart-4">
+                Horas Consolidadas
+              </CardTitle>
+              <Sigma className="h-5 w-5 text-chart-4" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-black text-foreground">
+                {formatHoursToHHMM(consolidatedHours)}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <div className="grid gap-5 md:grid-cols-2">
