@@ -235,7 +235,11 @@ export async function getDocumentBlob(
 }
 
 export async function openDocumentViewer(doc: ActivityDocument, activity?: ActivityRecord) {
-  if (doc.url && (doc.url.startsWith('http://') || doc.url.startsWith('https://'))) {
+  if (
+    doc.url &&
+    (doc.url.startsWith('http://') || doc.url.startsWith('https://')) &&
+    !doc.url.startsWith('blob:')
+  ) {
     window.open(doc.url, '_blank', 'noopener,noreferrer')
     return
   }
@@ -253,7 +257,7 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
       <meta charset="UTF-8">
       <title>${doc.name || 'Visualizador de Documento'}</title>
       <style>
-        body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; background-color: #0f172a; color: white; font-family: sans-serif; }
+        body { margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; background-color: #0f172a; color: white; font-family: sans-serif; overflow: hidden; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.1); border-left-color: #eab308; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px auto; }
         @keyframes spin { to { transform: rotate(360deg); } }
       </style>
@@ -272,10 +276,18 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
     const isImage = doc.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i)
     const isVideo = doc.name?.toLowerCase().match(/\.(mp4|webm|avi)$/i)
     const isAudio = doc.name?.toLowerCase().match(/\.(mp3|wav|ogg)$/i)
+    const isPdf = doc.name?.toLowerCase().endsWith('.pdf') || doc.type?.toLowerCase() === 'pdf'
 
     const blob = await getDocumentBlob(doc, activity)
     if (blob) {
       const blobUrl = URL.createObjectURL(blob)
+
+      if (isPdf || blob.type === 'application/pdf') {
+        win.location.replace(blobUrl)
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 300000)
+        return
+      }
+
       let dataHtml = ''
       if (isImage) {
         dataHtml = `<img src="${blobUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;"/>`
@@ -290,7 +302,7 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
       win.document.body.innerHTML = dataHtml
       setTimeout(() => URL.revokeObjectURL(blobUrl), 120000)
     } else if (doc.url && !doc.url.startsWith('data:') && !doc.url.startsWith('blob:')) {
-      win.location.href = doc.url
+      win.location.replace(doc.url)
     } else {
       win.document.body.innerHTML =
         '<div style="padding: 20px; text-align: center; color: #ff4444; font-weight: bold;">Erro: Não foi possível carregar o conteúdo do documento.</div>'
@@ -346,7 +358,11 @@ export async function downloadDocument(doc: ActivityDocument, activity?: Activit
 
 export async function printDocument(doc: ActivityDocument, activity?: ActivityRecord) {
   try {
-    if (doc.url && (doc.url.startsWith('http://') || doc.url.startsWith('https://'))) {
+    if (
+      doc.url &&
+      (doc.url.startsWith('http://') || doc.url.startsWith('https://')) &&
+      !doc.url.startsWith('blob:')
+    ) {
       const win = window.open(doc.url, '_blank', 'noopener,noreferrer')
       if (win) {
         win.onload = () => {
@@ -366,21 +382,31 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
     const isPdf = blob.type === 'application/pdf' || doc.name?.toLowerCase().endsWith('.pdf')
 
     if (isPdf) {
-      const win = window.open('', '_blank')
-      if (!win) {
-        alert('Por favor, permita pop-ups no seu navegador para imprimir o documento.')
-        URL.revokeObjectURL(printUrl)
-        return
+      const iframe = document.createElement('iframe')
+      iframe.style.display = 'none'
+      iframe.src = printUrl
+      document.body.appendChild(iframe)
+
+      iframe.onload = () => {
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus()
+            iframe.contentWindow?.print()
+          } catch (e) {
+            const win = window.open(printUrl, '_blank')
+            if (win) {
+              win.onload = () => win.print()
+            }
+          }
+        }, 800)
       }
-      win.document.write(`
-        <!DOCTYPE html>
-        <html>
-          <head><title>Imprimir - ${doc.name || 'Documento'}</title></head>
-          <body style="margin:0;"><iframe src="${printUrl}" style="width:100%;height:100vh;border:none;" onload="this.contentWindow.focus(); this.contentWindow.print();"></iframe></body>
-        </html>
-      `)
-      win.document.close()
-      setTimeout(() => URL.revokeObjectURL(printUrl), 120000)
+
+      setTimeout(() => {
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe)
+        }
+        URL.revokeObjectURL(printUrl)
+      }, 120000)
       return
     }
 

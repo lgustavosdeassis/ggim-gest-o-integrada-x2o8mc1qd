@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button'
-import { Eye, Download, FileX, Printer, ChevronDown } from 'lucide-react'
+import { Eye, Download, FileX, Printer, ChevronDown, ExternalLink } from 'lucide-react'
 import { Document as ActivityDocument, ActivityRecord } from '@/lib/types'
 import { openDocumentViewer, downloadDocument, printDocument } from '@/lib/utils'
 import {
@@ -36,9 +36,21 @@ export function DocumentList({
           className="flex flex-col gap-3 bg-card p-4 border border-border rounded-xl shadow-sm hover:border-primary/50 transition-colors"
         >
           <div className="flex items-start justify-between gap-2">
-            <span className="font-semibold text-sm text-foreground line-clamp-2" title={doc.name}>
-              {doc.name}
-            </span>
+            {doc.url && (doc.url.startsWith('http://') || doc.url.startsWith('https://')) ? (
+              <a
+                href={doc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-sm text-primary hover:underline line-clamp-2 flex items-center gap-1.5"
+                title={doc.name}
+              >
+                {doc.name} <ExternalLink className="w-3.5 h-3.5 shrink-0" />
+              </a>
+            ) : (
+              <span className="font-semibold text-sm text-foreground line-clamp-2" title={doc.name}>
+                {doc.name}
+              </span>
+            )}
             <span className="text-[10px] font-black bg-muted px-2 py-1 rounded uppercase tracking-widest text-primary shrink-0 border border-border mt-0.5">
               {doc.type || 'S/TIPO'}
             </span>

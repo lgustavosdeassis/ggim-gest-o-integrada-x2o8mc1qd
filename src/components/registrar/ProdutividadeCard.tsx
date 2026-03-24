@@ -15,6 +15,7 @@ import {
   Download,
   Printer,
   ChevronDown,
+  ExternalLink,
 } from 'lucide-react'
 import { FormValues, DOC_TYPES } from './schema'
 import {
@@ -247,13 +248,35 @@ export function ProdutividadeCard() {
                           Conteúdo / URL
                         </FormLabel>
                         <FormControl>
-                          <Input
-                            className="h-11 bg-white font-mono text-xs"
-                            placeholder="https:// ou base64 gerado"
-                            disabled={isViewer}
-                            {...field}
-                            value={field.value || ''}
-                          />
+                          <div className="relative flex items-center">
+                            <Input
+                              className={cn(
+                                'h-11 bg-white font-mono text-xs',
+                                field.value &&
+                                  (field.value.startsWith('http://') ||
+                                    field.value.startsWith('https://')) &&
+                                  'pr-12',
+                              )}
+                              placeholder="https:// ou base64 gerado"
+                              disabled={isViewer}
+                              {...field}
+                              value={field.value || ''}
+                            />
+                            {field.value &&
+                              (field.value.startsWith('http://') ||
+                                field.value.startsWith('https://')) && (
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-1 h-9 w-9 text-muted-foreground hover:text-primary"
+                                  onClick={() => window.open(field.value, '_blank')}
+                                  title="Abrir Link Externo"
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </Button>
+                              )}
+                          </div>
                         </FormControl>
                         <FormMessage />
                       </FormItem>
