@@ -1,0 +1,99 @@
+import * as z from 'zod'
+
+export const INSTANCIAS = [
+  'Colegiado Pleno',
+  'Eventos Institucionais',
+  'CMTEC-TRAN/PVT',
+  'CMTEC-PVCM/CMDM',
+  'CMTEC-PVCCA/RP',
+  'CMTEC-PVC',
+  'CMTEC-MA',
+  'CMTEC-ETP',
+  'CMTEC-AP/COMUD',
+  'CMTEC-AIFU',
+] as const
+
+export const EVENTOS_TIPO = [
+  'Reunião Ordinária',
+  'Reunião Extraordinária',
+  'Apresentação',
+  'Palestra',
+  'Seminário',
+  'Workshop',
+  'Capacitação',
+  'Visita Técnica',
+  'Outros',
+] as const
+
+export const MODALIDADES = ['Presencial', 'Remota', 'Híbrida'] as const
+
+export const DOC_TYPES = [
+  'Ata',
+  'Ofício',
+  'Relatório',
+  'Transcrição',
+  'E-mail',
+  'SID',
+  'Formulário',
+  'Imagens',
+  'Áudio',
+  'Vídeo',
+  'Lista de Presença',
+  'Outros',
+] as const
+
+export const formSchema = z.object({
+  eventName: z.string().optional(),
+  instance: z.string().min(1, 'Instância é obrigatória.'),
+  eventType: z.string().min(1, 'Tipo de evento é obrigatório.'),
+  modality: z.string().min(1, 'Modalidade é obrigatória.'),
+  location: z.string().min(1, 'Local é obrigatório.'),
+  meetingStart: z.string().min(1, 'Início do evento é obrigatório.'),
+  meetingEnd: z.string().min(1, 'Término do evento é obrigatório.'),
+  hasAdditionalDays: z.boolean().default(false),
+  additionalDays: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        start: z.string().min(1, 'Início é obrigatório.'),
+        end: z.string().min(1, 'Término é obrigatório.'),
+      }),
+    )
+    .optional(),
+  hasAction: z.boolean().default(false),
+  actionStart: z.string().optional(),
+  actionEnd: z.string().optional(),
+  actions: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        start: z.string().optional(),
+        end: z.string().optional(),
+        periods: z
+          .array(
+            z.object({
+              id: z.string().optional(),
+              start: z.string().min(1, 'Início é obrigatório.'),
+              end: z.string().min(1, 'Término é obrigatório.'),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .optional(),
+  participantsPF: z.string().optional(),
+  participantsPJ: z.string().optional(),
+  deliberations: z.string().optional(),
+  documents: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string().min(1, 'Nome do arquivo é obrigatório.'),
+        type: z.string().min(1, 'Categoria é obrigatória.'),
+        url: z.string().optional(),
+      }),
+    )
+    .optional(),
+})
+
+export type FormValues = z.infer<typeof formSchema>

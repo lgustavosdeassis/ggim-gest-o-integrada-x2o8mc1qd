@@ -129,8 +129,6 @@ export async function getDocumentBlob(
   const isHtml = lowerName.match(/\.html$/)
 
   if (isAudio || isVideo || isHtml) {
-    // Cannot mock a valid video/audio/html dynamically here safely, return fallback text
-    // The main flow uses the real data: url directly so it rarely hits this except for empty urls
     return new Blob(
       [`Arquivo: ${name}\n\nNenhum conteudo disponivel ou formato invalido para mock.`],
       { type: 'text/plain' },
@@ -435,7 +433,9 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
       setTimeout(() => {
         try {
           iframe.contentWindow?.print()
-        } catch (e) {}
+        } catch (e) {
+          /* ignore */
+        }
       }, 500)
     } else if (!isImage) {
       const text = await blob.text()
