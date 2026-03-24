@@ -6,7 +6,7 @@ import { AuditLog } from '@/stores/audit'
 import { mockActivities } from '@/lib/mock-data'
 
 const DEFAULT_DB = {
-  updatedAt: Date.now(),
+  updatedAt: 1774330115950,
   activities: mockActivities,
   users: [
     {
@@ -18,25 +18,35 @@ const DEFAULT_DB = {
       jobTitle: 'Proprietário',
     },
     {
-      id: '2',
-      email: 'editor@ggim.foz.br',
-      password: 'editor',
+      id: '8omuofn',
+      name: 'L. Gustavo S. de Assis',
+      email: 'ggim.ctfoz@gmail.com',
+      password: 'ggim.ctfoz',
       role: 'editor',
-      name: 'Editor GGIM',
+      avatarUrl: '',
       jobTitle: 'Editor',
     },
     {
-      id: '3',
-      email: 'viewer@ggim.foz.br',
-      password: 'viewer',
-      role: 'viewer',
-      name: 'Visualizador GGIM',
-      jobTitle: 'Visualizador',
+      id: 'mtwee1b',
+      name: 'Stephany',
+      email: 'estagiariosggimfoz@gmail.com',
+      password: 'ggim.2026',
+      role: 'editor',
+      avatarUrl: '',
+      jobTitle: 'Editor',
     },
-  ],
+  ] as User[],
   videoRecords: [
     { id: 'v1', date: '2026-02', particulares: 3, instituicoes: 7, imprensa: 0, operadores: 21 },
-  ],
+    {
+      id: 'et182rjru',
+      date: '2026-01',
+      particulares: 2,
+      instituicoes: 6,
+      imprensa: 1,
+      operadores: 23,
+    },
+  ] as VideoRecord[],
   obsRecords: [
     {
       id: 'o1',
@@ -48,12 +58,27 @@ const DEFAULT_DB = {
       violenciaDomestica: 244,
       roubos: 89,
     },
-  ],
-  auditLogs: [] as AuditLog[],
+  ] as ObsRecord[],
+  auditLogs: [
+    {
+      id: 't0r3yip',
+      userName: 'Gestor GGIM',
+      userEmail: 'admin@ggim.foz.br',
+      action: 'Excluiu 3 atividades em lote do histórico',
+      timestamp: '2026-03-24T02:48:24.013Z',
+    },
+    {
+      id: 'liz8e04',
+      userName: 'Gestor GGIM',
+      userEmail: 'admin@ggim.foz.br',
+      action: 'Cadastrou o novo usuário: estagiariosggimfoz@gmail.com (editor)',
+      timestamp: '2026-03-24T02:48:13.549Z',
+    },
+  ] as AuditLog[],
 }
 
 // Native Skip Cloud instance configuration
-const GLOBAL_SYNC_ID = import.meta.env.VITE_GLOBAL_SYNC_ID || '1351608930495815680'
+const GLOBAL_SYNC_ID = (import.meta.env.VITE_GLOBAL_SYNC_ID || '1351608930495815680').trim()
 const SKIP_CLOUD_API = '/api/collections/ggim_data/records'
 const LOCAL_STORAGE_DB_KEY = 'ggim_pocketbase_cache'
 
@@ -233,23 +258,41 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
               const controller = new AbortController()
               const timeoutId = setTimeout(() => controller.abort(), 8000)
 
+              const payload = { id: GLOBAL_SYNC_ID, data: cleanedDb }
+
+              // Try standard PocketBase PATCH to item endpoint
               let res = await fetch(`${SKIP_CLOUD_API}/${GLOBAL_SYNC_ID}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                 body: JSON.stringify({ data: cleanedDb }),
                 signal: controller.signal,
-              })
+              }).catch(() => null)
 
-              if (res.status === 404 || res.status === 405) {
+              // If 405 or 404, try PATCH to the collection root (Custom endpoint support)
+              if (!res || res.status === 404 || res.status === 405) {
+                res = await fetch(SKIP_CLOUD_API, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                  body: JSON.stringify(payload),
+                  signal: controller.signal,
+                }).catch(() => null)
+              }
+
+              // Finally, try POST to collection root if the above still yield 405 or 404
+              if (!res || res.status === 404 || res.status === 405) {
                 res = await fetch(SKIP_CLOUD_API, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                  body: JSON.stringify({ id: GLOBAL_SYNC_ID, data: cleanedDb }),
+                  body: JSON.stringify(payload),
                   signal: controller.signal,
-                })
+                }).catch(() => null)
               }
 
               clearTimeout(timeoutId)
+
+              if (!res || !res.ok) {
+                throw new Error(`Sync error: ${res ? res.status : 'Network Error'}`)
+              }
             } catch (e) {
               consecutiveFailures++
               lastFailureTime = Date.now()
