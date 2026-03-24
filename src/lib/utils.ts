@@ -126,11 +126,20 @@ export async function getDocumentBlob(
   const isImg = lowerName.match(/\.(jpg|jpeg|png|gif|webp)$/)
   const isAudio = lowerName.match(/\.(mp3|wav|ogg)$/)
   const isVideo = lowerName.match(/\.(mp4|webm|avi)$/)
-  const isHtml = lowerName.match(/\.html$/)
+  const isHtml = lowerName.match(/\.html?$/)
 
-  if (isAudio || isVideo || isHtml) {
+  if (isHtml) {
     return new Blob(
-      [`Arquivo: ${name}\n\nNenhum conteudo disponivel ou formato invalido para mock.`],
+      [
+        `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><h2>Arquivo HTML Mock</h2><p>Nome: ${name}</p><p>Nenhum conteudo disponivel no mock para exibicao fiel.</p></body></html>`,
+      ],
+      { type: 'text/html' },
+    )
+  }
+
+  if (isAudio || isVideo) {
+    return new Blob(
+      [`Arquivo de midia: ${name}\n\nNenhum conteudo disponivel ou formato invalido para mock.`],
       { type: 'text/plain' },
     )
   }
@@ -236,9 +245,10 @@ export async function getDocumentBlob(
 
 export async function openDocumentViewer(doc: ActivityDocument, activity?: ActivityRecord) {
   if (
-    doc.url &&
-    (doc.url.startsWith('http://') || doc.url.startsWith('https://')) &&
-    !doc.url.startsWith('blob:')
+    doc.type === 'Link' ||
+    (doc.url &&
+      (doc.url.startsWith('http://') || doc.url.startsWith('https://')) &&
+      !doc.url.startsWith('blob:'))
   ) {
     window.open(doc.url, '_blank', 'noopener,noreferrer')
     return
@@ -276,13 +286,13 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
     const isImage = doc.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i)
     const isVideo = doc.name?.toLowerCase().match(/\.(mp4|webm|avi)$/i)
     const isAudio = doc.name?.toLowerCase().match(/\.(mp3|wav|ogg)$/i)
-    const isPdf = doc.name?.toLowerCase().endsWith('.pdf') || doc.type?.toLowerCase() === 'pdf'
 
     const blob = await getDocumentBlob(doc, activity)
     if (blob) {
       const blobUrl = URL.createObjectURL(blob)
+      const isPdf = doc.name?.toLowerCase().endsWith('.pdf') || blob.type === 'application/pdf'
 
-      if (isPdf || blob.type === 'application/pdf') {
+      if (isPdf) {
         win.location.replace(blobUrl)
         setTimeout(() => URL.revokeObjectURL(blobUrl), 300000)
         return
@@ -319,11 +329,21 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
 export async function downloadDocument(doc: ActivityDocument, activity?: ActivityRecord) {
   try {
     if (
-      doc.url &&
-      (doc.url.startsWith('http://') || doc.url.startsWith('https://')) &&
-      !doc.url.startsWith('blob:')
+      doc.type === 'Link' ||
+      (doc.url &&
+        (doc.url.startsWith('http://') || doc.url.startsWith('https://')) &&
+        !doc.url.startsWith('blob:'))
     ) {
-      window.open(doc.url, '_blank', 'noopener,noreferrer')
+      const urlContent = `[InternetShortcut]\nURL=${doc.url}`
+      const blob = new Blob([urlContent], { type: 'text/plain' })
+      const downloadUrl = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = downloadUrl
+      a.download = `${doc.name || 'link'}.url`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000)
       return
     }
 
@@ -359,14 +379,15 @@ export async function downloadDocument(doc: ActivityDocument, activity?: Activit
 export async function printDocument(doc: ActivityDocument, activity?: ActivityRecord) {
   try {
     if (
-      doc.url &&
-      (doc.url.startsWith('http://') || doc.url.startsWith('https://')) &&
-      !doc.url.startsWith('blob:')
+      doc.type === 'Link' ||
+      (doc.url &&
+        (doc.url.startsWith('http://') || doc.url.startsWith('https://')) &&
+        !doc.url.startsWith('blob:'))
     ) {
       const win = window.open(doc.url, '_blank', 'noopener,noreferrer')
       if (win) {
         win.onload = () => {
-          win.print()
+          setTimeout(() => win.print(), 1000)
         }
       }
       return
@@ -375,6 +396,21 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
     const blob = await getDocumentBlob(doc, activity)
     if (!blob) {
       alert('Não foi possível carregar o documento para impressão.')
+      return
+    }
+
+    const isExcel =
+      doc.name?.toLowerCase().match(/\.(xls|xlsx|csv)$/i) ||
+      blob.type.includes('excel') ||
+      blob.type.includes('spreadsheet') ||
+      blob.type.includes('csv')
+    const isWord = doc.name?.toLowerCase().match(/\.(doc|docx)$/i) || blob.type.includes('word')
+
+    if (isExcel || isWord) {
+      alert(
+        'Este formato de arquivo não suporta impressão direta pelo navegador. O download será iniciado.',
+      )
+      downloadDocument(doc, activity)
       return
     }
 
@@ -423,6 +459,27 @@ export async function printDocument(doc: ActivityDocument, activity?: ActivityRe
     const isImage = blob.type.startsWith('image/') || doc.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
     const isVideo = blob.type.startsWith('video/') || doc.name?.match(/\.(mp4|webm|avi)$/i)
     const isAudio = blob.type.startsWith('audio/') || doc.name?.match(/\.(mp3|wav|ogg)$/i)
+    const isHtml = blob.type === 'text/html' || doc.name?.toLowerCase().match(/\.html?$/i)
+
+    if (isHtml) {
+      const text = await blob.text()
+      iframeDoc.write(text)
+      iframeDoc.close()
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus()
+          iframe.contentWindow?.print()
+        } catch (e) {
+          window.open(printUrl, '_blank')
+        }
+      }, 800)
+
+      setTimeout(() => {
+        if (document.body.contains(iframe)) document.body.removeChild(iframe)
+        URL.revokeObjectURL(printUrl)
+      }, 120000)
+      return
+    }
 
     iframeDoc.write(`
       <!DOCTYPE html>

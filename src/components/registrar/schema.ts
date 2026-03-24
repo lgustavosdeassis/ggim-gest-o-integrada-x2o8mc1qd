@@ -39,6 +39,7 @@ export const DOC_TYPES = [
   'Áudio',
   'Vídeo',
   'Lista de Presença',
+  'Link',
   'Outros',
 ] as const
 

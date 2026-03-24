@@ -55,6 +55,30 @@ export function ProdutividadeCard() {
 
   const processFiles = (files: FileList) => {
     Array.from(files).forEach((file) => {
+      const ext = file.name.split('.').pop()?.toLowerCase()
+      if (ext === 'url' || ext === 'webloc') {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const text = event.target?.result as string
+          let urlStr = ''
+          if (ext === 'url') {
+            const match = text.match(/URL=(.+)/i)
+            if (match && match[1]) urlStr = match[1].trim()
+          } else if (ext === 'webloc') {
+            const match = text.match(/<string>(.*?)<\/string>/i)
+            if (match && match[1]) urlStr = match[1].trim()
+          }
+
+          append({
+            name: file.name.replace(/\.(url|webloc)$/i, ''),
+            type: 'Link',
+            url: urlStr || text,
+          })
+        }
+        reader.readAsText(file)
+        return
+      }
+
       const reader = new FileReader()
       reader.onload = (event) => {
         append({
@@ -154,7 +178,7 @@ export function ProdutividadeCard() {
                 ref={fileRef}
                 className="hidden"
                 multiple
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.mp3,.mp4,.html,text/html"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.mp3,.mp4,.html,text/html,.url,.webloc"
                 onChange={handleFileUpload}
               />
               <DropdownMenu>
@@ -176,7 +200,7 @@ export function ProdutividadeCard() {
                     Do Dispositivo (Arquivo)
                   </DropdownMenuItem>
                   <DropdownMenuItem
-                    onClick={() => append({ name: '', type: '', url: '' })}
+                    onClick={() => append({ name: '', type: 'Link', url: '' })}
                     className="cursor-pointer font-medium py-2.5"
                   >
                     <Plus className="w-4 h-4 mr-2 text-muted-foreground" />

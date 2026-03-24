@@ -1,5 +1,5 @@
 import { ActivityRecord } from '@/lib/types'
-import { calculateTotalHours, parseSemicolonList } from '@/lib/utils'
+import { calculateHoursDifference, parseSemicolonList } from '@/lib/utils'
 
 export interface DashboardStats {
   overview: {
@@ -155,6 +155,7 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     'Áudio',
     'Vídeo',
     'Lista de Presença',
+    'Link',
     'Outros',
   ]
   const docsByType = DOC_TYPES_CHART.reduce(
@@ -179,6 +180,7 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     else if (upper === 'ÁUDIO') mapped = 'Áudio'
     else if (upper === 'VÍDEO' || upper === 'VIDEO') mapped = 'Vídeo'
     else if (upper === 'LISTA DE PRESENÇA') mapped = 'Lista de Presença'
+    else if (upper === 'LINK') mapped = 'Link'
     else if (upper === 'OUTROS') mapped = 'Outros'
     else if (docsByType[t]) mapped = t
 
