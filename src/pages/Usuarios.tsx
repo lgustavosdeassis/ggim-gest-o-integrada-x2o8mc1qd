@@ -307,10 +307,10 @@ export default function Usuarios() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((u) => {
+            {users.map((u, idx) => {
               const isMe = u.id === currentUser?.id
               return (
-                <TableRow key={u.id} className="border-border hover:bg-muted/50">
+                <TableRow key={u.id || `user-${idx}`} className="border-border hover:bg-muted/50">
                   <TableCell className="py-4 pl-6 font-bold text-sm">
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10 border border-border shadow-sm">

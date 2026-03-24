@@ -42,7 +42,6 @@ export const useAuthStore = create<AuthState>()(
           const data = await api.users.list()
           set((state) => {
             if (!Array.isArray(data)) return { isFetching: false }
-            // Ensure robust user matching even when underlying DB identity sync encounters a latency wave
             const updatedCurrentUser = state.user
               ? data.find((u) => u.id === state.user!.id) || state.user
               : null
@@ -113,6 +112,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,
+        users: state.users,
       }),
     },
   ),

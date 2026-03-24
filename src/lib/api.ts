@@ -52,7 +52,8 @@ const DEFAULT_DB = {
   auditLogs: [] as AuditLog[],
 }
 
-// Native Skip Cloud instance
+// Native Skip Cloud instance configuration
+const GLOBAL_SYNC_ID = import.meta.env.VITE_GLOBAL_SYNC_ID || '1351608930495815680'
 const SKIP_CLOUD_API = '/api/collections/ggim_data/records'
 const LOCAL_STORAGE_DB_KEY = 'ggim_pocketbase_cache'
 
@@ -60,7 +61,6 @@ let isSaving = false
 let memoryDb: any = null
 let fetchPromise: Promise<any> | null = null
 let updateMutex = Promise.resolve()
-let cloudRecordId: string | null = null
 
 let consecutiveFailures = 0
 const MAX_FAILURES = 3
@@ -78,9 +78,8 @@ function isCircuitOpen() {
   return false
 }
 
-// Kept as no-ops to maintain external contract compatibility
 export async function getCloudDbId(): Promise<string> {
-  return cloudRecordId || 'skip-cloud-native'
+  return GLOBAL_SYNC_ID
 }
 
 export function setCloudDbId(id: string) {
@@ -99,6 +98,19 @@ function getFallbackDb() {
   return memoryDb ? JSON.parse(JSON.stringify(memoryDb)) : JSON.parse(JSON.stringify(DEFAULT_DB))
 }
 
+function cleanDb(db: any) {
+  if (db.users) db.users = Array.from(new Map(db.users.map((u: any) => [u.id, u])).values())
+  if (db.auditLogs)
+    db.auditLogs = Array.from(new Map(db.auditLogs.map((l: any) => [l.id, l])).values())
+  if (db.activities)
+    db.activities = Array.from(new Map(db.activities.map((a: any) => [a.id, a])).values())
+  if (db.videoRecords)
+    db.videoRecords = Array.from(new Map(db.videoRecords.map((v: any) => [v.id, v])).values())
+  if (db.obsRecords)
+    db.obsRecords = Array.from(new Map(db.obsRecords.map((o: any) => [o.id, o])).values())
+  return db
+}
+
 async function fetchStrict(retries = 2, throwOnFailure = false, attempt = 0): Promise<any> {
   if (isCircuitOpen()) {
     if (throwOnFailure) {
@@ -113,7 +125,7 @@ async function fetchStrict(retries = 2, throwOnFailure = false, attempt = 0): Pr
 
     let res: Response | undefined
     try {
-      res = await fetch(SKIP_CLOUD_API, {
+      res = await fetch(`${SKIP_CLOUD_API}/${GLOBAL_SYNC_ID}`, {
         method: 'GET',
         headers: { Accept: 'application/json' },
         signal: controller.signal,
@@ -124,6 +136,10 @@ async function fetchStrict(retries = 2, throwOnFailure = false, attempt = 0): Pr
       throw new Error(`Failed to fetch: ${fetchErr?.message || 'Network disconnected'}`)
     }
 
+    if (res?.status === 404) {
+      return getFallbackDb()
+    }
+
     if (!res || !res.ok) {
       throw new Error(`HTTP ${res ? res.status : 'N/A'}`)
     }
@@ -131,17 +147,15 @@ async function fetchStrict(retries = 2, throwOnFailure = false, attempt = 0): Pr
     const json = await res.json()
     consecutiveFailures = 0
 
-    // Attempt to extract Skip Cloud / PocketBase format, or fallback to raw
     let dbData = json
-    if (json?.items && Array.isArray(json.items) && json.items.length > 0) {
-      cloudRecordId = json.items[0].id
+    if (json?.data) {
+      dbData = json.data
+    } else if (json?.items && Array.isArray(json.items) && json.items.length > 0) {
       dbData = json.items[0].data || json.items[0]
-    } else if (json?.id) {
-      cloudRecordId = json.id
-      dbData = json.data || json
     }
 
     if (dbData && Object.keys(dbData).length > 0) {
+      dbData = cleanDb(dbData)
       try {
         localStorage.setItem(LOCAL_STORAGE_DB_KEY, JSON.stringify(dbData))
       } catch (e) {
@@ -164,7 +178,6 @@ async function fetchStrict(retries = 2, throwOnFailure = false, attempt = 0): Pr
       throw new Error('Safe Mode Fallback: Network failure intercepted')
     }
 
-    // Suppress "Failed to fetch"
     console.warn('[Bug Scanner Guard] Cloud sync fetch failed. Activating Safe Mode.', e.message)
     return getFallbackDb()
   }
@@ -201,36 +214,41 @@ export async function atomicUpdate(updater: (db: any) => void): Promise<void> {
       .then(async () => {
         isSaving = true
         try {
-          // Emulate safe mode immediate local update
           const db = getFallbackDb()
           updater(db)
           db.updatedAt = Date.now()
+          const cleanedDb = cleanDb(db)
 
-          memoryDb = JSON.parse(JSON.stringify(db))
+          memoryDb = JSON.parse(JSON.stringify(cleanedDb))
           try {
-            localStorage.setItem(LOCAL_STORAGE_DB_KEY, JSON.stringify(db))
+            localStorage.setItem(LOCAL_STORAGE_DB_KEY, JSON.stringify(cleanedDb))
           } catch (e) {
-            // Ignore quota
+            console.warn('Local storage quota exceeded. Relying on cloud and memory db.', e)
           }
 
-          // Force listeners across tabs and local components to recognize updates
           window.dispatchEvent(new Event('db_updated'))
 
-          // Try to sync with Skip Cloud in background, safely falling back if offline
           if (!isCircuitOpen()) {
             try {
               const controller = new AbortController()
-              const timeoutId = setTimeout(() => controller.abort(), 5000)
+              const timeoutId = setTimeout(() => controller.abort(), 8000)
 
-              const url = cloudRecordId ? `${SKIP_CLOUD_API}/${cloudRecordId}` : SKIP_CLOUD_API
-              const method = cloudRecordId ? 'PATCH' : 'POST'
-
-              await fetch(url, {
-                method,
+              let res = await fetch(`${SKIP_CLOUD_API}/${GLOBAL_SYNC_ID}`, {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify({ data: db }),
+                body: JSON.stringify({ data: cleanedDb }),
                 signal: controller.signal,
               })
+
+              if (res.status === 404 || res.status === 405) {
+                res = await fetch(SKIP_CLOUD_API, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                  body: JSON.stringify({ id: GLOBAL_SYNC_ID, data: cleanedDb }),
+                  signal: controller.signal,
+                })
+              }
+
               clearTimeout(timeoutId)
             } catch (e) {
               consecutiveFailures++
@@ -290,7 +308,6 @@ export const api = {
   },
 }
 
-// Ensures that changes applied in one tab are reflected instantly in other open instances.
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (e) => {
     if (e.key === LOCAL_STORAGE_DB_KEY) {

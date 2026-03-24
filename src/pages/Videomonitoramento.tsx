@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MonitorPlay, Plus, Calendar as CalendarIcon, Printer } from 'lucide-react'
+import { MonitorPlay, Plus, Calendar as CalendarIcon, Printer, Edit, Trash2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -19,6 +19,14 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { useVideoStore } from '@/stores/video'
 import { VideoFormDialog } from '@/components/video/VideoFormDialog'
 import { useAuthStore } from '@/stores/auth'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 
 const getYYYYMM = (d: Date) => {
   const year = d.getFullYear()
@@ -27,11 +35,12 @@ const getYYYYMM = (d: Date) => {
 }
 
 export default function Videomonitoramento() {
-  const { records } = useVideoStore()
+  const { records, deleteRecord } = useVideoStore()
   const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
   const [customStart, setCustomStart] = useState<Date | undefined>(new Date(2026, 0, 1))
   const [customEnd, setCustomEnd] = useState<Date | undefined>(new Date(2026, 11, 31))
   const [isFormOpen, setIsFormOpen] = useState(false)
+  const [editDate, setEditDate] = useState<string>('')
 
   const filteredRecords = records.filter((r) => {
     if (customStart && customEnd) {
@@ -154,7 +163,10 @@ export default function Videomonitoramento() {
             </Button>
             {!isViewer && (
               <Button
-                onClick={() => setIsFormOpen(true)}
+                onClick={() => {
+                  setEditDate(getYYYYMM(customStart || new Date()))
+                  setIsFormOpen(true)
+                }}
                 className="flex-1 md:flex-none h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap"
               >
                 <Plus className="w-5 h-5 mr-2" /> Lançar Dados
@@ -164,7 +176,6 @@ export default function Videomonitoramento() {
         </div>
       </div>
 
-      {/* Print-only header */}
       <div className="hidden print:block mb-8 pb-4 border-b border-border">
         <h1 className="text-3xl font-black text-foreground">Relatório Videomonitoramento</h1>
         <p className="text-lg text-muted-foreground font-medium mt-1">
@@ -273,10 +284,109 @@ export default function Videomonitoramento() {
         </div>
       </Card>
 
+      <Card className="border-border shadow-sm bg-card rounded-2xl overflow-hidden mt-8 no-print">
+        <div className="p-6 border-b border-border bg-muted/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h3 className="text-xl font-black text-foreground uppercase tracking-widest">
+              Registros Lançados
+            </h3>
+            <p className="text-sm text-muted-foreground font-medium mt-1">
+              Histórico detalhado do período selecionado.
+            </p>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead className="font-bold uppercase tracking-widest text-xs py-4 pl-6">
+                  Mês
+                </TableHead>
+                <TableHead className="font-bold uppercase tracking-widest text-xs">
+                  Particulares
+                </TableHead>
+                <TableHead className="font-bold uppercase tracking-widest text-xs">
+                  Instituições
+                </TableHead>
+                <TableHead className="font-bold uppercase tracking-widest text-xs">
+                  Imprensa
+                </TableHead>
+                <TableHead className="font-bold uppercase tracking-widest text-xs">
+                  Operadores
+                </TableHead>
+                <TableHead className="font-bold uppercase tracking-widest text-xs">Total</TableHead>
+                {!isViewer && (
+                  <TableHead className="font-bold uppercase tracking-widest text-xs text-right pr-6">
+                    Ações
+                  </TableHead>
+                )}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredRecords.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={isViewer ? 6 : 7}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    Nenhum registro encontrado no período.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredRecords
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((r) => {
+                    const rTotal = r.particulares + r.instituicoes + r.imprensa + r.operadores
+                    return (
+                      <TableRow key={r.id} className="hover:bg-muted/50">
+                        <TableCell className="font-bold pl-6">{r.date}</TableCell>
+                        <TableCell>{r.particulares}</TableCell>
+                        <TableCell>{r.instituicoes}</TableCell>
+                        <TableCell>{r.imprensa}</TableCell>
+                        <TableCell>{r.operadores}</TableCell>
+                        <TableCell className="font-bold">{rTotal}</TableCell>
+                        {!isViewer && (
+                          <TableCell className="text-right pr-6">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                                onClick={() => {
+                                  setEditDate(r.date)
+                                  setIsFormOpen(true)
+                                }}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                onClick={() => {
+                                  if (confirm('Tem certeza que deseja excluir este registro?')) {
+                                    deleteRecord(r.id)
+                                  }
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    )
+                  })
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
       <VideoFormDialog
         open={isFormOpen}
         onOpenChange={setIsFormOpen}
-        initialDate={getYYYYMM(customStart || new Date())}
+        initialDate={editDate || getYYYYMM(customStart || new Date())}
       />
     </div>
   )

@@ -198,7 +198,7 @@ export function DuracaoCard() {
                 <div className="space-y-1 leading-none">
                   <FormLabel className="font-bold text-[#0f172a]">Ações Vinculadas</FormLabel>
                   <p className="text-sm text-muted-foreground">
-                    Marque se este evento gerou ou desdobrou uma ação vinculada.
+                    Este evento gerou ou desdobrou uma ação vinculada.
                   </p>
                 </div>
               </FormItem>

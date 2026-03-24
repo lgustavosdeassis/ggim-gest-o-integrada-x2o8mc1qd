@@ -263,8 +263,8 @@ export default function AuditLogs() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredLogs.map((log) => (
-                <TableRow key={log.id} className="border-border hover:bg-muted/50">
+              filteredLogs.map((log, idx) => (
+                <TableRow key={log.id || `log-${idx}`} className="border-border hover:bg-muted/50">
                   <TableCell className="py-4 pl-6">
                     <div className="font-bold text-foreground text-sm">{log.userName}</div>
                     <div className="text-xs text-muted-foreground font-medium mt-0.5">
