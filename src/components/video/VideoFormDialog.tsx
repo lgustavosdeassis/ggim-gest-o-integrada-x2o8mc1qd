@@ -17,19 +17,22 @@ export function VideoFormDialog({
 }) {
   const { addRecord, records } = useVideoStore()
   const [date, setDate] = useState(initialDate || '')
-  const [part, setPart] = useState(0)
-  const [inst, setInst] = useState(0)
-  const [imp, setImp] = useState(0)
-  const [op, setOp] = useState(0)
+  const [isModified, setIsModified] = useState(false)
+
+  const [part, setPart] = useState<number | string>(0)
+  const [inst, setInst] = useState<number | string>(0)
+  const [imp, setImp] = useState<number | string>(0)
+  const [op, setOp] = useState<number | string>(0)
 
   useEffect(() => {
     if (open && initialDate) {
       setDate(initialDate)
+      setIsModified(false)
     }
   }, [open, initialDate])
 
   useEffect(() => {
-    if (open && date) {
+    if (open && date && !isModified) {
       const existing = records.find((r) => r.date === date)
       if (existing) {
         setPart(existing.particulares)
@@ -43,13 +46,24 @@ export function VideoFormDialog({
         setOp(0)
       }
     }
-  }, [date, records, open])
+  }, [date, records, open, isModified])
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!date) return
-    addRecord({ date, particulares: part, instituicoes: inst, imprensa: imp, operadores: op })
+    addRecord({
+      date,
+      particulares: Number(part) || 0,
+      instituicoes: Number(inst) || 0,
+      imprensa: Number(imp) || 0,
+      operadores: Number(op) || 0,
+    })
     onOpenChange(false)
+  }
+
+  const handleNumChange = (val: string, setter: (v: number | string) => void) => {
+    setter(val === '' ? '' : Number(val))
+    setIsModified(true)
   }
 
   return (
@@ -65,7 +79,13 @@ export function VideoFormDialog({
             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
               Mês de Referência
             </Label>
-            <MonthPicker value={date} onChange={setDate} />
+            <MonthPicker
+              value={date}
+              onChange={(newDate) => {
+                setDate(newDate)
+                setIsModified(false)
+              }}
+            />
           </div>
           <div className="grid grid-cols-2 gap-5">
             <div className="space-y-2">
@@ -75,7 +95,7 @@ export function VideoFormDialog({
               <Input
                 type="number"
                 value={part}
-                onChange={(e) => setPart(Number(e.target.value))}
+                onChange={(e) => handleNumChange(e.target.value, setPart)}
                 min={0}
                 required
                 className="h-11 rounded-xl"
@@ -88,7 +108,7 @@ export function VideoFormDialog({
               <Input
                 type="number"
                 value={inst}
-                onChange={(e) => setInst(Number(e.target.value))}
+                onChange={(e) => handleNumChange(e.target.value, setInst)}
                 min={0}
                 required
                 className="h-11 rounded-xl"
@@ -101,7 +121,7 @@ export function VideoFormDialog({
               <Input
                 type="number"
                 value={imp}
-                onChange={(e) => setImp(Number(e.target.value))}
+                onChange={(e) => handleNumChange(e.target.value, setImp)}
                 min={0}
                 required
                 className="h-11 rounded-xl"
@@ -114,7 +134,7 @@ export function VideoFormDialog({
               <Input
                 type="number"
                 value={op}
-                onChange={(e) => setOp(Number(e.target.value))}
+                onChange={(e) => handleNumChange(e.target.value, setOp)}
                 min={0}
                 required
                 className="h-11 rounded-xl"

@@ -17,21 +17,24 @@ export function ObsFormDialog({
 }) {
   const { addRecord, records } = useObsStore()
   const [date, setDate] = useState(initialDate || '')
-  const [vitimas, setVitimas] = useState(0)
-  const [total, setTotal] = useState(0)
-  const [autos, setAutos] = useState(0)
-  const [hom, setHom] = useState(0)
-  const [vio, setViol] = useState(0)
-  const [roubos, setRoubos] = useState(0)
+  const [isModified, setIsModified] = useState(false)
+
+  const [vitimas, setVitimas] = useState<number | string>(0)
+  const [total, setTotal] = useState<number | string>(0)
+  const [autos, setAutos] = useState<number | string>(0)
+  const [hom, setHom] = useState<number | string>(0)
+  const [vio, setViol] = useState<number | string>(0)
+  const [roubos, setRoubos] = useState<number | string>(0)
 
   useEffect(() => {
     if (open && initialDate) {
       setDate(initialDate)
+      setIsModified(false)
     }
   }, [open, initialDate])
 
   useEffect(() => {
-    if (open && date) {
+    if (open && date && !isModified) {
       const existing = records.find((r) => r.date === date)
       if (existing) {
         setVitimas(existing.sinistrosVitimas)
@@ -49,21 +52,26 @@ export function ObsFormDialog({
         setRoubos(0)
       }
     }
-  }, [date, records, open])
+  }, [date, records, open, isModified])
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!date) return
     addRecord({
       date,
-      sinistrosVitimas: vitimas,
-      sinistrosTotal: total,
-      autosInfracao: autos,
-      homicidios: hom,
-      violenciaDomestica: vio,
-      roubos,
+      sinistrosVitimas: Number(vitimas) || 0,
+      sinistrosTotal: Number(total) || 0,
+      autosInfracao: Number(autos) || 0,
+      homicidios: Number(hom) || 0,
+      violenciaDomestica: Number(vio) || 0,
+      roubos: Number(roubos) || 0,
     })
     onOpenChange(false)
+  }
+
+  const handleNumChange = (val: string, setter: (v: number | string) => void) => {
+    setter(val === '' ? '' : Number(val))
+    setIsModified(true)
   }
 
   return (
@@ -79,7 +87,13 @@ export function ObsFormDialog({
             <Label className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
               Mês de Referência
             </Label>
-            <MonthPicker value={date} onChange={setDate} />
+            <MonthPicker
+              value={date}
+              onChange={(newDate) => {
+                setDate(newDate)
+                setIsModified(false)
+              }}
+            />
           </div>
           <div className="grid grid-cols-2 gap-5">
             <div className="space-y-2">
@@ -89,7 +103,7 @@ export function ObsFormDialog({
               <Input
                 type="number"
                 value={vitimas}
-                onChange={(e) => setVitimas(Number(e.target.value))}
+                onChange={(e) => handleNumChange(e.target.value, setVitimas)}
                 required
                 className="h-11 rounded-xl"
               />
@@ -101,7 +115,7 @@ export function ObsFormDialog({
               <Input
                 type="number"
                 value={total}
-                onChange={(e) => setTotal(Number(e.target.value))}
+                onChange={(e) => handleNumChange(e.target.value, setTotal)}
                 required
                 className="h-11 rounded-xl"
               />
@@ -113,7 +127,7 @@ export function ObsFormDialog({
               <Input
                 type="number"
                 value={autos}
-                onChange={(e) => setAutos(Number(e.target.value))}
+                onChange={(e) => handleNumChange(e.target.value, setAutos)}
                 required
                 className="h-11 rounded-xl"
               />
@@ -125,7 +139,7 @@ export function ObsFormDialog({
               <Input
                 type="number"
                 value={hom}
-                onChange={(e) => setHom(Number(e.target.value))}
+                onChange={(e) => handleNumChange(e.target.value, setHom)}
                 required
                 className="h-11 rounded-xl"
               />
@@ -137,7 +151,7 @@ export function ObsFormDialog({
               <Input
                 type="number"
                 value={vio}
-                onChange={(e) => setViol(Number(e.target.value))}
+                onChange={(e) => handleNumChange(e.target.value, setViol)}
                 required
                 className="h-11 rounded-xl"
               />
@@ -149,7 +163,7 @@ export function ObsFormDialog({
               <Input
                 type="number"
                 value={roubos}
-                onChange={(e) => setRoubos(Number(e.target.value))}
+                onChange={(e) => handleNumChange(e.target.value, setRoubos)}
                 required
                 className="h-11 rounded-xl"
               />
