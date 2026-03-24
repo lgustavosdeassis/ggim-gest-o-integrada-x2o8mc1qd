@@ -81,9 +81,17 @@ export function ProdutividadeCard() {
 
       const reader = new FileReader()
       reader.onload = (event) => {
+        let defaultType = 'Outros'
+        if (ext) {
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) defaultType = 'Imagens'
+          else if (['mp4', 'webm', 'avi', 'mkv', 'mov'].includes(ext)) defaultType = 'Vídeo'
+          else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) defaultType = 'Áudio'
+          else if (['pdf'].includes(ext)) defaultType = 'Relatório'
+        }
+
         append({
           name: file.name,
-          type: '',
+          type: defaultType,
           url: event.target?.result as string,
         })
       }
@@ -266,45 +274,58 @@ export function ProdutividadeCard() {
                   <FormField
                     control={control}
                     name={`documents.${index}.url`}
-                    render={({ field }) => (
-                      <FormItem className="flex-1">
-                        <FormLabel className="text-[10px] font-bold text-[#0f172a] uppercase tracking-widest">
-                          Conteúdo / URL
-                        </FormLabel>
-                        <FormControl>
-                          <div className="relative flex items-center">
-                            <Input
-                              className={cn(
-                                'h-11 bg-white font-mono text-xs',
-                                field.value &&
-                                  (field.value.startsWith('http://') ||
-                                    field.value.startsWith('https://')) &&
-                                  'pr-12',
-                              )}
-                              placeholder="https:// ou base64 gerado"
-                              disabled={isViewer}
-                              {...field}
-                              value={field.value || ''}
-                            />
-                            {field.value &&
-                              (field.value.startsWith('http://') ||
-                                field.value.startsWith('https://')) && (
+                    render={({ field }) => {
+                      const val = field.value || ''
+                      const isDataUrl = val.startsWith('data:')
+                      const isLink =
+                        !isDataUrl &&
+                        val &&
+                        (val.startsWith('http://') || val.startsWith('https://'))
+
+                      return (
+                        <FormItem className="flex-1">
+                          <FormLabel className="text-[10px] font-bold text-[#0f172a] uppercase tracking-widest">
+                            Conteúdo / URL
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative flex items-center">
+                              <Input
+                                className={cn(
+                                  'h-11 bg-white font-mono text-xs transition-colors',
+                                  isLink && 'pr-12',
+                                  isDataUrl && 'text-muted-foreground bg-slate-50 cursor-default',
+                                )}
+                                placeholder={
+                                  isDataUrl ? 'Arquivo Local Anexado (Oculto)' : 'https://...'
+                                }
+                                disabled={isViewer}
+                                readOnly={isDataUrl}
+                                {...field}
+                                value={isDataUrl ? '' : val}
+                                onChange={(e) => {
+                                  if (!isDataUrl) {
+                                    field.onChange(e.target.value)
+                                  }
+                                }}
+                              />
+                              {isLink && (
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="icon"
                                   className="absolute right-1 h-9 w-9 text-muted-foreground hover:text-primary"
-                                  onClick={() => window.open(field.value, '_blank')}
+                                  onClick={() => window.open(val, '_blank')}
                                   title="Abrir Link Externo"
                                 >
                                   <ExternalLink className="h-4 w-4" />
                                 </Button>
                               )}
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )
+                    }}
                   />
                   <div className="mt-auto mb-0.5">
                     <DropdownMenu>

@@ -83,7 +83,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
               <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-primary">
-                Horas (Eventos)
+                Horas do Evento
               </CardTitle>
               <Clock className="h-5 w-5 text-primary" />
             </CardHeader>
@@ -98,7 +98,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-secondary/20 rounded-full blur-2xl group-hover:bg-secondary/30 transition-colors" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
               <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-secondary-foreground/80">
-                Horas (Ações)
+                Horas das Ações
               </CardTitle>
               <Timer className="h-5 w-5 text-secondary-foreground/80" />
             </CardHeader>

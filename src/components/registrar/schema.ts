@@ -28,6 +28,7 @@ export const EVENTOS_TIPO = [
 export const MODALIDADES = ['Presencial', 'Remota', 'Híbrida'] as const
 
 export const DOC_TYPES = [
+  'Link',
   'Ata',
   'Ofício',
   'Relatório',
@@ -39,7 +40,6 @@ export const DOC_TYPES = [
   'Áudio',
   'Vídeo',
   'Lista de Presença',
-  'Link',
   'Outros',
 ] as const
 

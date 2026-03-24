@@ -283,33 +283,26 @@ export async function openDocumentViewer(doc: ActivityDocument, activity?: Activ
   win.document.close()
 
   try {
-    const isImage = doc.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i)
-    const isVideo = doc.name?.toLowerCase().match(/\.(mp4|webm|avi)$/i)
-    const isAudio = doc.name?.toLowerCase().match(/\.(mp3|wav|ogg)$/i)
-
     const blob = await getDocumentBlob(doc, activity)
     if (blob) {
       const blobUrl = URL.createObjectURL(blob)
-      const isPdf = doc.name?.toLowerCase().endsWith('.pdf') || blob.type === 'application/pdf'
+      const isPdf = blob.type === 'application/pdf' || doc.name?.toLowerCase().endsWith('.pdf')
+      const isVideo =
+        blob.type.startsWith('video/') ||
+        doc.name?.toLowerCase().match(/\.(mp4|webm|avi|mkv|mov)$/i)
+      const isAudio =
+        blob.type.startsWith('audio/') || doc.name?.toLowerCase().match(/\.(mp3|wav|ogg|m4a)$/i)
+      const isImage =
+        blob.type.startsWith('image/') ||
+        doc.name?.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/i)
 
-      if (isPdf) {
+      if (isPdf || isVideo || isAudio || isImage) {
         win.location.replace(blobUrl)
         setTimeout(() => URL.revokeObjectURL(blobUrl), 300000)
         return
       }
 
-      let dataHtml = ''
-      if (isImage) {
-        dataHtml = `<img src="${blobUrl}" style="max-width:100%;max-height:100vh;object-fit:contain;"/>`
-      } else if (isVideo) {
-        dataHtml = `<video src="${blobUrl}" controls autoplay style="max-width:100%;max-height:100vh;object-fit:contain;"></video>`
-      } else if (isAudio) {
-        dataHtml = `<audio src="${blobUrl}" controls autoplay></audio>`
-      } else {
-        dataHtml = `<iframe src="${blobUrl}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
-      }
-
-      win.document.body.innerHTML = dataHtml
+      win.document.body.innerHTML = `<iframe src="${blobUrl}" style="width:100%;height:100vh;border:none;margin:0;padding:0;" allowfullscreen></iframe>`
       setTimeout(() => URL.revokeObjectURL(blobUrl), 120000)
     } else if (doc.url && !doc.url.startsWith('data:') && !doc.url.startsWith('blob:')) {
       win.location.replace(doc.url)
