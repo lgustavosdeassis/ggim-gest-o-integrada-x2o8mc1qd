@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 import { api } from '@/lib/api'
+import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 export type Role = 'owner' | 'editor' | 'viewer'
@@ -22,103 +22,63 @@ interface AuthState {
   isFetching: boolean
   fetchUsers: () => Promise<void>
   login: (user: User) => void
-  logout: () => void
+  logout: () => Promise<void>
   updateAvatar: (url: string) => Promise<void>
   updateProfile: (data: Partial<User>) => Promise<void>
   addUser: (user: User) => Promise<void>
   removeUser: (id: string) => Promise<void>
 }
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set, get) => ({
-      isAuthenticated: false,
-      user: null,
-      users: [],
-      isFetching: false,
-      fetchUsers: async () => {
-        set({ isFetching: true })
-        try {
-          const data = await api.users.list()
-          set((state) => {
-            if (!Array.isArray(data)) return { isFetching: false }
-            const updatedCurrentUser = state.user
-              ? data.find((u) => u.id === state.user!.id) || state.user
-              : null
-            return { users: data, user: updatedCurrentUser, isFetching: false }
-          })
-        } catch (e) {
-          console.warn('Failed to fetch remote users, maintaining resilient localized state', e)
-          set({ isFetching: false })
-        }
-      },
-      login: (user) => set({ isAuthenticated: true, user }),
-      logout: () => set({ isAuthenticated: false, user: null }),
-      updateAvatar: async (url) => {
-        const state = get()
-        if (!state.user) return
-        const updatedUser = { ...state.user, avatarUrl: url }
-
-        try {
-          await api.users.syncUpdate((list) =>
-            list.map((u) => (u.id === state.user!.id ? updatedUser : u)),
-          )
-          set({ user: updatedUser })
-        } catch (e) {
-          toast('Aviso: Modo Offline', {
-            description: 'Avatar salvo localmente devido a falha na rede.',
-          })
-        } finally {
-          get().fetchUsers()
-        }
-      },
-      updateProfile: async (data) => {
-        const state = get()
-        if (!state.user) return
-        const updatedUser = { ...state.user, ...data }
-
-        try {
-          await api.users.syncUpdate((list) =>
-            list.map((u) => (u.id === state.user!.id ? updatedUser : u)),
-          )
-          set({ user: updatedUser })
-          toast.success('Sucesso', { description: 'Perfil sincronizado.' })
-        } catch (e) {
-          toast('Aviso: Modo Offline', {
-            description: 'Perfil salvo localmente.',
-          })
-        } finally {
-          get().fetchUsers()
-        }
-      },
-      addUser: async (newUser) => {
-        try {
-          await api.users.syncUpdate((list) => [...list, newUser])
-          set((state) => ({ users: [...state.users, newUser] }))
-          toast.success('Sucesso', { description: 'Usuário cadastrado com sucesso.' })
-        } catch (e) {
-          toast('Aviso: Modo Offline', {
-            description: 'Usuário salvo localmente. Sincronização pendente.',
-          })
-        }
-      },
-      removeUser: async (id) => {
-        try {
-          await api.users.syncUpdate((list) => list.filter((u) => u.id !== id))
-          set((state) => ({ users: state.users.filter((u) => u.id !== id) }))
-          toast.success('Sucesso', { description: 'Usuário removido.' })
-        } catch (e) {
-          toast('Aviso: Modo Offline', { description: 'Exclusão processada localmente.' })
-        }
-      },
-    }),
-    {
-      name: 'ggim-auth-storage',
-      partialize: (state) => ({
-        isAuthenticated: state.isAuthenticated,
-        user: state.user,
-        users: state.users,
-      }),
-    },
-  ),
-)
+export const useAuthStore = create<AuthState>()((set, get) => ({
+  isAuthenticated: false,
+  user: null,
+  users: [],
+  isFetching: false,
+  fetchUsers: async () => {
+    set({ isFetching: true })
+    try {
+      const data = await api.users.list()
+      set((state) => {
+        const updatedCurrentUser = state.user
+          ? data.find((u: any) => u.id === state.user!.id) || state.user
+          : null
+        return { users: data as User[], user: updatedCurrentUser as User, isFetching: false }
+      })
+    } catch (e) {
+      set({ isFetching: false })
+    }
+  },
+  login: (user) => set({ isAuthenticated: true, user }),
+  logout: async () => {
+    await supabase.auth.signOut()
+    set({ isAuthenticated: false, user: null })
+  },
+  updateAvatar: async (url) => {
+    const state = get()
+    if (!state.user) return
+    try {
+      await api.users.update(state.user.id, { avatarUrl: url })
+      set({ user: { ...state.user, avatarUrl: url } })
+      toast.success('Sucesso', { description: 'Avatar atualizado com sucesso.' })
+    } catch (e) {
+      toast.error('Erro', { description: 'Erro ao salvar avatar.' })
+    }
+  },
+  updateProfile: async (data) => {
+    const state = get()
+    if (!state.user) return
+    try {
+      await api.users.update(state.user.id, data)
+      set({ user: { ...state.user, ...data } })
+      toast.success('Sucesso', { description: 'Perfil atualizado.' })
+    } catch (e) {
+      toast.error('Erro', { description: 'Erro ao atualizar perfil.' })
+    }
+  },
+  addUser: async (newUser) => {
+    // Administrativo: gerenciado fora deste escopo local ou via supabase auth admin
+  },
+  removeUser: async (id) => {
+    // Administrativo: gerenciado fora deste escopo local ou via supabase auth admin
+  },
+}))

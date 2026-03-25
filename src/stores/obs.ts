@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 
 export interface ObsRecord {
   id: string
-  date: string // YYYY-MM
+  date: string
   sinistrosVitimas: number
   sinistrosTotal: number
   autosInfracao: number
@@ -28,41 +28,27 @@ export const useObsStore = create<ObsState>()((set, get) => ({
     set({ isFetching: true })
     try {
       const data = await api.obs.list()
-      set({ records: data, isFetching: false })
+      set({ records: data as ObsRecord[], isFetching: false })
     } catch (e) {
       set({ isFetching: false })
     }
   },
   addRecord: async (record) => {
-    const newId = Math.random().toString(36).substr(2, 9)
     try {
-      await api.obs.syncUpdate((list) => {
-        const existingIndex = list.findIndex((r) => r.date === record.date)
-        if (existingIndex >= 0) {
-          const updated = [...list]
-          updated[existingIndex] = { ...record, id: list[existingIndex].id }
-          return updated
-        }
-        return [...list, { ...record, id: newId }]
-      })
-      toast.success('Sucesso', { description: 'Registro do observatório sincronizado.' })
+      await api.obs.save(record)
+      toast.success('Sucesso', { description: 'Registro do observatório sincronizado na nuvem.' })
     } catch (e) {
-      toast('Aviso: Modo Offline', {
-        description:
-          'A comunicação com a nuvem falhou. Seus dados foram salvos com segurança de forma local.',
-      })
+      toast.error('Erro', { description: 'A comunicação com a nuvem falhou.' })
     } finally {
       get().fetchRecords()
     }
   },
   deleteRecord: async (id) => {
     try {
-      await api.obs.syncUpdate((list) => list.filter((r) => r.id !== id))
+      await api.obs.delete(id)
       toast.success('Sucesso', { description: 'Registro do observatório excluído.' })
     } catch (e) {
-      toast('Aviso: Modo Offline', {
-        description: 'Exclusão registrada localmente devido a falha de conexão.',
-      })
+      toast.error('Erro', { description: 'Falha ao excluir registro.' })
     } finally {
       get().fetchRecords()
     }

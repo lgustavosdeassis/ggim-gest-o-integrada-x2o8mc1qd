@@ -25,30 +25,25 @@ export const useAuditStore = create<AuditState>()((set, get) => ({
     set({ isFetching: true })
     try {
       const data = await api.audit.list()
-      set({ logs: Array.isArray(data) ? data : [], isFetching: false })
+      set({ logs: data as AuditLog[], isFetching: false })
     } catch (e) {
       set({ logs: [], isFetching: false })
     }
   },
   addLog: async (log) => {
-    const newLog = {
-      ...log,
-      id: Math.random().toString(36).substring(2, 9),
-      timestamp: new Date().toISOString(),
-    }
     try {
-      await api.audit.syncUpdate((list) => [newLog, ...list])
+      await api.audit.add(log)
       get().fetchLogs()
     } catch (e) {
-      console.warn('Falha silenciosa no sync do audit log', e)
+      console.warn('Falha no audit log', e)
     }
   },
   clearLogs: async () => {
     try {
-      await api.audit.syncUpdate(() => [])
+      await api.audit.clear()
       toast.success('Sucesso', { description: 'Histórico de auditoria limpo.' })
     } catch (e) {
-      toast('Aviso: Modo Offline', { description: 'Limpeza registrada localmente.' })
+      toast.error('Erro', { description: 'Falha ao limpar histórico de auditoria.' })
     } finally {
       get().fetchLogs()
     }

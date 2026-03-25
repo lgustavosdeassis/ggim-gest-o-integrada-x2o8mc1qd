@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuthStore } from '@/stores/auth'
-import { api } from '@/lib/api'
+import { useAuthStore, Role } from '@/stores/auth'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast'
 import { GgimHexLogo } from '@/components/GgimHexLogo'
 
 export default function Login() {
-  const { login, isAuthenticated, fetchUsers } = useAuthStore()
+  const { login, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
@@ -25,78 +25,22 @@ export default function Login() {
     if (isAuthenticated) {
       const from = location.state?.from?.pathname || '/'
       navigate(from, { replace: true })
-      return
     }
-    // Fetch users in the background completely decoupled from UI
-    fetchUsers().catch(() => {})
-  }, [isAuthenticated, fetchUsers, navigate, location])
+  }, [isAuthenticated, navigate, location])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     e.stopPropagation()
 
-    if (isLoading) return // Prevent multiple submissions
+    if (isLoading) return
 
     setIsLoading(true)
     setErrorMsg(null)
 
     try {
-      // Simulate network request delay for UX and to allow browser autofill/managers to process
-      await new Promise((resolve) => setTimeout(resolve, 800))
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
-      let usersList = useAuthStore.getState().users
-
-      // Attempt to fetch from the data layer if state is empty to ensure PocketBase/Skip Cloud alignment
-      if (!Array.isArray(usersList) || usersList.length === 0) {
-        try {
-          const remoteUsers = await api.users.list()
-          if (Array.isArray(remoteUsers) && remoteUsers.length > 0) {
-            usersList = remoteUsers
-          }
-        } catch (err) {
-          console.warn('Could not fetch remote users during login', err)
-        }
-      }
-
-      if (!Array.isArray(usersList) || usersList.length === 0) {
-        usersList = [
-          {
-            id: '1',
-            email: 'admin@ggim.foz.br',
-            password: 'admin',
-            role: 'owner',
-            name: 'Gestor GGIM',
-            jobTitle: 'Proprietário',
-          },
-          {
-            id: '2',
-            email: 'editor@ggim.foz.br',
-            password: 'editor',
-            role: 'editor',
-            name: 'Editor GGIM',
-            jobTitle: 'Editor',
-          },
-          {
-            id: '3',
-            email: 'viewer@ggim.foz.br',
-            password: 'viewer',
-            role: 'viewer',
-            name: 'Visualizador GGIM',
-            jobTitle: 'Visualizador',
-          },
-        ]
-      }
-
-      const user = usersList.find(
-        (u) =>
-          u?.email?.toLowerCase().trim() === email.toLowerCase().trim() && u?.password === password,
-      )
-
-      if (user) {
-        login(user)
-        const from = location.state?.from?.pathname || '/'
-        navigate(from, { replace: true })
-      } else {
+      if (error) {
         setErrorMsg(
           'E-mail ou senha incorretos. Verifique as credenciais digitadas e tente novamente.',
         )
@@ -105,16 +49,34 @@ export default function Login() {
           description: 'E-mail ou senha incorretos. Verifique as credenciais.',
           variant: 'destructive',
         })
+      } else if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single()
+        if (profile) {
+          login({
+            id: profile.id,
+            email: profile.email,
+            name: profile.name,
+            role: profile.role as Role,
+            jobTitle: profile.job_title,
+            avatarUrl: profile.avatar_url,
+          })
+        } else {
+          login({
+            id: data.user.id,
+            email: data.user.email || '',
+            name: 'Usuário',
+            role: 'editor',
+          })
+        }
+        const from = location.state?.from?.pathname || '/'
+        navigate(from, { replace: true })
       }
     } catch (error: any) {
-      setErrorMsg(
-        'Ocorreu uma falha de comunicação com o servidor de autenticação. Tente novamente.',
-      )
-      toast({
-        title: 'Falha na Autenticação',
-        description: 'Verifique sua conexão ou tente novamente mais tarde.',
-        variant: 'destructive',
-      })
+      setErrorMsg('Ocorreu uma falha de comunicação com o servidor de autenticação.')
     } finally {
       setIsLoading(false)
     }

@@ -21,84 +21,68 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set({ isFetching: true })
     try {
       const data = await api.activities.list()
-      set({ activities: data, isFetching: false })
+      set({ activities: data as ActivityRecord[], isFetching: false })
     } catch (e) {
+      console.error(e)
       set({ isFetching: false })
     }
   },
   addActivity: async (activity) => {
-    const newActivity = {
-      ...activity,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
-    } as ActivityRecord
-
     try {
-      await api.activities.syncUpdate((list) => [newActivity, ...list])
-      set((state) => ({ activities: [newActivity, ...state.activities] }))
-      toast.success('Sucesso', { description: 'Atividade salva e sincronizada.' })
-    } catch (e) {
-      toast('Aviso: Modo Offline', {
-        description: 'Conexão falhou. A atividade foi salva com segurança de forma local.',
-      })
+      const newAct = await api.activities.create(activity)
+      set((state) => ({ activities: [newAct as ActivityRecord, ...state.activities] }))
+      toast.success('Sucesso', { description: 'Atividade salva e sincronizada na nuvem.' })
+    } catch (e: any) {
+      console.error(e)
+      toast.error('Erro', { description: 'Falha ao salvar atividade na nuvem.' })
     }
   },
   updateActivity: async (id, updated) => {
     try {
-      await api.activities.syncUpdate((list) =>
-        list.map((a) => (a.id === id ? { ...a, ...updated } : a)),
-      )
+      const newAct = await api.activities.update(id, updated)
       set((state) => ({
-        activities: state.activities.map((a) => (a.id === id ? { ...a, ...updated } : a)),
+        activities: state.activities.map((a) => (a.id === id ? { ...a, ...newAct } : a)),
       }))
-      toast.success('Sucesso', { description: 'Atividade atualizada.' })
-    } catch (e) {
-      toast('Aviso: Modo Offline', {
-        description: 'Conexão falhou. Atualização salva de forma local.',
-      })
+      toast.success('Sucesso', { description: 'Atividade atualizada na nuvem.' })
+    } catch (e: any) {
+      console.error(e)
+      toast.error('Erro', { description: 'Falha ao atualizar atividade na nuvem.' })
     }
   },
   deleteActivity: async (id) => {
     try {
-      await api.activities.syncUpdate((list) => list.filter((a) => a.id !== id))
+      await api.activities.delete(id)
       set((state) => ({
         activities: state.activities.filter((a) => a.id !== id),
       }))
-      toast.success('Sucesso', { description: 'Atividade excluída.' })
-    } catch (e) {
-      toast('Aviso: Modo Offline', {
-        description: 'Conexão falhou. Exclusão registrada localmente.',
-      })
+      toast.success('Sucesso', { description: 'Atividade excluída da nuvem.' })
+    } catch (e: any) {
+      console.error(e)
+      toast.error('Erro', { description: 'Falha ao excluir a atividade.' })
     }
   },
   bulkDeleteActivities: async (ids) => {
     try {
-      await api.activities.syncUpdate((list) => list.filter((a) => !ids.includes(a.id)))
+      await api.activities.bulkDelete(ids)
       set((state) => ({
         activities: state.activities.filter((a) => !ids.includes(a.id)),
       }))
       toast.success('Sucesso', { description: 'Atividades excluídas em lote.' })
-    } catch (e) {
-      toast('Aviso: Modo Offline', {
-        description: 'Exclusão em lote registrada localmente.',
-      })
+    } catch (e: any) {
+      console.error(e)
+      toast.error('Erro', { description: 'Falha na exclusão em lote.' })
     }
   },
   importActivities: async (newActivities) => {
-    const mapped = newActivities.map((a) => ({
-      ...a,
-      id: Math.random().toString(36).substr(2, 9),
-      createdAt: new Date().toISOString(),
-    })) as ActivityRecord[]
-
     try {
-      await api.activities.syncUpdate((list) => [...mapped, ...list])
-      set((state) => ({ activities: [...mapped, ...state.activities] }))
+      for (const act of newActivities) {
+        await api.activities.create(act)
+      }
+      await get().fetchActivities()
       toast.success('Sucesso', { description: 'Lote de atividades importado e sincronizado.' })
-    } catch (e) {
-      toast('Aviso: Modo Offline', {
-        description: 'Conexão falhou. A importação foi concluída com segurança localmente.',
-      })
+    } catch (e: any) {
+      console.error(e)
+      toast.error('Erro', { description: 'Falha ao importar atividades.' })
     }
   },
 }))
