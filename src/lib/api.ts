@@ -138,6 +138,22 @@ export const api = {
       if (error) throw error
       return data
     },
+    create: async (payload: any) => {
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'create', payload },
+      })
+      if (error) throw error
+      if (data.error) throw new Error(data.error)
+      return data
+    },
+    delete: async (id: string) => {
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'delete', payload: { id } },
+      })
+      if (error) throw error
+      if (data.error) throw new Error(data.error)
+      return data
+    },
   },
   video: {
     list: async () => {

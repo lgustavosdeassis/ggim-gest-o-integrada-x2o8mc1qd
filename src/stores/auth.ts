@@ -76,9 +76,30 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     }
   },
   addUser: async (newUser) => {
-    // Administrativo: gerenciado fora deste escopo local ou via supabase auth admin
+    try {
+      await api.users.create({
+        name: newUser.name,
+        email: newUser.email,
+        password: newUser.password,
+        role: newUser.role,
+        avatarUrl: newUser.avatarUrl,
+        jobTitle: newUser.jobTitle,
+      })
+      toast.success('Sucesso', { description: 'Usuário cadastrado com sucesso.' })
+      get().fetchUsers()
+    } catch (e: any) {
+      toast.error('Erro', { description: e.message || 'Falha ao cadastrar usuário.' })
+      throw e
+    }
   },
   removeUser: async (id) => {
-    // Administrativo: gerenciado fora deste escopo local ou via supabase auth admin
+    try {
+      await api.users.delete(id)
+      toast.success('Sucesso', { description: 'Usuário removido com sucesso.' })
+      get().fetchUsers()
+    } catch (e: any) {
+      toast.error('Erro', { description: e.message || 'Falha ao remover usuário.' })
+      throw e
+    }
   },
 }))

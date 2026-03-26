@@ -18,69 +18,75 @@ import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
 import { supabase } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
+import { AuthProvider, useAuth } from '@/hooks/use-auth'
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, user } = useAuthStore()
+  const { user: authUser, loading: authLoading } = useAuth()
+  const { isAuthenticated, user: storeUser } = useAuthStore()
   const location = useLocation()
 
-  if (!isAuthenticated || !user?.role) {
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#020617]">
+        <Loader2 className="h-12 w-12 animate-spin text-[#eab308]" />
+      </div>
+    )
+  }
+
+  if (!authUser || !isAuthenticated || !storeUser?.role) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
   return <ErrorBoundary>{children}</ErrorBoundary>
 }
 
-export default function App() {
+const AppContent = () => {
+  const { user: authUser, loading: authLoading } = useAuth()
   const { login, logout } = useAuthStore()
-  const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(true)
 
   useEffect(() => {
+    if (authLoading) return
+
     let mounted = true
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return
-      if (session?.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-        if (profile) {
-          login({
-            id: profile.id,
-            email: profile.email,
-            name: profile.name,
-            role: profile.role as any,
-            jobTitle: profile.job_title,
-            avatarUrl: profile.avatar_url,
-          })
-        } else {
-          login({
-            id: session.user.id,
-            email: session.user.email || '',
-            name: 'Usuário',
-            role: 'editor' as any,
-          })
-        }
-      }
-      setLoading(false)
-    })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        logout()
-      }
-    })
+    if (authUser) {
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single()
+        .then(({ data: profile }) => {
+          if (!mounted) return
+          if (profile) {
+            login({
+              id: profile.id,
+              email: profile.email,
+              name: profile.name,
+              role: profile.role as any,
+              jobTitle: profile.job_title,
+              avatarUrl: profile.avatar_url,
+            })
+          } else {
+            login({
+              id: authUser.id,
+              email: authUser.email || '',
+              name: 'Usuário',
+              role: 'viewer' as any,
+            })
+          }
+          setProfileLoading(false)
+        })
+    } else {
+      logout()
+      setProfileLoading(false)
+    }
 
     return () => {
       mounted = false
-      subscription.unsubscribe()
     }
-  }, [login, logout])
+  }, [authUser, authLoading, login, logout])
 
-  if (loading) {
+  if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#020617]">
         <Loader2 className="h-12 w-12 animate-spin text-[#eab308]" />
@@ -116,5 +122,13 @@ export default function App() {
       </Routes>
       <Toaster />
     </Router>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }

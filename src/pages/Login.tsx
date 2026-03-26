@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuthStore, Role } from '@/stores/auth'
-import { supabase } from '@/lib/supabase/client'
+import { useAuthStore } from '@/stores/auth'
+import { useAuth } from '@/hooks/use-auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,8 @@ import { useToast } from '@/hooks/use-toast'
 import { GgimHexLogo } from '@/components/GgimHexLogo'
 
 export default function Login() {
-  const { login, isAuthenticated } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
+  const { signIn } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const { toast } = useToast()
@@ -38,7 +39,7 @@ export default function Login() {
     setErrorMsg(null)
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+      const { error } = await signIn(email, password)
 
       if (error) {
         setErrorMsg(
@@ -49,35 +50,11 @@ export default function Login() {
           description: 'E-mail ou senha incorretos. Verifique as credenciais.',
           variant: 'destructive',
         })
-      } else if (data.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single()
-        if (profile) {
-          login({
-            id: profile.id,
-            email: profile.email,
-            name: profile.name,
-            role: profile.role as Role,
-            jobTitle: profile.job_title,
-            avatarUrl: profile.avatar_url,
-          })
-        } else {
-          login({
-            id: data.user.id,
-            email: data.user.email || '',
-            name: 'Usuário',
-            role: 'editor',
-          })
-        }
-        const from = location.state?.from?.pathname || '/'
-        navigate(from, { replace: true })
+        setIsLoading(false)
       }
+      // Em caso de sucesso, o isLoading permanece true até o redirecionamento
     } catch (error: any) {
       setErrorMsg('Ocorreu uma falha de comunicação com o servidor de autenticação.')
-    } finally {
       setIsLoading(false)
     }
   }

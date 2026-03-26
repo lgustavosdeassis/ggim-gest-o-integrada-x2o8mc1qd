@@ -66,6 +66,7 @@ export default function Usuarios() {
   const { user: currentUser, users, addUser, removeUser } = useAuthStore()
   const addLog = useAuditStore((state) => state.addLog)
   const [isOpen, setIsOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -75,28 +76,34 @@ export default function Usuarios() {
 
   if (currentUser?.role !== 'owner') return <Navigate to="/" replace />
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (users.some((u) => u.email === values.email)) {
       return toast.error('Este e-mail já está em uso por outro usuário.')
     }
-    addUser({
-      id: Math.random().toString(36).substring(2, 9),
-      ...values,
-      jobTitle:
-        values.role === 'owner'
-          ? 'Proprietário'
-          : values.role === 'editor'
-            ? 'Editor'
-            : 'Visualizador',
-    })
-    addLog({
-      userName: currentUser?.name || 'Sistema',
-      userEmail: currentUser?.email || '',
-      action: `Cadastrou o novo usuário: ${values.email} (${values.role})`,
-    })
-    toast.success('Usuário registrado com sucesso!')
-    setIsOpen(false)
-    form.reset()
+    setIsSubmitting(true)
+    try {
+      await addUser({
+        id: Math.random().toString(36).substring(2, 9),
+        ...values,
+        jobTitle:
+          values.role === 'owner'
+            ? 'Proprietário'
+            : values.role === 'editor'
+              ? 'Editor'
+              : 'Visualizador',
+      })
+      addLog({
+        userName: currentUser?.name || 'Sistema',
+        userEmail: currentUser?.email || '',
+        action: `Cadastrou o novo usuário: ${values.email} (${values.role})`,
+      })
+      setIsOpen(false)
+      form.reset()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -275,11 +282,12 @@ export default function Usuarios() {
                     variant="ghost"
                     onClick={() => setIsOpen(false)}
                     className="rounded-xl font-bold"
+                    disabled={isSubmitting}
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" className="rounded-xl font-bold">
-                    Criar Conta
+                  <Button type="submit" className="rounded-xl font-bold" disabled={isSubmitting}>
+                    {isSubmitting ? 'Salvando...' : 'Criar Conta'}
                   </Button>
                 </DialogFooter>
               </form>
@@ -376,14 +384,17 @@ export default function Usuarios() {
                               Cancelar
                             </AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => {
-                                removeUser(u.id)
-                                addLog({
-                                  userName: currentUser?.name || 'Sistema',
-                                  userEmail: currentUser?.email || '',
-                                  action: `Revogou o acesso do usuário: ${u.email}`,
-                                })
-                                toast.success('Removido')
+                              onClick={async () => {
+                                try {
+                                  await removeUser(u.id)
+                                  addLog({
+                                    userName: currentUser?.name || 'Sistema',
+                                    userEmail: currentUser?.email || '',
+                                    action: `Revogou o acesso do usuário: ${u.email}`,
+                                  })
+                                } catch (e) {
+                                  console.error(e)
+                                }
                               }}
                               className="rounded-xl font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90"
                             >
