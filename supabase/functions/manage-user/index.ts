@@ -10,25 +10,34 @@ Deno.serve(async (req: Request) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
 
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) throw new Error('Missing Authorization header')
 
-    const token = authHeader.replace('Bearer ', '')
+    // Utilize o client anônimo passando o Authorization header para validar o token atual
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    })
+
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser(token)
+    } = await supabaseClient.auth.getUser()
 
-    if (authError || !user) throw new Error('Unauthorized')
+    if (authError || !user) {
+      throw new Error(`Unauthorized: ${authError?.message || 'No user found'}`)
+    }
 
-    const { data: profile } = await supabase
+    // Utilize o admin client apenas para as operações privilegiadas
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+
+    const { data: profile } = await supabaseAdmin
       .from('profiles')
       .select('role')
       .eq('id', user.id)
       .single()
+
     if (profile?.role !== 'owner') {
       throw new Error('Forbidden: Only owners can manage users')
     }
@@ -39,16 +48,17 @@ Deno.serve(async (req: Request) => {
     if (action === 'create') {
       const { email, password, name, role, avatarUrl, jobTitle } = payload
 
-      const { data: newAuthUser, error: createError } = await supabase.auth.admin.createUser({
+      const { data: newAuthUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
         password,
         email_confirm: true,
+        user_metadata: { name },
       })
 
       if (createError) throw createError
 
       // Update the profile created by the database trigger
-      await supabase
+      await supabaseAdmin
         .from('profiles')
         .update({
           name,
@@ -63,7 +73,7 @@ Deno.serve(async (req: Request) => {
       })
     } else if (action === 'delete') {
       const { id } = payload
-      const { error } = await supabase.auth.admin.deleteUser(id)
+      const { error } = await supabaseAdmin.auth.admin.deleteUser(id)
 
       // Ignore error if user is already deleted or not found
       if (error && !error.message.includes('User not found') && error.status !== 404) {
@@ -71,7 +81,7 @@ Deno.serve(async (req: Request) => {
       }
 
       // Ensure profile is deleted even if auth user wasn't found
-      await supabase.from('profiles').delete().eq('id', id)
+      await supabaseAdmin.from('profiles').delete().eq('id', id)
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
