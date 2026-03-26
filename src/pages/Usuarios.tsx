@@ -82,7 +82,18 @@ export default function Usuarios() {
 
       if (error) throw error
       if (data?.users) {
-        setUsers(data.users)
+        const parsedUsers = data.users.map((u: any) => {
+          let tabs = u.allowed_tabs || []
+          if (typeof tabs === 'string') {
+            try {
+              tabs = JSON.parse(tabs)
+            } catch (e) {
+              tabs = []
+            }
+          }
+          return { ...u, allowed_tabs: tabs }
+        })
+        setUsers(parsedUsers)
       }
     } catch (error: any) {
       toast.error('Erro ao buscar usuários: ' + error.message)
@@ -112,8 +123,18 @@ export default function Usuarios() {
   }
 
   const handleOpenEdit = (user: User) => {
+    let parsedTabs = user.allowed_tabs || []
+    if (typeof parsedTabs === 'string') {
+      try {
+        parsedTabs = JSON.parse(parsedTabs as string)
+      } catch (e) {
+        parsedTabs = []
+      }
+    }
+
     setFormData({
       ...user,
+      allowed_tabs: parsedTabs,
       password: '',
     })
     setIsEditing(true)

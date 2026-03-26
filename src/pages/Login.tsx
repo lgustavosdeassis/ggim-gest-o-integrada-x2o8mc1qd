@@ -24,8 +24,11 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      const from = location.state?.from?.pathname || '/'
-      navigate(from, { replace: true })
+      let fromPath = location.state?.from?.pathname || '/'
+      if (fromPath === '/login') {
+        fromPath = '/'
+      }
+      navigate(fromPath, { replace: true })
     }
   }, [isAuthenticated, navigate, location])
 

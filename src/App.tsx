@@ -43,7 +43,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppContent = () => {
   const { user: authUser, loading: authLoading } = useAuth()
-  const { login, logout } = useAuthStore()
+  const login = useAuthStore((state) => state.login)
+  const logout = useAuthStore((state) => state.logout)
   const [profileLoading, setProfileLoading] = useState(true)
 
   useEffect(() => {
@@ -59,13 +60,26 @@ const AppContent = () => {
         .then(({ data }) => {
           if (!mounted) return
           const profile = data as any
+
+          let parsedTabs: string[] = []
+          try {
+            const rawTabs = profile?.allowed_tabs ?? authUser.user_metadata?.allowed_tabs
+            if (Array.isArray(rawTabs)) {
+              parsedTabs = rawTabs
+            } else if (typeof rawTabs === 'string') {
+              parsedTabs = JSON.parse(rawTabs)
+            }
+          } catch (e) {
+            console.error('Error parsing allowedTabs', e)
+          }
+
           if (profile) {
             login({
               id: profile.id,
-              email: profile.email,
-              name: profile.name,
-              role: profile.role,
-              jobTitle: profile.job_title,
+              email: profile.email || authUser.email || '',
+              name: profile.name || authUser.user_metadata?.name || 'Usuário',
+              role: profile.role || authUser.user_metadata?.role || 'viewer',
+              jobTitle: profile.job_title || authUser.user_metadata?.job_title,
               avatarUrl: profile.avatar_url,
               canGenerateReports:
                 profile.can_generate_reports ??
@@ -73,7 +87,7 @@ const AppContent = () => {
                 false,
               canDeleteReports:
                 profile.can_delete_reports ?? authUser.user_metadata?.can_delete_reports ?? false,
-              allowedTabs: profile.allowed_tabs ?? authUser.user_metadata?.allowed_tabs ?? [],
+              allowedTabs: parsedTabs,
             })
           } else {
             login({
@@ -81,9 +95,22 @@ const AppContent = () => {
               email: authUser.email || '',
               name: authUser.user_metadata?.name || 'Usuário',
               role: authUser.user_metadata?.role || 'viewer',
-              allowedTabs: authUser.user_metadata?.allowed_tabs ?? [],
+              allowedTabs: parsedTabs,
             })
           }
+          setProfileLoading(false)
+        })
+        .catch(() => {
+          if (!mounted) return
+          login({
+            id: authUser.id,
+            email: authUser.email || '',
+            name: authUser.user_metadata?.name || 'Usuário',
+            role: authUser.user_metadata?.role || 'viewer',
+            allowedTabs: Array.isArray(authUser.user_metadata?.allowed_tabs)
+              ? authUser.user_metadata.allowed_tabs
+              : [],
+          })
           setProfileLoading(false)
         })
     } else {

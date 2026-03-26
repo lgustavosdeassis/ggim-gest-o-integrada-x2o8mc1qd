@@ -62,13 +62,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const profile = data as any
       const supabaseUser = get().supabaseUser
 
+      let parsedTabs: string[] = []
+      try {
+        const rawTabs = profile.allowed_tabs ?? supabaseUser?.user_metadata?.allowed_tabs
+        if (Array.isArray(rawTabs)) {
+          parsedTabs = rawTabs
+        } else if (typeof rawTabs === 'string') {
+          parsedTabs = JSON.parse(rawTabs)
+        }
+      } catch (e) {
+        console.error('Error parsing allowedTabs', e)
+      }
+
       set({
         profile,
         user: {
           id: profile.id,
           email: profile.email,
           name: profile.name,
-          role: profile.role,
+          role: profile.role || supabaseUser?.user_metadata?.role || 'viewer',
           jobTitle: profile.job_title,
           avatarUrl: profile.avatar_url,
           canGenerateReports:
@@ -77,7 +89,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             false,
           canDeleteReports:
             profile.can_delete_reports ?? supabaseUser?.user_metadata?.can_delete_reports ?? false,
-          allowedTabs: profile.allowed_tabs ?? supabaseUser?.user_metadata?.allowed_tabs ?? [],
+          allowedTabs: parsedTabs,
         },
         isAuthenticated: true,
       })

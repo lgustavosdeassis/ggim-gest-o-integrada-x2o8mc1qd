@@ -503,3 +503,15 @@ export const Constants = {
 //   END;
 //   $function$
 //
+
+// --- INDEXES ---
+// Table: activities
+//   CREATE INDEX idx_activities_created_at_desc ON public.activities USING btree (created_at DESC)
+// Table: audit_logs
+//   CREATE INDEX idx_audit_logs_timestamp_desc ON public.audit_logs USING btree ("timestamp" DESC)
+// Table: ggim_reports
+//   CREATE INDEX idx_ggim_reports_created_at_desc ON public.ggim_reports USING btree (created_at DESC)
+// Table: obs_records
+//   CREATE INDEX idx_obs_records_date_desc ON public.obs_records USING btree (date DESC)
+// Table: video_records
+//   CREATE INDEX idx_video_records_date_desc ON public.video_records USING btree (date DESC)
