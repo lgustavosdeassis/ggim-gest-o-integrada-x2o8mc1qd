@@ -18,10 +18,13 @@ export default function Importar() {
   const { importActivities } = useAppStore()
   const { user } = useAuthStore()
   const isViewer =
-    user?.role === 'viewer' ||
-    (user?.role === 'editor' &&
+    user?.role !== 'admin' &&
+    user?.role !== 'owner' &&
+    !(
+      user?.role === 'editor' &&
       Array.isArray(user?.allowedTabs) &&
-      !user.allowedTabs.includes('Importar Arquivo'))
+      user.allowedTabs.includes('Importar Arquivo')
+    )
 
   const addLog = useAuditStore((state) => state.addLog)
 

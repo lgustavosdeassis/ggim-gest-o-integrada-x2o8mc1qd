@@ -38,10 +38,13 @@ export default function Videomonitoramento() {
   const { records, deleteRecord } = useVideoStore()
   const user = useAuthStore((state) => state.user)
   const isViewer =
-    user?.role === 'viewer' ||
-    (user?.role === 'editor' &&
+    user?.role !== 'admin' &&
+    user?.role !== 'owner' &&
+    !(
+      user?.role === 'editor' &&
       Array.isArray(user?.allowedTabs) &&
-      !user.allowedTabs.includes('Videomonitoramento'))
+      user.allowedTabs.includes('Videomonitoramento')
+    )
 
   const [customStart, setCustomStart] = useState<Date | undefined>(new Date(2026, 0, 1))
   const [customEnd, setCustomEnd] = useState<Date | undefined>(new Date(2026, 11, 31))

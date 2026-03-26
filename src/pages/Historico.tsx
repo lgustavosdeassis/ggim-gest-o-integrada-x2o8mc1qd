@@ -34,10 +34,13 @@ export default function Historico() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const isViewer =
-    user?.role === 'viewer' ||
-    (user?.role === 'editor' &&
+    user?.role !== 'admin' &&
+    user?.role !== 'owner' &&
+    !(
+      user?.role === 'editor' &&
       Array.isArray(user?.allowedTabs) &&
-      !user.allowedTabs.includes('Acervo Histórico'))
+      user.allowedTabs.includes('Acervo Histórico')
+    )
 
   const { activities, deleteActivity, bulkDeleteActivities } = useAppStore()
   const addLog = useAuditStore((state) => state.addLog)

@@ -36,10 +36,13 @@ export default function Index() {
   const [selectedInstances, setSelectedInstances] = useState<string[]>([])
 
   const isViewer =
-    user?.role === 'viewer' ||
-    (user?.role === 'editor' &&
+    user?.role !== 'admin' &&
+    user?.role !== 'owner' &&
+    !(
+      user?.role === 'editor' &&
       Array.isArray(user?.allowedTabs) &&
-      !user.allowedTabs.includes('Dashboard BI'))
+      user.allowedTabs.includes('Dashboard BI')
+    )
 
   const filteredData = useMemo(() => {
     return activities.filter((a) => {

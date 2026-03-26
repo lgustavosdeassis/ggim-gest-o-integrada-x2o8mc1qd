@@ -35,10 +35,13 @@ export default function Registrar() {
   const { user } = useAuthStore()
 
   const isViewer =
-    user?.role === 'viewer' ||
-    (user?.role === 'editor' &&
+    user?.role !== 'admin' &&
+    user?.role !== 'owner' &&
+    !(
+      user?.role === 'editor' &&
       Array.isArray(user?.allowedTabs) &&
-      !user.allowedTabs.includes('Registrar Atividade'))
+      user.allowedTabs.includes('Registrar Atividade')
+    )
 
   const addLog = useAuditStore((state) => state.addLog)
 
