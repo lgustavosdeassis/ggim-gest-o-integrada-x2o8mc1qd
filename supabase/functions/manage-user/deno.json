@@ -1,5 +1,5 @@
 {
   "imports": {
-    "../_shared/": "../_shared/"
+    "npm:@supabase/supabase-js@2": "npm:@supabase/supabase-js@2.42.0"
   }
 }

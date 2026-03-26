@@ -1,11 +1,8 @@
-import { useState, useRef } from 'react'
-import { Navigate } from 'react-router-dom'
-import { useAuthStore, User } from '@/stores/auth'
-import { useAuditStore } from '@/stores/audit'
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase/client'
+import { Profile } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -19,20 +16,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import {
   Select,
   SelectContent,
@@ -40,547 +27,406 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Trash2,
-  ShieldAlert,
-  UserPlus,
-  Shield,
-  Upload,
-  User as UserIcon,
-  Pencil,
-} from 'lucide-react'
-import { toast } from 'sonner'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import * as z from 'zod'
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
-import { Card } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-
-const formSchema = z.object({
-  name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('E-mail inválido'),
-  password: z.string().optional(),
-  role: z.enum(['owner', 'editor', 'viewer'], { required_error: 'Selecione um perfil' }),
-  avatarUrl: z.string().optional(),
-  canGenerateReports: z.boolean().optional(),
-  allowedTabs: z.array(z.string()).optional(),
-})
+import { useToast } from '@/hooks/use-toast'
+import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function Usuarios() {
-  const { user: currentUser, users, addUser, removeUser, updateUser } = useAuthStore()
-  const addLog = useAuditStore((state) => state.addLog)
-  const [isOpen, setIsOpen] = useState(false)
+  const [users, setUsers] = useState<Profile[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<Profile | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      email: '',
-      password: '',
-      role: 'viewer',
-      avatarUrl: '',
-      canGenerateReports: false,
-      allowedTabs: [],
-    },
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'user',
+    is_admin: false,
+    status: 'active',
   })
 
-  if (currentUser?.role !== 'owner') return <Navigate to="/" replace />
+  useEffect(() => {
+    fetchUsers()
+  }, [])
 
-  const handleOpenChange = (open: boolean) => {
-    setIsOpen(open)
-    if (!open) {
-      setTimeout(() => {
-        setEditingUser(null)
-        form.reset({
-          name: '',
-          email: '',
-          password: '',
-          role: 'viewer',
-          avatarUrl: '',
-          canGenerateReports: false,
-          allowedTabs: [],
-        })
-      }, 200)
+  const fetchUsers = async () => {
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setUsers(data || [])
+    } catch (error: any) {
+      toast({
+        title: 'Erro ao carregar usuários',
+        description: error.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleEditClick = (u: User) => {
-    setEditingUser(u)
-    form.reset({
-      name: u.name,
-      email: u.email,
-      password: '',
-      role: u.role,
-      avatarUrl: u.avatarUrl || '',
-      canGenerateReports: u.canGenerateReports || false,
-      allowedTabs: u.allowedTabs || [],
-    })
-    setIsOpen(true)
+  const handleOpenDialog = (user?: Profile) => {
+    if (user) {
+      setSelectedUser(user)
+      setFormData({
+        name: user.name || '',
+        email: user.email,
+        password: '',
+        role: user.role || 'user',
+        is_admin: user.is_admin || false,
+        status: user.status || 'active',
+      })
+    } else {
+      setSelectedUser(null)
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        role: 'user',
+        is_admin: false,
+        status: 'active',
+      })
+    }
+    setIsDialogOpen(true)
   }
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const handleSave = async () => {
+    if (!formData.email || !formData.name || (!selectedUser && !formData.password)) {
+      toast({
+        title: 'Campos obrigatórios',
+        description: 'Preencha todos os campos obrigatórios.',
+        variant: 'destructive',
+      })
+      return
+    }
+
     setIsSubmitting(true)
     try {
-      if (editingUser) {
-        await updateUser(editingUser.id, {
-          ...values,
-          jobTitle:
-            values.role === 'owner'
-              ? 'Proprietário'
-              : values.role === 'editor'
-                ? 'Editor'
-                : 'Visualizador',
-        })
-        addLog({
-          userName: currentUser?.name || 'Sistema',
-          userEmail: currentUser?.email || '',
-          action: `Editou as informações do usuário: ${values.email} (${values.role})`,
-        })
-      } else {
-        if (!values.password || values.password.length < 4) {
-          form.setError('password', { message: 'A senha deve ter pelo menos 4 caracteres' })
-          setIsSubmitting(false)
-          return
-        }
-        if (users.some((u) => u.email === values.email)) {
-          toast.error('Este e-mail já está em uso por outro usuário.')
-          setIsSubmitting(false)
-          return
-        }
-        await addUser({
-          id: Math.random().toString(36).substring(2, 9),
-          ...values,
-          password: values.password,
-          jobTitle:
-            values.role === 'owner'
-              ? 'Proprietário'
-              : values.role === 'editor'
-                ? 'Editor'
-                : 'Visualizador',
-        } as User)
-        addLog({
-          userName: currentUser?.name || 'Sistema',
-          userEmail: currentUser?.email || '',
-          action: `Cadastrou o novo usuário: ${values.email} (${values.role})`,
-        })
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      const functionUrl = import.meta.env.VITE_SUPABASE_URL
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-user`
+        : 'https://qjpmnqwzgzbknnouyeya.supabase.co/functions/v1/manage-user'
+
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: selectedUser ? 'update' : 'create',
+          userData: {
+            id: selectedUser?.id,
+            ...formData,
+          },
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao salvar usuário')
       }
-      setIsOpen(false)
-    } catch (e) {
-      console.error(e)
+
+      toast({
+        title: 'Sucesso',
+        description: selectedUser
+          ? 'Usuário atualizado com sucesso.'
+          : 'Usuário criado com sucesso.',
+      })
+
+      setIsDialogOpen(false)
+      fetchUsers()
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message,
+        variant: 'destructive',
+      })
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const img = new Image()
-        img.onload = () => {
-          const canvas = document.createElement('canvas')
-          const MAX_WIDTH = 256
-          const MAX_HEIGHT = 256
-          let width = img.width
-          let height = img.height
+  const handleDelete = async () => {
+    if (!selectedUser) return
 
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width
-              width = MAX_WIDTH
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height
-              height = MAX_HEIGHT
-            }
-          }
+    setIsSubmitting(true)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+      const functionUrl = import.meta.env.VITE_SUPABASE_URL
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-user`
+        : 'https://qjpmnqwzgzbknnouyeya.supabase.co/functions/v1/manage-user'
 
-          canvas.width = width
-          canvas.height = height
-          const ctx = canvas.getContext('2d')
-          ctx?.drawImage(img, 0, 0, width, height)
-          form.setValue('avatarUrl', canvas.toDataURL('image/jpeg', 0.8))
-        }
-        img.src = reader.result as string
+      const response = await fetch(functionUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: 'delete',
+          userData: { id: selectedUser.id },
+        }),
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Erro ao excluir usuário')
       }
-      reader.readAsDataURL(file)
+
+      toast({
+        title: 'Sucesso',
+        description: 'Usuário excluído com sucesso.',
+      })
+
+      setIsDeleteDialogOpen(false)
+      fetchUsers()
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: error.message,
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
+  const filteredUsers = users.filter(
+    (user) =>
+      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase()),
+  )
+
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tight text-foreground mb-2 flex items-center gap-3">
-            <Shield className="w-10 h-10 text-primary" /> Gestão de Usuários
-          </h1>
-          <p className="text-muted-foreground text-base font-medium">
-            Gerencie o acesso ao sistema. Apenas Proprietários podem adicionar ou remover contas.
-          </p>
+          <h1 className="text-3xl font-bold tracking-tight">Usuários</h1>
+          <p className="text-muted-foreground">Gerencie o acesso ao sistema</p>
         </div>
-
-        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-          <DialogTrigger asChild>
-            <Button className="h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground shadow-md">
-              <UserPlus className="mr-2 h-5 w-5" /> Novo Usuário
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px] border-border bg-card rounded-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-black text-foreground">
-                {editingUser ? 'Editar Usuário' : 'Registrar Acesso'}
-              </DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
-                <div className="flex justify-center mb-6">
-                  <div
-                    className="relative group cursor-pointer"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Avatar className="h-24 w-24 border-4 border-background shadow-lg transition-all duration-300 group-hover:opacity-80">
-                      <AvatarImage src={form.watch('avatarUrl') || ''} className="object-cover" />
-                      <AvatarFallback className="bg-secondary text-secondary-foreground font-bold text-xl">
-                        <UserIcon className="h-8 w-8" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <Upload className="h-6 w-6 text-white" />
-                    </div>
-                  </div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                        Nome Completo
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="Ex: João da Silva"
-                          className="h-11 rounded-xl"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                        E-mail
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="email"
-                          placeholder="joao@ggim.foz.br"
-                          className="h-11 rounded-xl"
-                          disabled={!!editingUser}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {!editingUser && (
-                  <FormField
-                    control={form.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                          Senha Provisória
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="••••••••"
-                            className="h-11 rounded-xl tracking-widest"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                <FormField
-                  control={form.control}
-                  name="role"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                        Nível de Permissão
-                      </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="h-11 rounded-xl">
-                            <SelectValue placeholder="Selecione um perfil" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent className="rounded-xl">
-                          <SelectItem value="owner">Proprietário (Admin)</SelectItem>
-                          <SelectItem value="editor">Editor</SelectItem>
-                          <SelectItem value="viewer">Visualizador</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {form.watch('role') === 'viewer' && (
-                  <FormField
-                    control={form.control}
-                    name="canGenerateReports"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border p-4 bg-muted/20">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-xs font-bold text-foreground uppercase tracking-widest">
-                            Gerar Relatórios
-                          </FormLabel>
-                          <div className="text-xs text-muted-foreground font-medium">
-                            Permitir que este usuário gere relatórios.
-                          </div>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {form.watch('role') === 'editor' && (
-                  <FormField
-                    control={form.control}
-                    name="allowedTabs"
-                    render={({ field }) => (
-                      <FormItem className="p-4 rounded-xl border border-border bg-muted/20">
-                        <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                          Permissões de Edição (Abas)
-                        </FormLabel>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
-                          {[
-                            'Dashboard BI',
-                            'Registrar Atividade',
-                            'Importar Arquivo',
-                            'Acervo Histórico',
-                            'Videomonitoramento',
-                            'Observatório',
-                          ].map((tab) => (
-                            <div key={tab} className="flex items-center space-x-2">
-                              <Checkbox
-                                id={`tab-${tab.replace(/\s+/g, '-')}`}
-                                checked={field.value?.includes(tab)}
-                                onCheckedChange={(checked) => {
-                                  const current = field.value || []
-                                  if (checked) {
-                                    field.onChange([...current, tab])
-                                  } else {
-                                    field.onChange(current.filter((t) => t !== tab))
-                                  }
-                                }}
-                              />
-                              <label
-                                htmlFor={`tab-${tab.replace(/\s+/g, '-')}`}
-                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                              >
-                                {tab}
-                              </label>
-                            </div>
-                          ))}
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                <DialogFooter className="pt-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => handleOpenChange(false)}
-                    className="rounded-xl font-bold"
-                    disabled={isSubmitting}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button type="submit" className="rounded-xl font-bold" disabled={isSubmitting}>
-                    {isSubmitting
-                      ? 'Salvando...'
-                      : editingUser
-                        ? 'Salvar Alterações'
-                        : 'Criar Conta'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => handleOpenDialog()}>
+          <Plus className="mr-2 h-4 w-4" /> Novo Usuário
+        </Button>
       </div>
 
-      <Card className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader className="bg-muted/50">
-            <TableRow>
-              <TableHead className="text-xs font-bold uppercase tracking-widest py-5 pl-6">
-                Nome
-              </TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-widest py-5">
-                E-mail
-              </TableHead>
-              <TableHead className="text-xs font-bold uppercase tracking-widest py-5">
-                Perfil
-              </TableHead>
-              <TableHead className="text-right pr-6 py-5 text-xs font-bold uppercase tracking-widest">
-                Ações
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.map((u, idx) => {
-              const isMe = u.id === currentUser?.id
-              return (
-                <TableRow key={u.id || `user-${idx}`} className="border-border hover:bg-muted/50">
-                  <TableCell className="py-4 pl-6 font-bold text-sm">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10 border border-border shadow-sm">
-                        <AvatarImage src={u.avatarUrl || ''} />
-                        <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">
-                          {u.name.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        {u.name}{' '}
-                        {isMe && (
-                          <span className="ml-2 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary uppercase">
-                            Você
-                          </span>
-                        )}
-                        <div className="text-xs text-muted-foreground font-medium mt-1">
-                          {u.jobTitle || 'N/A'}
-                        </div>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4 text-sm text-muted-foreground">{u.email}</TableCell>
-                  <TableCell className="py-4">
-                    <span
-                      className={`rounded-md border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-widest ${
-                        u.role === 'owner'
-                          ? 'border-primary/20 bg-primary/10 text-primary'
-                          : u.role === 'editor'
-                            ? 'border-chart-2/20 bg-chart-2/10 text-chart-2'
-                            : 'border-chart-3/20 bg-chart-3/10 text-chart-3'
-                      }`}
-                    >
-                      {u.role === 'owner'
-                        ? 'Proprietário'
-                        : u.role === 'editor'
-                          ? 'Editor'
-                          : 'Visualizador'}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right pr-6 py-4">
-                    {!isMe ? (
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEditClick(u)}
-                          className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl"
-                          title="Editar Usuário"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center space-x-2">
+            <Search className="h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou e-mail..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="max-w-md"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>E-mail</TableHead>
+                    <TableHead>Nível</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                        Nenhum usuário encontrado.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          {user.is_admin ? (
+                            <Badge variant="default">Administrador</Badge>
+                          ) : (
+                            <Badge variant="secondary">Usuário</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {user.status === 'active' ? (
+                            <Badge
+                              variant="outline"
+                              className="text-green-600 bg-green-50 border-green-200"
                             >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-2xl">
-                            <AlertDialogHeader>
-                              <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold">
-                                <ShieldAlert className="h-6 w-6 text-destructive" /> Revogar Acesso
-                              </AlertDialogTitle>
-                              <AlertDialogDescription className="text-base font-medium">
-                                Tem certeza que deseja remover este usuário?
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel className="rounded-xl font-bold">
-                                Cancelar
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={async () => {
-                                  try {
-                                    await removeUser(u.id)
-                                    addLog({
-                                      userName: currentUser?.name || 'Sistema',
-                                      userEmail: currentUser?.email || '',
-                                      action: `Revogou o acesso do usuário: ${u.email}`,
-                                    })
-                                  } catch (e) {
-                                    console.error(e)
-                                  }
-                                }}
-                                className="rounded-xl font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Remover
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground/50 font-medium uppercase tracking-widest pr-2">
-                        Protegido
-                      </span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              )
-            })}
-          </TableBody>
-        </Table>
+                              Ativo
+                            </Badge>
+                          ) : (
+                            <Badge
+                              variant="outline"
+                              className="text-red-600 bg-red-50 border-red-200"
+                            >
+                              Inativo
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleOpenDialog(user)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              setSelectedUser(user)
+                              setIsDeleteDialogOpen(true)
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
       </Card>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>{selectedUser ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name">Nome completo</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="João da Silva"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="email">E-mail</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="joao@exemplo.com"
+                disabled={!!selectedUser}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="password">
+                {selectedUser ? 'Nova Senha (deixe em branco para manter)' : 'Senha'}
+              </Label>
+              <Input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => setFormData({ ...formData, status: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Ativo</SelectItem>
+                    <SelectItem value="inactive">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2 mt-8">
+                <Switch
+                  id="is_admin"
+                  checked={formData.is_admin}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_admin: checked })}
+                />
+                <Label htmlFor="is_admin" className="cursor-pointer">
+                  Administrador
+                </Label>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Excluir Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p>
+              Tem certeza que deseja excluir o usuário <strong>{selectedUser?.name}</strong>?
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">Esta ação não pode ser desfeita.</p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={isSubmitting}
+            >
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Excluir
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

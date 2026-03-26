@@ -1,76 +1,57 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers':
-    'authorization, x-client-info, x-supabase-client-platform, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
 
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader) throw new Error('Missing Authorization header')
-
-    const token = authHeader.replace('Bearer ', '')
-
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-    })
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabaseClient.auth.getUser(token)
-
-    if (authError || !user) {
-      throw new Error(`Unauthorized: Auth session missing!`)
+    if (!authHeader) {
+      throw new Error('No authorization header')
     }
 
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-    })
+    const token = authHeader.replace('Bearer ', '')
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseAdmin.auth.getUser(token)
+
+    if (userError || !user) {
+      throw new Error('Invalid token')
+    }
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('role')
+      .select('is_admin')
       .eq('id', user.id)
       .single()
 
-    if (profile?.role !== 'owner') {
-      throw new Error('Forbidden: Only owners can manage users')
+    if (!profile?.is_admin) {
+      throw new Error('Unauthorized')
     }
 
     const body = await req.json()
-    const { action, payload } = body
+    const { action, userData } = body
 
     if (action === 'create') {
-      const { email, password, name, role, avatarUrl, jobTitle, canGenerateReports, allowedTabs } =
-        payload
-
-      const { data: newAuthUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password,
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: userData.email,
+        password: userData.password,
         email_confirm: true,
-        user_metadata: { name },
+        user_metadata: { name: userData.name },
       })
 
       if (createError) throw createError
@@ -78,39 +59,59 @@ Deno.serve(async (req: Request) => {
       await supabaseAdmin
         .from('profiles')
         .update({
+          name: userData.name,
+          role: userData.role || 'user',
+          is_admin: userData.is_admin || false,
+          status: userData.status || 'active',
+        })
+        .eq('id', newUser.user.id)
+
+      return new Response(JSON.stringify({ user: newUser.user }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      })
+    }
+
+    if (action === 'update') {
+      const { id, email, password, name, role, is_admin, status } = userData
+
+      const updateData: any = {}
+      if (email) updateData.email = email
+      if (password) updateData.password = password
+
+      if (Object.keys(updateData).length > 0) {
+        const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(
+          id,
+          updateData,
+        )
+        if (updateAuthError) throw updateAuthError
+      }
+
+      const { error: updateProfileError } = await supabaseAdmin
+        .from('profiles')
+        .update({
           name,
           role,
-          avatar_url: avatarUrl,
-          job_title: jobTitle,
-          can_generate_reports: canGenerateReports ?? false,
-          allowed_tabs: allowedTabs ?? [],
+          is_admin,
+          status,
         })
-        .eq('id', newAuthUser.user.id)
+        .eq('id', id)
 
-      return new Response(JSON.stringify({ user: newAuthUser.user }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
-    } else if (action === 'delete') {
-      const { id } = payload
-
-      if (!id) {
-        throw new Error('Missing user id')
-      }
-
-      if (id === user.id) {
-        throw new Error('Forbidden: Cannot delete your own user account')
-      }
-
-      const { error } = await supabaseAdmin.auth.admin.deleteUser(id)
-
-      if (error && !error.message.includes('User not found') && error.status !== 404) {
-        throw error
-      }
-
-      await supabaseAdmin.from('profiles').delete().eq('id', id)
+      if (updateProfileError) throw updateProfileError
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      })
+    }
+
+    if (action === 'delete') {
+      const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userData.id)
+      if (deleteError) throw deleteError
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
       })
     }
 
