@@ -15,22 +15,35 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) throw new Error('Missing Authorization header')
 
+    const token = authHeader.replace('Bearer ', '')
+
     // Utilize o client anônimo configurando o header global de Authorization
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
     })
 
     const {
       data: { user },
       error: authError,
-    } = await supabaseClient.auth.getUser()
+    } = await supabaseClient.auth.getUser(token)
 
     if (authError || !user) {
       throw new Error(`Unauthorized: ${authError?.message || 'No user found'}`)
     }
 
     // Utilize o admin client apenas para as operações privilegiadas
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    })
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
