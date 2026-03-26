@@ -14,7 +14,7 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all rounded-2xl col-span-2 sm:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Participantes (PF)
+              Participações (PF)
             </CardTitle>
             <div className="p-2 bg-chart-3/10 rounded-lg">
               <Users className="h-5 w-5 text-chart-3" />
@@ -75,7 +75,7 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
                     {data.topPf.count}
                   </span>
                   <span className="text-[10px] uppercase tracking-widest font-bold text-secondary-foreground/80 mt-1 block">
-                    Vezes
+                    {data.topPf.count === 1 ? 'Vez' : 'Vezes'}
                   </span>
                 </div>
               </div>
@@ -103,7 +103,7 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
                     {data.topPj.count}
                   </span>
                   <span className="text-[10px] uppercase tracking-widest font-bold text-secondary-foreground/80 mt-1 block">
-                    Vezes
+                    {data.topPj.count === 1 ? 'Vez' : 'Vezes'}
                   </span>
                 </div>
               </div>

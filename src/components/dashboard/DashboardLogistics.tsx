@@ -61,7 +61,7 @@ export function DashboardLogistics({ data }: { data: DashboardStats['logistics']
                     {data.topLocation.count}
                   </span>
                   <span className="text-xs uppercase tracking-widest font-bold text-secondary-foreground/80 mt-1 block">
-                    Vezes
+                    {data.topLocation.count === 1 ? 'Vez' : 'Vezes'}
                   </span>
                 </div>
               </div>
