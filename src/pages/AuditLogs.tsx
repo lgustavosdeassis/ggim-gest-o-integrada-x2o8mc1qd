@@ -22,7 +22,7 @@ export default function AuditLogs() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  if (user?.role !== 'owner') return <Navigate to="/" replace />
+  if (user?.role !== 'owner' && user?.role !== 'admin') return <Navigate to="/" replace />
 
   const sortedLogs = [...logs].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),

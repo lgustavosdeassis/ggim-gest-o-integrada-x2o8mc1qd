@@ -7,7 +7,7 @@ export interface AppUser {
   id: string
   email: string
   name?: string | null
-  role: 'admin' | 'user' | 'viewer'
+  role: 'admin' | 'owner' | 'editor' | 'viewer' | 'user'
   jobTitle?: string | null
   avatarUrl?: string | null
   canGenerateReports?: boolean
@@ -27,6 +27,8 @@ interface AuthState {
   signOut: () => Promise<void>
   login: (user: AppUser) => void
   logout: () => void
+  updateAvatar: (url: string) => void
+  updateProfile: (data: Partial<AppUser>) => void
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -87,5 +89,35 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: () => {
     set({ user: null, isAuthenticated: false })
+  },
+
+  updateAvatar: (url) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, avatarUrl: url } : null,
+      profile: state.profile ? { ...state.profile, avatar_url: url } : null,
+    }))
+    const userId = get().user?.id
+    if (userId) {
+      supabase.from('profiles').update({ avatar_url: url }).eq('id', userId).then()
+    }
+  },
+
+  updateProfile: (data) => {
+    set((state) => ({
+      user: state.user ? { ...state.user, ...data } : null,
+      profile: state.profile
+        ? { ...state.profile, ...data, job_title: data.jobTitle || state.profile.job_title }
+        : null,
+    }))
+    const userId = get().user?.id
+    if (userId) {
+      const updateData: any = {}
+      if (data.name !== undefined) updateData.name = data.name
+      if (data.jobTitle !== undefined) updateData.job_title = data.jobTitle
+
+      if (Object.keys(updateData).length > 0) {
+        supabase.from('profiles').update(updateData).eq('id', userId).then()
+      }
+    }
   },
 }))

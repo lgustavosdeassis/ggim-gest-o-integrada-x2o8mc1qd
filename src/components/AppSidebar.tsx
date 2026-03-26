@@ -26,7 +26,7 @@ import sealLogo from '@/assets/logo-cmtecs-fe595.jpg'
 export function AppSidebar() {
   const { pathname } = useLocation()
   const { user } = useAuthStore()
-  const isOwner = user?.role === 'owner'
+  const isOwner = user?.role === 'owner' || user?.role === 'admin'
 
   const menuItems = [
     { title: 'Dashboard BI', path: '/', icon: LayoutDashboard },
@@ -45,7 +45,6 @@ export function AppSidebar() {
   return (
     <Sidebar variant="sidebar" className="border-r border-border bg-sidebar z-40">
       <SidebarHeader className="h-20 flex items-center px-4 border-b border-border justify-center bg-sidebar">
-        {/* Relocated original seal logo, replacing previous branding */}
         <div className="flex items-center gap-3 w-full justify-center">
           <div className="h-11 w-11 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center p-0 border-none bg-white">
             <img
