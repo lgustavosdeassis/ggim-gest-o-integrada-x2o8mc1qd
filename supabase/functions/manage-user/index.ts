@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
     }
 
     // Allow access if user is marked as admin either by boolean flag or by role string
-    if (!profile?.is_admin && profile?.role !== 'admin') {
+    if (!profile?.is_admin && profile?.role !== 'admin' && profile?.role !== 'owner') {
       throw new Error('Unauthorized')
     }
 
