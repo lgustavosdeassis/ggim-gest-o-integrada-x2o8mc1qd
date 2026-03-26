@@ -49,6 +49,8 @@ export default function Usuarios() {
     role: 'user',
     is_admin: false,
     status: 'active',
+    job_title: '',
+    can_generate_reports: false,
   })
 
   useEffect(() => {
@@ -86,6 +88,8 @@ export default function Usuarios() {
         role: user.role || 'user',
         is_admin: user.is_admin || false,
         status: user.status || 'active',
+        job_title: user.job_title || '',
+        can_generate_reports: user.can_generate_reports || false,
       })
     } else {
       setSelectedUser(null)
@@ -96,6 +100,8 @@ export default function Usuarios() {
         role: 'user',
         is_admin: false,
         status: 'active',
+        job_title: '',
+        can_generate_reports: false,
       })
     }
     setIsDialogOpen(true)
@@ -357,6 +363,15 @@ export default function Usuarios() {
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="job_title">Cargo / Função</Label>
+              <Input
+                id="job_title"
+                value={formData.job_title}
+                onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                placeholder="Ex: Analista de Segurança"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="status">Status</Label>
@@ -373,15 +388,30 @@ export default function Usuarios() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center gap-2 mt-8">
-                <Switch
-                  id="is_admin"
-                  checked={formData.is_admin}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_admin: checked })}
-                />
-                <Label htmlFor="is_admin" className="cursor-pointer">
-                  Administrador
-                </Label>
+              <div className="flex flex-col gap-3 mt-1">
+                <Label>Permissões</Label>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="is_admin"
+                    checked={formData.is_admin}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_admin: checked })}
+                  />
+                  <Label htmlFor="is_admin" className="cursor-pointer font-normal">
+                    Administrador
+                  </Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="can_generate_reports"
+                    checked={formData.can_generate_reports}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, can_generate_reports: checked })
+                    }
+                  />
+                  <Label htmlFor="can_generate_reports" className="cursor-pointer font-normal">
+                    Pode gerar relatórios
+                  </Label>
+                </div>
               </div>
             </div>
           </div>

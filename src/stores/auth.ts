@@ -1,32 +1,49 @@
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase/client'
 import { Profile } from '@/lib/types'
-import { User, Session } from '@supabase/supabase-js'
+import { User as SupabaseUser, Session } from '@supabase/supabase-js'
+
+export interface AppUser {
+  id: string
+  email: string
+  name?: string | null
+  role: 'admin' | 'user' | 'viewer'
+  jobTitle?: string | null
+  avatarUrl?: string | null
+  canGenerateReports?: boolean
+  allowedTabs?: string[] | null
+}
 
 interface AuthState {
-  user: User | null
+  user: AppUser | null
+  supabaseUser: SupabaseUser | null
   session: Session | null
   profile: Profile | null
   loading: boolean
   initialized: boolean
-  setAuth: (session: Session | null, user: User | null) => void
+  isAuthenticated: boolean
+  setAuth: (session: Session | null, user: SupabaseUser | null) => void
   fetchProfile: (userId: string) => Promise<void>
   signOut: () => Promise<void>
+  login: (user: AppUser) => void
+  logout: () => void
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
+  supabaseUser: null,
   session: null,
   profile: null,
   loading: true,
   initialized: false,
+  isAuthenticated: false,
 
-  setAuth: async (session, user) => {
-    set({ session, user, loading: false, initialized: true })
-    if (user) {
-      await get().fetchProfile(user.id)
+  setAuth: async (session, supabaseUser) => {
+    set({ session, supabaseUser, loading: false, initialized: true })
+    if (supabaseUser) {
+      await get().fetchProfile(supabaseUser.id)
     } else {
-      set({ profile: null })
+      set({ profile: null, user: null, isAuthenticated: false })
     }
   },
 
@@ -39,7 +56,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         return
       }
 
-      set({ profile: data as Profile })
+      const profile = data as Profile
+      set({
+        profile,
+        user: {
+          id: profile.id,
+          email: profile.email,
+          name: profile.name,
+          role: profile.role as any,
+          jobTitle: profile.job_title,
+          avatarUrl: profile.avatar_url,
+          canGenerateReports: profile.can_generate_reports,
+          allowedTabs: profile.allowed_tabs,
+        },
+        isAuthenticated: true,
+      })
     } catch (error) {
       console.error('Failed to fetch profile', error)
     }
@@ -47,6 +78,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut()
-    set({ user: null, session: null, profile: null })
+    set({ user: null, supabaseUser: null, session: null, profile: null, isAuthenticated: false })
+  },
+
+  login: (user) => {
+    set({ user, isAuthenticated: true })
+  },
+
+  logout: () => {
+    set({ user: null, isAuthenticated: false })
   },
 }))

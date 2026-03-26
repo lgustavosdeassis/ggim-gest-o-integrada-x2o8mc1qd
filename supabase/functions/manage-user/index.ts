@@ -63,6 +63,9 @@ Deno.serve(async (req) => {
           role: userData.role || 'user',
           is_admin: userData.is_admin || false,
           status: userData.status || 'active',
+          job_title: userData.job_title || null,
+          can_generate_reports: userData.can_generate_reports || false,
+          allowed_tabs: userData.allowed_tabs || null,
         })
         .eq('id', newUser.user.id)
 
@@ -73,7 +76,18 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'update') {
-      const { id, email, password, name, role, is_admin, status } = userData
+      const {
+        id,
+        email,
+        password,
+        name,
+        role,
+        is_admin,
+        status,
+        job_title,
+        can_generate_reports,
+        allowed_tabs,
+      } = userData
 
       const updateData: any = {}
       if (email) updateData.email = email
@@ -94,6 +108,9 @@ Deno.serve(async (req) => {
           role,
           is_admin,
           status,
+          job_title: job_title || null,
+          can_generate_reports: can_generate_reports || false,
+          allowed_tabs: allowed_tabs || null,
         })
         .eq('id', id)
 
