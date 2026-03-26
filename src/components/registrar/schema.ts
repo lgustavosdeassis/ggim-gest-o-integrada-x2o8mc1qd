@@ -62,14 +62,14 @@ export const formSchema = z.object({
     )
     .optional(),
   hasAction: z.boolean().default(false),
-  actionStart: z.string().nullish(),
-  actionEnd: z.string().nullish(),
+  actionStart: z.any().optional(),
+  actionEnd: z.any().optional(),
   actions: z
     .array(
       z.object({
         id: z.string().optional(),
-        start: z.string().nullish(),
-        end: z.string().nullish(),
+        start: z.any().optional(),
+        end: z.any().optional(),
         periods: z
           .array(
             z.object({

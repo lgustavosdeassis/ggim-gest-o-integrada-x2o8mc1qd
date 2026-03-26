@@ -64,43 +64,63 @@ export const api = {
         return (data || []).map(mapFromDB)
       } catch (error: any) {
         console.warn(
-          'Erro ao buscar todas as atividades, tentando em lotes menores para contornar payload muito grande ou falhas de fetch...',
+          'Aviso: Erro na busca completa (payload grande ou erro de rede). Ativando busca fracionada e segura...',
           error,
         )
         try {
           const allData: any[] = []
-          const pageSize = 15 // Lote pequeno para mitigar "Unterminated string in JSON" ou "Failed to fetch"
+          const { data: idData, error: idError } = await supabase
+            .from('activities')
+            .select('id')
+            .order('created_at', { ascending: false })
 
-          for (let i = 0; i < 50; i++) {
-            // Limite de lotes para evitar loops infinitos
+          if (idError || !idData) {
+            console.warn('Aviso: Falha ao recuperar os IDs.', idError)
+            return []
+          }
+
+          const ids = idData.map((d: any) => d.id)
+          const chunkSize = 15
+
+          for (let i = 0; i < ids.length; i += chunkSize) {
+            const chunkIds = ids.slice(i, i + chunkSize)
             try {
-              const { data, error: chunkError } = await supabase
+              const { data: chunk, error: chunkErr } = await supabase
                 .from('activities')
                 .select('*')
+                .in('id', chunkIds)
                 .order('created_at', { ascending: false })
-                .range(i * pageSize, (i + 1) * pageSize - 1)
 
-              if (chunkError) {
-                console.error(`Erro ao buscar lote ${i}:`, chunkError)
-                continue // Ignora o lote defeituoso e segue para tentar processar os demais
-              }
-
-              if (data) {
-                allData.push(...data)
-              }
-
-              if (!data || data.length < pageSize) {
-                break // Fim dos registros
-              }
+              if (chunkErr) throw chunkErr
+              if (chunk) allData.push(...chunk)
             } catch (chunkException) {
-              console.error(`Exceção ao buscar lote ${i}:`, chunkException)
-              // Continua para o próximo lote
+              console.warn(
+                `Aviso: Lote de IDs falhou. Buscando registros um a um...`,
+                chunkException,
+              )
+              for (const id of chunkIds) {
+                try {
+                  const { data: single, error: singleErr } = await supabase
+                    .from('activities')
+                    .select('*')
+                    .eq('id', id)
+                    .single()
+                  if (!singleErr && single) {
+                    allData.push(single)
+                  }
+                } catch (singleEx) {
+                  console.warn(
+                    `Aviso: Falha irreversível no registro ${id}. Sendo ignorado para manter estabilidade.`,
+                    singleEx,
+                  )
+                }
+              }
             }
           }
           return allData.map(mapFromDB)
         } catch (fallbackError) {
-          console.error('Falha total no fallback de busca em lotes:', fallbackError)
-          throw fallbackError
+          console.warn('Aviso: Falha total na busca de contingência.', fallbackError)
+          return []
         }
       }
     },
