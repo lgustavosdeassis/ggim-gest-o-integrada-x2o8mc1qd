@@ -52,77 +52,55 @@ function mapToDB(item: any) {
   return payload
 }
 
+async function fetchPaginated(table: string, orderColumn: string, stepSize: number = 100) {
+  const allData: any[] = []
+  let from = 0
+  let hasMore = true
+  let retryCount = 0
+
+  while (hasMore) {
+    try {
+      const { data, error } = await supabase
+        .from(table)
+        .select('*')
+        .order(orderColumn, { ascending: false })
+        .range(from, from + stepSize - 1)
+
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        allData.push(...data)
+        from += stepSize
+        if (data.length < stepSize) hasMore = false
+        retryCount = 0
+      } else {
+        hasMore = false
+      }
+    } catch (error) {
+      console.warn(
+        `Aviso: Erro ao buscar lote ${from}-${from + stepSize - 1} em ${table}. Retentando...`,
+        error,
+      )
+      retryCount++
+      if (retryCount > 3) {
+        console.error(
+          `Falha ao buscar ${table} após 3 tentativas. Interrompendo busca para este lote.`,
+        )
+        hasMore = false
+      } else {
+        await new Promise((r) => setTimeout(r, 2000 * retryCount))
+      }
+    }
+  }
+  return allData
+}
+
 export const api = {
   activities: {
     list: async () => {
-      try {
-        const { data, error } = await supabase
-          .from('activities')
-          .select('*')
-          .order('created_at', { ascending: false })
-        if (error) throw error
-        return (data || []).map(mapFromDB)
-      } catch (error: any) {
-        console.warn(
-          'Aviso: Erro na busca completa (payload grande ou erro de rede). Ativando busca fracionada e segura...',
-          error,
-        )
-        try {
-          const allData: any[] = []
-          const { data: idData, error: idError } = await supabase
-            .from('activities')
-            .select('id')
-            .order('created_at', { ascending: false })
-
-          if (idError || !idData) {
-            console.warn('Aviso: Falha ao recuperar os IDs.', idError)
-            return []
-          }
-
-          const ids = idData.map((d: any) => d.id)
-          const chunkSize = 15
-
-          for (let i = 0; i < ids.length; i += chunkSize) {
-            const chunkIds = ids.slice(i, i + chunkSize)
-            try {
-              const { data: chunk, error: chunkErr } = await supabase
-                .from('activities')
-                .select('*')
-                .in('id', chunkIds)
-                .order('created_at', { ascending: false })
-
-              if (chunkErr) throw chunkErr
-              if (chunk) allData.push(...chunk)
-            } catch (chunkException) {
-              console.warn(
-                `Aviso: Lote de IDs falhou. Buscando registros um a um...`,
-                chunkException,
-              )
-              for (const id of chunkIds) {
-                try {
-                  const { data: single, error: singleErr } = await supabase
-                    .from('activities')
-                    .select('*')
-                    .eq('id', id)
-                    .single()
-                  if (!singleErr && single) {
-                    allData.push(single)
-                  }
-                } catch (singleEx) {
-                  console.warn(
-                    `Aviso: Falha irreversível no registro ${id}. Sendo ignorado para manter estabilidade.`,
-                    singleEx,
-                  )
-                }
-              }
-            }
-          }
-          return allData.map(mapFromDB)
-        } catch (fallbackError) {
-          console.warn('Aviso: Falha total na busca de contingência.', fallbackError)
-          return []
-        }
-      }
+      // Chunk de 25 registros para evitar erros de limite de memória no payload devido aos arquivos base64
+      const data = await fetchPaginated('activities', 'created_at', 25)
+      return data.map(mapFromDB)
     },
     create: async (activity: any) => {
       const { data, error } = await supabase
@@ -200,8 +178,7 @@ export const api = {
   },
   video: {
     list: async () => {
-      const { data, error } = await supabase.from('video_records').select('*')
-      if (error) throw error
+      const data = await fetchPaginated('video_records', 'date', 200)
       return data
     },
     save: async (record: any) => {
@@ -236,9 +213,8 @@ export const api = {
   },
   obs: {
     list: async () => {
-      const { data, error } = await supabase.from('obs_records').select('*')
-      if (error) throw error
-      return (data || []).map((r: any) => ({
+      const data = await fetchPaginated('obs_records', 'date', 200)
+      return data.map((r: any) => ({
         id: r.id,
         date: r.date,
         sinistrosVitimas: r.sinistros_vitimas,
@@ -290,12 +266,8 @@ export const api = {
   },
   audit: {
     list: async () => {
-      const { data, error } = await supabase
-        .from('audit_logs')
-        .select('*')
-        .order('timestamp', { ascending: false })
-      if (error) throw error
-      return (data || []).map((l: any) => ({
+      const data = await fetchPaginated('audit_logs', 'timestamp', 500)
+      return data.map((l: any) => ({
         id: l.id,
         userName: l.user_name,
         userEmail: l.user_email,

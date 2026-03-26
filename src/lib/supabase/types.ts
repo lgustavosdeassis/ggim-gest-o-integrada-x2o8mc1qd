@@ -173,8 +173,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          allowed_tabs: Json | null
           avatar_url: string | null
           can_delete_reports: boolean | null
+          can_generate_reports: boolean | null
           created_at: string | null
           email: string
           id: string
@@ -183,8 +185,10 @@ export type Database = {
           role: string
         }
         Insert: {
+          allowed_tabs?: Json | null
           avatar_url?: string | null
           can_delete_reports?: boolean | null
+          can_generate_reports?: boolean | null
           created_at?: string | null
           email: string
           id: string
@@ -193,8 +197,10 @@ export type Database = {
           role?: string
         }
         Update: {
+          allowed_tabs?: Json | null
           avatar_url?: string | null
           can_delete_reports?: boolean | null
+          can_generate_reports?: boolean | null
           created_at?: string | null
           email?: string
           id?: string
@@ -436,6 +442,8 @@ export const Constants = {
 //   avatar_url: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
 //   can_delete_reports: boolean (nullable, default: false)
+//   can_generate_reports: boolean (nullable, default: false)
+//   allowed_tabs: jsonb (nullable, default: '[]'::jsonb)
 // Table: video_records
 //   id: uuid (not null, default: gen_random_uuid())
 //   date: text (not null)

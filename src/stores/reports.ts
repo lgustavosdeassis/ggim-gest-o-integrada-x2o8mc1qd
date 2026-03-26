@@ -27,12 +27,48 @@ export const useReportStore = create<ReportState>()((set, get) => ({
   fetchReports: async () => {
     set({ isFetching: true })
     try {
-      const { data, error } = await supabase
-        .from('ggim_reports')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      set({ reports: data as ReportRecord[], isFetching: false })
+      const allData: ReportRecord[] = []
+      let from = 0
+      const step = 25 // Chunk pequeno para prevenir erros de timeout com arquivos em Base64
+      let hasMore = true
+      let retryCount = 0
+
+      while (hasMore) {
+        try {
+          const { data, error } = await supabase
+            .from('ggim_reports')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .range(from, from + step - 1)
+
+          if (error) throw error
+
+          if (data && data.length > 0) {
+            allData.push(...(data as ReportRecord[]))
+            from += step
+            if (data.length < step) hasMore = false
+            retryCount = 0
+          } else {
+            hasMore = false
+          }
+        } catch (error) {
+          console.warn(`Erro ao buscar ggim_reports lote ${from}. Retentando...`, error)
+          retryCount++
+          if (retryCount > 3) {
+            console.error(`Falha ao buscar relatórios após 3 tentativas. Interrompendo lote.`)
+            hasMore = false
+          } else {
+            await new Promise((r) => setTimeout(r, 2000 * retryCount))
+          }
+        }
+      }
+
+      set((state) => {
+        if (JSON.stringify(state.reports) === JSON.stringify(allData)) {
+          return { isFetching: false }
+        }
+        return { reports: allData, isFetching: false }
+      })
     } catch (e) {
       console.error(e)
       set({ isFetching: false })
