@@ -64,7 +64,14 @@ Deno.serve(async (req: Request) => {
     } else if (action === 'delete') {
       const { id } = payload
       const { error } = await supabase.auth.admin.deleteUser(id)
-      if (error) throw error
+
+      // Ignore error if user is already deleted or not found
+      if (error && !error.message.includes('User not found') && error.status !== 404) {
+        throw error
+      }
+
+      // Ensure profile is deleted even if auth user wasn't found
+      await supabase.from('profiles').delete().eq('id', id)
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
