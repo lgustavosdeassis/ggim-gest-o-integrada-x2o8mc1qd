@@ -27,6 +27,7 @@ interface AuthState {
   updateAvatar: (url: string) => Promise<void>
   updateProfile: (data: Partial<User>) => Promise<void>
   addUser: (user: User) => Promise<void>
+  updateUser: (id: string, data: Partial<User>) => Promise<void>
   removeUser: (id: string) => Promise<void>
 }
 
@@ -144,6 +145,27 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       get().fetchUsers()
     } catch (e: any) {
       toast.error('Erro', { description: e.message || 'Falha ao cadastrar usuário.' })
+      throw e
+    }
+  },
+  updateUser: async (id, data) => {
+    try {
+      const updates: any = {}
+      if (data.name !== undefined) updates.name = data.name
+      if (data.role !== undefined) updates.role = data.role
+      if (data.jobTitle !== undefined) updates.job_title = data.jobTitle
+      if (data.avatarUrl !== undefined) updates.avatar_url = data.avatarUrl
+      if (data.canGenerateReports !== undefined)
+        updates.can_generate_reports = data.canGenerateReports
+      if (data.allowedTabs !== undefined) updates.allowed_tabs = data.allowedTabs
+
+      const { error } = await supabase.from('profiles').update(updates).eq('id', id)
+      if (error) throw error
+
+      toast.success('Sucesso', { description: 'Usuário atualizado com sucesso.' })
+      get().fetchUsers()
+    } catch (e: any) {
+      toast.error('Erro', { description: e.message || 'Falha ao atualizar usuário.' })
       throw e
     }
   },

@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { Navigate } from 'react-router-dom'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore, User } from '@/stores/auth'
 import { useAuditStore } from '@/stores/audit'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -40,7 +40,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Trash2, ShieldAlert, UserPlus, Shield, Upload, User as UserIcon } from 'lucide-react'
+import {
+  Trash2,
+  ShieldAlert,
+  UserPlus,
+  Shield,
+  Upload,
+  User as UserIcon,
+  Pencil,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -59,7 +67,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 const formSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('E-mail inválido'),
-  password: z.string().min(4, 'A senha deve ter pelo menos 4 caracteres'),
+  password: z.string().optional(),
   role: z.enum(['owner', 'editor', 'viewer'], { required_error: 'Selecione um perfil' }),
   avatarUrl: z.string().optional(),
   canGenerateReports: z.boolean().optional(),
@@ -67,10 +75,11 @@ const formSchema = z.object({
 })
 
 export default function Usuarios() {
-  const { user: currentUser, users, addUser, removeUser } = useAuthStore()
+  const { user: currentUser, users, addUser, removeUser, updateUser } = useAuthStore()
   const addLog = useAuditStore((state) => state.addLog)
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -88,29 +97,85 @@ export default function Usuarios() {
 
   if (currentUser?.role !== 'owner') return <Navigate to="/" replace />
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (users.some((u) => u.email === values.email)) {
-      return toast.error('Este e-mail já está em uso por outro usuário.')
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open)
+    if (!open) {
+      setTimeout(() => {
+        setEditingUser(null)
+        form.reset({
+          name: '',
+          email: '',
+          password: '',
+          role: 'viewer',
+          avatarUrl: '',
+          canGenerateReports: false,
+          allowedTabs: [],
+        })
+      }, 200)
     }
+  }
+
+  const handleEditClick = (u: User) => {
+    setEditingUser(u)
+    form.reset({
+      name: u.name,
+      email: u.email,
+      password: '',
+      role: u.role,
+      avatarUrl: u.avatarUrl || '',
+      canGenerateReports: u.canGenerateReports || false,
+      allowedTabs: u.allowedTabs || [],
+    })
+    setIsOpen(true)
+  }
+
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true)
     try {
-      await addUser({
-        id: Math.random().toString(36).substring(2, 9),
-        ...values,
-        jobTitle:
-          values.role === 'owner'
-            ? 'Proprietário'
-            : values.role === 'editor'
-              ? 'Editor'
-              : 'Visualizador',
-      })
-      addLog({
-        userName: currentUser?.name || 'Sistema',
-        userEmail: currentUser?.email || '',
-        action: `Cadastrou o novo usuário: ${values.email} (${values.role})`,
-      })
+      if (editingUser) {
+        await updateUser(editingUser.id, {
+          ...values,
+          jobTitle:
+            values.role === 'owner'
+              ? 'Proprietário'
+              : values.role === 'editor'
+                ? 'Editor'
+                : 'Visualizador',
+        })
+        addLog({
+          userName: currentUser?.name || 'Sistema',
+          userEmail: currentUser?.email || '',
+          action: `Editou as informações do usuário: ${values.email} (${values.role})`,
+        })
+      } else {
+        if (!values.password || values.password.length < 4) {
+          form.setError('password', { message: 'A senha deve ter pelo menos 4 caracteres' })
+          setIsSubmitting(false)
+          return
+        }
+        if (users.some((u) => u.email === values.email)) {
+          toast.error('Este e-mail já está em uso por outro usuário.')
+          setIsSubmitting(false)
+          return
+        }
+        await addUser({
+          id: Math.random().toString(36).substring(2, 9),
+          ...values,
+          password: values.password,
+          jobTitle:
+            values.role === 'owner'
+              ? 'Proprietário'
+              : values.role === 'editor'
+                ? 'Editor'
+                : 'Visualizador',
+        } as User)
+        addLog({
+          userName: currentUser?.name || 'Sistema',
+          userEmail: currentUser?.email || '',
+          action: `Cadastrou o novo usuário: ${values.email} (${values.role})`,
+        })
+      }
       setIsOpen(false)
-      form.reset()
     } catch (e) {
       console.error(e)
     } finally {
@@ -167,13 +232,7 @@ export default function Usuarios() {
           </p>
         </div>
 
-        <Dialog
-          open={isOpen}
-          onOpenChange={(open) => {
-            setIsOpen(open)
-            if (!open) form.reset()
-          }}
-        >
+        <Dialog open={isOpen} onOpenChange={handleOpenChange}>
           <DialogTrigger asChild>
             <Button className="h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground shadow-md">
               <UserPlus className="mr-2 h-5 w-5" /> Novo Usuário
@@ -182,7 +241,7 @@ export default function Usuarios() {
           <DialogContent className="sm:max-w-[425px] border-border bg-card rounded-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-2xl font-black text-foreground">
-                Registrar Acesso
+                {editingUser ? 'Editar Usuário' : 'Registrar Acesso'}
               </DialogTitle>
             </DialogHeader>
             <Form {...form}>
@@ -243,6 +302,7 @@ export default function Usuarios() {
                           type="email"
                           placeholder="joao@ggim.foz.br"
                           className="h-11 rounded-xl"
+                          disabled={!!editingUser}
                           {...field}
                         />
                       </FormControl>
@@ -250,26 +310,30 @@ export default function Usuarios() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                        Senha Provisória
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder="••••••••"
-                          className="h-11 rounded-xl tracking-widest"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
+                {!editingUser && (
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                          Senha Provisória
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="password"
+                            placeholder="••••••••"
+                            className="h-11 rounded-xl tracking-widest"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <FormField
                   control={form.control}
                   name="role"
@@ -278,7 +342,7 @@ export default function Usuarios() {
                       <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
                         Nível de Permissão
                       </FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger className="h-11 rounded-xl">
                             <SelectValue placeholder="Selecione um perfil" />
@@ -367,14 +431,18 @@ export default function Usuarios() {
                   <Button
                     type="button"
                     variant="ghost"
-                    onClick={() => setIsOpen(false)}
+                    onClick={() => handleOpenChange(false)}
                     className="rounded-xl font-bold"
                     disabled={isSubmitting}
                   >
                     Cancelar
                   </Button>
                   <Button type="submit" className="rounded-xl font-bold" disabled={isSubmitting}>
-                    {isSubmitting ? 'Salvando...' : 'Criar Conta'}
+                    {isSubmitting
+                      ? 'Salvando...'
+                      : editingUser
+                        ? 'Salvar Alterações'
+                        : 'Criar Conta'}
                   </Button>
                 </DialogFooter>
               </form>
@@ -447,49 +515,60 @@ export default function Usuarios() {
                   </TableCell>
                   <TableCell className="text-right pr-6 py-4">
                     {!isMe ? (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent className="rounded-2xl">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold">
-                              <ShieldAlert className="h-6 w-6 text-destructive" /> Revogar Acesso
-                            </AlertDialogTitle>
-                            <AlertDialogDescription className="text-base font-medium">
-                              Tem certeza que deseja remover este usuário?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel className="rounded-xl font-bold">
-                              Cancelar
-                            </AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={async () => {
-                                try {
-                                  await removeUser(u.id)
-                                  addLog({
-                                    userName: currentUser?.name || 'Sistema',
-                                    userEmail: currentUser?.email || '',
-                                    action: `Revogou o acesso do usuário: ${u.email}`,
-                                  })
-                                } catch (e) {
-                                  console.error(e)
-                                }
-                              }}
-                              className="rounded-xl font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleEditClick(u)}
+                          className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl"
+                          title="Editar Usuário"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl"
                             >
-                              Remover
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-2xl">
+                            <AlertDialogHeader>
+                              <AlertDialogTitle className="flex items-center gap-2 text-xl font-bold">
+                                <ShieldAlert className="h-6 w-6 text-destructive" /> Revogar Acesso
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="text-base font-medium">
+                                Tem certeza que deseja remover este usuário?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel className="rounded-xl font-bold">
+                                Cancelar
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={async () => {
+                                  try {
+                                    await removeUser(u.id)
+                                    addLog({
+                                      userName: currentUser?.name || 'Sistema',
+                                      userEmail: currentUser?.email || '',
+                                      action: `Revogou o acesso do usuário: ${u.email}`,
+                                    })
+                                  } catch (e) {
+                                    console.error(e)
+                                  }
+                                }}
+                                className="rounded-xl font-bold bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     ) : (
                       <span className="text-xs text-muted-foreground/50 font-medium uppercase tracking-widest pr-2">
                         Protegido
