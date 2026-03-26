@@ -32,7 +32,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
       setSession(session)
-      setUser(session?.user ?? null)
+      // Mantém a mesma referência de objeto se o ID do usuário não mudou, evitando re-renders infinitos
+      setUser((prevUser) =>
+        prevUser?.id === session?.user?.id ? prevUser : (session?.user ?? null),
+      )
       setLoading(false)
     })
 
@@ -44,10 +47,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         if (mounted) {
           setSession(data?.session ?? null)
-          setUser(data?.session?.user ?? null)
+          // Mantém a mesma referência de objeto para evitar loops de efeito
+          setUser((prevUser) =>
+            prevUser?.id === data?.session?.user?.id ? prevUser : (data?.session?.user ?? null),
+          )
         }
       } catch (err) {
-        console.warn('Exceção ao recuperar sessão (possível falha de rede):', err)
+        // Captura falhas de rede severas (ex: CORS, Failed to fetch) de forma silenciosa
+        console.warn('Exceção ao recuperar sessão (possível falha de rede/CORS):', err)
       } finally {
         if (mounted) setLoading(false)
       }

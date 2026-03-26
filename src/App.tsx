@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Layout } from '@/components/Layout'
 import { GlobalDataSync } from '@/components/GlobalDataSync'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -47,93 +47,107 @@ const AppContent = () => {
   const logout = useAuthStore((state) => state.logout)
   const [profileLoading, setProfileLoading] = useState(true)
 
+  // Utiliza useRef para rastrear o ID do usuário e evitar loops de re-renderização
+  // caso eventos do onAuthStateChange sejam disparados repetidamente pela rede
+  const lastFetchedUserId = useRef<string | null>(null)
+
   useEffect(() => {
     if (authLoading) return
 
+    if (!authUser) {
+      if (lastFetchedUserId.current !== null) {
+        logout()
+        lastFetchedUserId.current = null
+      }
+      setProfileLoading(false)
+      return
+    }
+
+    // Se o ID do usuário for o mesmo do último fetch, não fazemos nada para evitar loop
+    if (lastFetchedUserId.current === authUser.id) {
+      return
+    }
+
     let mounted = true
-    if (authUser) {
-      setProfileLoading(true)
-      supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .single()
-        .then(({ data, error }) => {
-          if (!mounted) return
-          if (error && error.code !== 'PGRST116') {
-            console.error('Erro ao buscar perfil:', error)
-          }
+    lastFetchedUserId.current = authUser.id
+    setProfileLoading(true)
 
-          const profile = data as any
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', authUser.id)
+      .single()
+      .then(({ data, error }) => {
+        if (!mounted) return
+        if (error && error.code !== 'PGRST116') {
+          console.error('Erro ao buscar perfil:', error)
+        }
 
-          let parsedTabs: string[] = []
-          try {
-            const rawTabs = profile?.allowed_tabs ?? authUser.user_metadata?.allowed_tabs
-            if (Array.isArray(rawTabs)) {
-              parsedTabs = rawTabs
-            } else if (typeof rawTabs === 'string') {
-              if (rawTabs.startsWith('{') && rawTabs.endsWith('}')) {
-                const inner = rawTabs.slice(1, -1).trim()
-                if (inner) {
-                  parsedTabs = inner.split(',').map((s) => s.trim().replace(/(^"|"$)/g, ''))
-                }
-              } else {
-                try {
-                  parsedTabs = JSON.parse(rawTabs)
-                } catch (e) {
-                  // Ignora parse se não for json
-                }
+        const profile = data as any
+
+        let parsedTabs: string[] = []
+        try {
+          const rawTabs = profile?.allowed_tabs ?? authUser.user_metadata?.allowed_tabs
+          if (Array.isArray(rawTabs)) {
+            parsedTabs = rawTabs
+          } else if (typeof rawTabs === 'string') {
+            if (rawTabs.startsWith('{') && rawTabs.endsWith('}')) {
+              const inner = rawTabs.slice(1, -1).trim()
+              if (inner) {
+                parsedTabs = inner.split(',').map((s) => s.trim().replace(/(^"|"$)/g, ''))
+              }
+            } else {
+              try {
+                parsedTabs = JSON.parse(rawTabs)
+              } catch (e) {
+                // Ignora parse se não for json
               }
             }
-          } catch (e) {
-            console.error('Error parsing allowedTabs', e)
           }
+        } catch (e) {
+          console.error('Error parsing allowedTabs', e)
+        }
 
-          if (profile) {
-            login({
-              id: profile.id,
-              email: profile.email || authUser.email || '',
-              name: profile.name || authUser.user_metadata?.name || 'Usuário',
-              role: profile.role || authUser.user_metadata?.role || 'viewer',
-              jobTitle: profile.job_title || authUser.user_metadata?.job_title,
-              avatarUrl: profile.avatar_url,
-              canGenerateReports:
-                profile.can_generate_reports ??
-                authUser.user_metadata?.can_generate_reports ??
-                false,
-              canDeleteReports:
-                profile.can_delete_reports ?? authUser.user_metadata?.can_delete_reports ?? false,
-              allowedTabs: parsedTabs,
-            })
-          } else {
-            login({
-              id: authUser.id,
-              email: authUser.email || '',
-              name: authUser.user_metadata?.name || 'Usuário',
-              role: authUser.user_metadata?.role || 'viewer',
-              allowedTabs: parsedTabs,
-            })
-          }
-          setProfileLoading(false)
-        })
-        .catch((err) => {
-          console.error('Profile catch block:', err)
-          if (!mounted) return
+        if (profile) {
+          login({
+            id: profile.id,
+            email: profile.email || authUser.email || '',
+            name: profile.name || authUser.user_metadata?.name || 'Usuário',
+            role: profile.role || authUser.user_metadata?.role || 'viewer',
+            jobTitle: profile.job_title || authUser.user_metadata?.job_title,
+            avatarUrl: profile.avatar_url,
+            canGenerateReports:
+              profile.can_generate_reports ?? authUser.user_metadata?.can_generate_reports ?? false,
+            canDeleteReports:
+              profile.can_delete_reports ?? authUser.user_metadata?.can_delete_reports ?? false,
+            allowedTabs: parsedTabs,
+          })
+        } else {
           login({
             id: authUser.id,
             email: authUser.email || '',
             name: authUser.user_metadata?.name || 'Usuário',
             role: authUser.user_metadata?.role || 'viewer',
-            allowedTabs: Array.isArray(authUser.user_metadata?.allowed_tabs)
-              ? authUser.user_metadata.allowed_tabs
-              : [],
+            allowedTabs: parsedTabs,
           })
-          setProfileLoading(false)
+        }
+        setProfileLoading(false)
+      })
+      .catch((err) => {
+        // Fallback seguro em caso de falha de CORS/Rede total
+        console.error('Profile catch block (Falha de rede):', err)
+        if (!mounted) return
+        login({
+          id: authUser.id,
+          email: authUser.email || '',
+          name: authUser.user_metadata?.name || 'Usuário',
+          role: authUser.user_metadata?.role || 'viewer',
+          allowedTabs: Array.isArray(authUser.user_metadata?.allowed_tabs)
+            ? authUser.user_metadata.allowed_tabs
+            : [],
         })
-    } else {
-      logout()
-      setProfileLoading(false)
-    }
+        setProfileLoading(false)
+      })
 
     return () => {
       mounted = false
