@@ -56,26 +56,32 @@ const AppContent = () => {
         .select('*')
         .eq('id', authUser.id)
         .single()
-        .then(({ data: profile }) => {
+        .then(({ data }) => {
           if (!mounted) return
+          const profile = data as any
           if (profile) {
             login({
               id: profile.id,
               email: profile.email,
               name: profile.name,
-              role: profile.role as any,
+              role: profile.role,
               jobTitle: profile.job_title,
               avatarUrl: profile.avatar_url,
-              canGenerateReports: profile.can_generate_reports,
-              canDeleteReports: profile.can_delete_reports,
-              allowedTabs: profile.allowed_tabs === null ? undefined : profile.allowed_tabs,
+              canGenerateReports:
+                profile.can_generate_reports ??
+                authUser.user_metadata?.can_generate_reports ??
+                false,
+              canDeleteReports:
+                profile.can_delete_reports ?? authUser.user_metadata?.can_delete_reports ?? false,
+              allowedTabs: profile.allowed_tabs ?? authUser.user_metadata?.allowed_tabs ?? [],
             })
           } else {
             login({
               id: authUser.id,
               email: authUser.email || '',
-              name: 'Usuário',
-              role: 'viewer' as any,
+              name: authUser.user_metadata?.name || 'Usuário',
+              role: authUser.user_metadata?.role || 'viewer',
+              allowedTabs: authUser.user_metadata?.allowed_tabs ?? [],
             })
           }
           setProfileLoading(false)

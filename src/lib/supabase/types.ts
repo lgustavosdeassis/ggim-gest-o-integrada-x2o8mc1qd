@@ -102,6 +102,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ggim_reports: {
+        Row: {
+          created_at: string | null
+          file_type: string
+          id: string
+          name: string
+          period_month: number | null
+          period_year: number
+          report_type: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          file_type: string
+          id?: string
+          name: string
+          period_month?: number | null
+          period_year: number
+          report_type: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          file_type?: string
+          id?: string
+          name?: string
+          period_month?: number | null
+          period_year?: number
+          report_type?: string
+          url?: string | null
+        }
+        Relationships: []
+      }
       obs_records: {
         Row: {
           autos_infracao: number | null
@@ -141,6 +174,7 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          can_delete_reports: boolean | null
           created_at: string | null
           email: string
           id: string
@@ -150,6 +184,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          can_delete_reports?: boolean | null
           created_at?: string | null
           email: string
           id: string
@@ -159,6 +194,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          can_delete_reports?: boolean | null
           created_at?: string | null
           email?: string
           id?: string
@@ -372,6 +408,15 @@ export const Constants = {
 //   user_email: text (nullable)
 //   action: text (not null)
 //   timestamp: timestamp with time zone (nullable, default: now())
+// Table: ggim_reports
+//   id: uuid (not null, default: gen_random_uuid())
+//   report_type: text (not null)
+//   period_year: integer (not null)
+//   period_month: integer (nullable)
+//   name: text (not null)
+//   file_type: text (not null)
+//   url: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
 // Table: obs_records
 //   id: uuid (not null, default: gen_random_uuid())
 //   date: text (not null)
@@ -390,6 +435,7 @@ export const Constants = {
 //   job_title: text (nullable)
 //   avatar_url: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
+//   can_delete_reports: boolean (nullable, default: false)
 // Table: video_records
 //   id: uuid (not null, default: gen_random_uuid())
 //   date: text (not null)
@@ -404,6 +450,8 @@ export const Constants = {
 //   PRIMARY KEY activities_pkey: PRIMARY KEY (id)
 // Table: audit_logs
 //   PRIMARY KEY audit_logs_pkey: PRIMARY KEY (id)
+// Table: ggim_reports
+//   PRIMARY KEY ggim_reports_pkey: PRIMARY KEY (id)
 // Table: obs_records
 //   PRIMARY KEY obs_records_pkey: PRIMARY KEY (id)
 // Table: profiles
@@ -418,6 +466,9 @@ export const Constants = {
 //     USING: true
 // Table: audit_logs
 //   Policy "allow_all_audit" (ALL, PERMISSIVE) roles={public}
+//     USING: true
+// Table: ggim_reports
+//   Policy "allow_all_reports" (ALL, PERMISSIVE) roles={public}
 //     USING: true
 // Table: obs_records
 //   Policy "allow_all_obs" (ALL, PERMISSIVE) roles={public}
