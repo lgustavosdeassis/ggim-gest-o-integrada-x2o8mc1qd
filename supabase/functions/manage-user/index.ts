@@ -15,8 +15,6 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) throw new Error('Missing Authorization header')
 
-    const token = authHeader.replace('Bearer ', '')
-
     // Utilize o client anônimo configurando o header global de Authorization
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -27,10 +25,12 @@ Deno.serve(async (req: Request) => {
       },
     })
 
+    // Em Edge Functions, quando o header Authorization é passado globalmente,
+    // recomenda-se chamar getUser() sem argumentos para validar a sessão corretamente.
     const {
       data: { user },
       error: authError,
-    } = await supabaseClient.auth.getUser(token)
+    } = await supabaseClient.auth.getUser()
 
     if (authError || !user) {
       throw new Error(`Unauthorized: ${authError?.message || 'No user found'}`)
@@ -86,6 +86,15 @@ Deno.serve(async (req: Request) => {
       })
     } else if (action === 'delete') {
       const { id } = payload
+
+      if (!id) {
+        throw new Error('Missing user id')
+      }
+
+      if (id === user.id) {
+        throw new Error('Forbidden: Cannot delete your own user account')
+      }
+
       const { error } = await supabaseAdmin.auth.admin.deleteUser(id)
 
       // Ignore error if user is already deleted or not found
