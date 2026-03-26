@@ -15,6 +15,8 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) throw new Error('Missing Authorization header')
 
+    const token = authHeader.replace('Bearer ', '')
+
     // Utilize o client anônimo configurando o header global de Authorization
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
@@ -25,12 +27,12 @@ Deno.serve(async (req: Request) => {
       },
     })
 
-    // Em Edge Functions, quando o header Authorization é passado globalmente,
-    // recomenda-se chamar getUser() sem argumentos para validar a sessão corretamente.
+    // Em Edge Functions, quando o client tem persistSession: false,
+    // deve-se passar o token explicitamente para getUser
     const {
       data: { user },
       error: authError,
-    } = await supabaseClient.auth.getUser()
+    } = await supabaseClient.auth.getUser(token)
 
     if (authError || !user) {
       throw new Error(`Unauthorized: ${authError?.message || 'No user found'}`)
