@@ -33,13 +33,18 @@ Deno.serve(async (req) => {
       throw new Error('Invalid token')
     }
 
-    const { data: profile } = await supabaseAdmin
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('is_admin')
+      .select('is_admin, role')
       .eq('id', user.id)
       .single()
 
-    if (!profile?.is_admin) {
+    if (profileError) {
+      console.error('Error fetching profile:', profileError)
+    }
+
+    // Allow access if user is marked as admin either by boolean flag or by role string
+    if (!profile?.is_admin && profile?.role !== 'admin') {
       throw new Error('Unauthorized')
     }
 
