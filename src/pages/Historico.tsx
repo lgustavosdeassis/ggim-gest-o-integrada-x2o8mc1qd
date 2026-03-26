@@ -33,7 +33,12 @@ import { ViewDialog } from '@/components/historico/ViewDialog'
 export default function Historico() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const isViewer = user?.role === 'viewer'
+  const isViewer =
+    user?.role === 'viewer' ||
+    (user?.role === 'editor' &&
+      Array.isArray(user?.allowedTabs) &&
+      !user.allowedTabs.includes('Acervo Histórico'))
+
   const { activities, deleteActivity, bulkDeleteActivities } = useAppStore()
   const addLog = useAuditStore((state) => state.addLog)
 

@@ -17,7 +17,12 @@ export default function Importar() {
 
   const { importActivities } = useAppStore()
   const { user } = useAuthStore()
-  const isViewer = user?.role === 'viewer'
+  const isViewer =
+    user?.role === 'viewer' ||
+    (user?.role === 'editor' &&
+      Array.isArray(user?.allowedTabs) &&
+      !user.allowedTabs.includes('Importar Arquivo'))
+
   const addLog = useAuditStore((state) => state.addLog)
 
   const handleFile = (file: File) => {
@@ -94,10 +99,7 @@ export default function Importar() {
           <Lock className="w-16 h-16 text-muted-foreground/30 mx-auto mb-6" />
           <h3 className="text-2xl font-black text-foreground mb-3">Acesso Restrito</h3>
           <p className="text-muted-foreground font-medium text-base max-w-md mx-auto">
-            Apenas usuários com a permissão de{' '}
-            <span className="text-primary font-bold">Proprietário</span> ou{' '}
-            <span className="text-primary font-bold">Editor</span> podem realizar importações de
-            planilhas.
+            Acesso restrito. Você não possui permissão para realizar importações de planilhas.
           </p>
         </Card>
       </div>
