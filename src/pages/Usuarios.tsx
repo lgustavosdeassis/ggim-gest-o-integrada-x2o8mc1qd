@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase/client'
-import { Profile } from '@/lib/types'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -16,10 +15,11 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  DialogTrigger,
 } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -27,436 +27,295 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useToast } from '@/hooks/use-toast'
-import { Plus, Edit, Trash2, Search, Loader2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { toast } from 'sonner'
+import { Loader2, Plus, Edit, Trash2 } from 'lucide-react'
+
+type User = {
+  id: string
+  email: string
+  name: string
+  role: string
+  status: string
+  job_title: string
+  is_admin: boolean
+  can_generate_reports: boolean
+  allowed_tabs: string[]
+}
 
 export default function Usuarios() {
-  const [users, setUsers] = useState<Profile[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [selectedUser, setSelectedUser] = useState<Profile | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
+  const [isOpen, setIsOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [saving, setSaving] = useState(false)
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Partial<User> & { password?: string }>({
     name: '',
     email: '',
-    password: '',
     role: 'user',
-    is_admin: false,
     status: 'active',
     job_title: '',
+    is_admin: false,
     can_generate_reports: false,
+    allowed_tabs: [],
   })
 
-  useEffect(() => {
-    fetchUsers()
-  }, [])
-
   const fetchUsers = async () => {
-    setLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false })
+      setLoading(true)
+      const { data, error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'list' },
+      })
 
       if (error) throw error
-      setUsers(data || [])
+      if (data?.users) {
+        setUsers(data.users)
+      }
     } catch (error: any) {
-      toast({
-        title: 'Erro ao carregar usuários',
-        description: error.message,
-        variant: 'destructive',
-      })
+      toast.error('Erro ao buscar usuários: ' + error.message)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleOpenDialog = (user?: Profile) => {
-    if (user) {
-      setSelectedUser(user)
-      setFormData({
-        name: user.name || '',
-        email: user.email,
-        password: '',
-        role: user.role || 'user',
-        is_admin: user.is_admin || false,
-        status: user.status || 'active',
-        job_title: user.job_title || '',
-        can_generate_reports: user.can_generate_reports || false,
-      })
-    } else {
-      setSelectedUser(null)
-      setFormData({
-        name: '',
-        email: '',
-        password: '',
-        role: 'user',
-        is_admin: false,
-        status: 'active',
-        job_title: '',
-        can_generate_reports: false,
-      })
-    }
-    setIsDialogOpen(true)
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const handleOpenCreate = () => {
+    setFormData({
+      name: '',
+      email: '',
+      role: 'user',
+      status: 'active',
+      job_title: '',
+      is_admin: false,
+      can_generate_reports: false,
+      allowed_tabs: [],
+    })
+    setIsEditing(false)
+    setIsOpen(true)
   }
 
-  const handleSave = async () => {
-    if (!formData.email || !formData.name || (!selectedUser && !formData.password)) {
-      toast({
-        title: 'Campos obrigatórios',
-        description: 'Preencha todos os campos obrigatórios.',
-        variant: 'destructive',
-      })
-      return
-    }
+  const handleOpenEdit = (user: User) => {
+    setFormData({
+      ...user,
+      password: '',
+    })
+    setIsEditing(true)
+    setIsOpen(true)
+  }
 
-    setIsSubmitting(true)
+  const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este usuário?')) return
+
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData.session?.access_token
-      const functionUrl = import.meta.env.VITE_SUPABASE_URL
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-user`
-        : 'https://qjpmnqwzgzbknnouyeya.supabase.co/functions/v1/manage-user'
-
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          action: selectedUser ? 'update' : 'create',
-          userData: {
-            id: selectedUser?.id,
-            ...formData,
-          },
-        }),
+      const { error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'delete', userData: { id } },
       })
-
-      const result = await response.json()
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao salvar usuário')
-      }
-
-      toast({
-        title: 'Sucesso',
-        description: selectedUser
-          ? 'Usuário atualizado com sucesso.'
-          : 'Usuário criado com sucesso.',
-      })
-
-      setIsDialogOpen(false)
+      if (error) throw error
+      toast.success('Usuário excluído com sucesso!')
       fetchUsers()
     } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: error.message,
-        variant: 'destructive',
-      })
-    } finally {
-      setIsSubmitting(false)
+      toast.error('Erro ao excluir: ' + error.message)
     }
   }
 
-  const handleDelete = async () => {
-    if (!selectedUser) return
-
-    setIsSubmitting(true)
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData.session?.access_token
-      const functionUrl = import.meta.env.VITE_SUPABASE_URL
-        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/manage-user`
-        : 'https://qjpmnqwzgzbknnouyeya.supabase.co/functions/v1/manage-user'
+      const action = isEditing ? 'update' : 'create'
+      const payload = { action, userData: formData }
 
-      const response = await fetch(functionUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          action: 'delete',
-          userData: { id: selectedUser.id },
-        }),
+      const { error } = await supabase.functions.invoke('manage-user', {
+        body: payload,
       })
 
-      const result = await response.json()
+      if (error) throw error
 
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro ao excluir usuário')
-      }
-
-      toast({
-        title: 'Sucesso',
-        description: 'Usuário excluído com sucesso.',
-      })
-
-      setIsDeleteDialogOpen(false)
+      toast.success(`Usuário ${isEditing ? 'atualizado' : 'criado'} com sucesso!`)
+      setIsOpen(false)
       fetchUsers()
     } catch (error: any) {
-      toast({
-        title: 'Erro',
-        description: error.message,
-        variant: 'destructive',
-      })
+      toast.error(`Erro ao ${isEditing ? 'atualizar' : 'criar'}: ` + error.message)
     } finally {
-      setIsSubmitting(false)
+      setSaving(false)
     }
   }
-
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
 
   return (
-    <div className="p-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
+    <div className="p-6 max-w-6xl mx-auto space-y-6 animate-fade-in-up">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Usuários</h1>
-          <p className="text-muted-foreground">Gerencie o acesso ao sistema</p>
+          <p className="text-muted-foreground">Gerencie o acesso ao sistema GGIM.</p>
         </div>
-        <Button onClick={() => handleOpenDialog()}>
-          <Plus className="mr-2 h-4 w-4" /> Novo Usuário
-        </Button>
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={handleOpenCreate}>
+              <Plus className="mr-2 h-4 w-4" /> Novo Usuário
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>{isEditing ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Nome</Label>
+                <Input
+                  required
+                  value={formData.name || ''}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>E-mail</Label>
+                <Input
+                  required
+                  type="email"
+                  value={formData.email || ''}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{isEditing ? 'Nova Senha (deixe em branco para manter)' : 'Senha'}</Label>
+                <Input
+                  type="password"
+                  required={!isEditing}
+                  value={formData.password || ''}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Função</Label>
+                  <Select
+                    value={formData.role || 'user'}
+                    onValueChange={(val) =>
+                      setFormData({ ...formData, role: val, is_admin: val === 'admin' })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="user">Usuário</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Status</Label>
+                  <Select
+                    value={formData.status || 'active'}
+                    onValueChange={(val) => setFormData({ ...formData, status: val })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="active">Ativo</SelectItem>
+                      <SelectItem value="inactive">Inativo</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Cargo / Título (Opcional)</Label>
+                <Input
+                  value={formData.job_title || ''}
+                  onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center space-x-2 pt-2 border-t">
+                <Switch
+                  id="reports"
+                  checked={formData.can_generate_reports || false}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, can_generate_reports: checked })
+                  }
+                />
+                <Label htmlFor="reports">Pode gerar relatórios gerenciais</Label>
+              </div>
+              <Button type="submit" className="w-full mt-4" disabled={saving}>
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {isEditing ? 'Salvar Alterações' : 'Criar Usuário'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center space-x-2">
-            <Search className="h-5 w-5 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome ou e-mail..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="max-w-md"
-            />
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>E-mail</TableHead>
-                    <TableHead>Nível</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
-                        Nenhum usuário encontrado.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell className="font-medium">{user.name}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          {user.is_admin ? (
-                            <Badge variant="default">Administrador</Badge>
-                          ) : (
-                            <Badge variant="secondary">Usuário</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {user.status === 'active' ? (
-                            <Badge
-                              variant="outline"
-                              className="text-green-600 bg-green-50 border-green-200"
-                            >
-                              Ativo
-                            </Badge>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className="text-red-600 bg-red-50 border-red-200"
-                            >
-                              Inativo
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenDialog(user)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-destructive hover:text-destructive"
-                            onClick={() => {
-                              setSelectedUser(user)
-                              setIsDeleteDialogOpen(true)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>{selectedUser ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Nome completo</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="João da Silva"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="joao@exemplo.com"
-                disabled={!!selectedUser}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">
-                {selectedUser ? 'Nova Senha (deixe em branco para manter)' : 'Senha'}
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="job_title">Cargo / Função</Label>
-              <Input
-                id="job_title"
-                value={formData.job_title}
-                onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-                placeholder="Ex: Analista de Segurança"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) => setFormData({ ...formData, status: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="active">Ativo</SelectItem>
-                    <SelectItem value="inactive">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-3 mt-1">
-                <Label>Permissões</Label>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="is_admin"
-                    checked={formData.is_admin}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_admin: checked })}
-                  />
-                  <Label htmlFor="is_admin" className="cursor-pointer font-normal">
-                    Administrador
-                  </Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Switch
-                    id="can_generate_reports"
-                    checked={formData.can_generate_reports}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, can_generate_reports: checked })
-                    }
-                  />
-                  <Label htmlFor="can_generate_reports" className="cursor-pointer font-normal">
-                    Pode gerar relatórios
-                  </Label>
-                </div>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDialogOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </Button>
-            <Button onClick={handleSave} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Salvar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[400px]">
-          <DialogHeader>
-            <DialogTitle>Excluir Usuário</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p>
-              Tem certeza que deseja excluir o usuário <strong>{selectedUser?.name}</strong>?
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">Esta ação não pode ser desfeita.</p>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Excluir
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <div className="border rounded-md bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>E-mail</TableHead>
+              <TableHead>Função</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-32 text-center">
+                  <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+                </TableCell>
+              </TableRow>
+            ) : users.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                  Nenhum usuário encontrado.
+                </TableCell>
+              </TableRow>
+            ) : (
+              users.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">
+                    {user.name}
+                    {user.job_title && (
+                      <div className="text-xs text-muted-foreground">{user.job_title}</div>
+                    )}
+                  </TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={user.is_admin || user.role === 'admin' ? 'default' : 'secondary'}
+                    >
+                      {user.role === 'admin' || user.is_admin ? 'Admin' : 'Usuário'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={user.status === 'active' ? 'outline' : 'destructive'}
+                      className="capitalize"
+                    >
+                      {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(user)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(user.id)}
+                      className="text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }

@@ -43,9 +43,12 @@ Deno.serve(async (req) => {
       console.error('Error fetching profile:', profileError)
     }
 
-    // Allow access if user is marked as admin either by boolean flag or by role string
+    // Allow access if user is marked as admin either by boolean flag in metadata or by role string
     const isAdmin =
-      profile?.is_admin === true || profile?.role === 'admin' || profile?.role === 'owner'
+      profile?.role === 'admin' ||
+      profile?.role === 'owner' ||
+      user.user_metadata?.is_admin === true ||
+      user.user_metadata?.role === 'admin'
 
     if (!isAdmin) {
       throw new Error('Unauthorized')
@@ -54,27 +57,59 @@ Deno.serve(async (req) => {
     const body = await req.json()
     const { action, userData } = body
 
+    if (action === 'list') {
+      const { data: authData, error: listError } = await supabaseAdmin.auth.admin.listUsers()
+      if (listError) throw listError
+
+      const { data: profilesData } = await supabaseAdmin.from('profiles').select('*')
+      const profiles = profilesData || []
+
+      const users = authData.users.map((u) => {
+        const p = profiles.find((prof) => prof.id === u.id)
+        return {
+          id: u.id,
+          email: u.email,
+          name: u.user_metadata?.name || p?.name || '',
+          role: u.user_metadata?.role || p?.role || 'user',
+          status: u.user_metadata?.status || p?.status || 'active',
+          job_title: u.user_metadata?.job_title || p?.job_title || '',
+          is_admin: u.user_metadata?.is_admin || p?.role === 'admin' || false,
+          can_generate_reports: u.user_metadata?.can_generate_reports || false,
+          allowed_tabs: u.user_metadata?.allowed_tabs || [],
+        }
+      })
+
+      return new Response(JSON.stringify({ users }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      })
+    }
+
     if (action === 'create') {
+      const userMeta = {
+        name: userData.name,
+        role: userData.role || 'user',
+        status: userData.status || 'active',
+        job_title: userData.job_title || '',
+        is_admin: userData.is_admin || userData.role === 'admin',
+        can_generate_reports: userData.can_generate_reports || false,
+        allowed_tabs: userData.allowed_tabs || [],
+      }
+
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email: userData.email,
         password: userData.password,
         email_confirm: true,
-        user_metadata: { name: userData.name },
+        user_metadata: userMeta,
       })
 
       if (createError) throw createError
 
+      // Update basic fields in profile (ignore custom columns as they might not exist in db schema)
       const profileData: any = {
         name: userData.name,
         role: userData.role || 'user',
-        status: userData.status || 'active',
-        job_title: userData.job_title || null,
       }
-
-      if (userData.is_admin !== undefined) profileData.is_admin = userData.is_admin
-      if (userData.can_generate_reports !== undefined)
-        profileData.can_generate_reports = userData.can_generate_reports
-      if (userData.allowed_tabs !== undefined) profileData.allowed_tabs = userData.allowed_tabs
 
       await supabaseAdmin.from('profiles').update(profileData).eq('id', newUser.user.id)
 
@@ -98,36 +133,43 @@ Deno.serve(async (req) => {
         allowed_tabs,
       } = userData
 
-      const updateData: any = {}
+      const { data: currentUser, error: getUserError } =
+        await supabaseAdmin.auth.admin.getUserById(id)
+      if (getUserError) throw getUserError
+
+      const currentMeta = currentUser.user.user_metadata || {}
+
+      const newMeta = {
+        ...currentMeta,
+        name: name !== undefined ? name : currentMeta.name,
+        role: role !== undefined ? role : currentMeta.role,
+        status: status !== undefined ? status : currentMeta.status,
+        job_title: job_title !== undefined ? job_title : currentMeta.job_title,
+        is_admin: is_admin !== undefined ? is_admin : currentMeta.is_admin,
+        can_generate_reports:
+          can_generate_reports !== undefined
+            ? can_generate_reports
+            : currentMeta.can_generate_reports,
+        allowed_tabs: allowed_tabs !== undefined ? allowed_tabs : currentMeta.allowed_tabs,
+      }
+
+      const updateData: any = { user_metadata: newMeta }
       if (email) updateData.email = email
       if (password) updateData.password = password
 
-      if (Object.keys(updateData).length > 0) {
-        const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(
-          id,
-          updateData,
-        )
-        if (updateAuthError) throw updateAuthError
+      const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(
+        id,
+        updateData,
+      )
+      if (updateAuthError) throw updateAuthError
+
+      const profileData: any = {}
+      if (name !== undefined) profileData.name = name
+      if (role !== undefined) profileData.role = role
+
+      if (Object.keys(profileData).length > 0) {
+        await supabaseAdmin.from('profiles').update(profileData).eq('id', id)
       }
-
-      const profileData: any = {
-        name,
-        role,
-        status,
-        job_title: job_title || null,
-      }
-
-      if (is_admin !== undefined) profileData.is_admin = is_admin
-      if (can_generate_reports !== undefined)
-        profileData.can_generate_reports = can_generate_reports
-      if (allowed_tabs !== undefined) profileData.allowed_tabs = allowed_tabs
-
-      const { error: updateProfileError } = await supabaseAdmin
-        .from('profiles')
-        .update(profileData)
-        .eq('id', id)
-
-      if (updateProfileError) throw updateProfileError
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
