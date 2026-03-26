@@ -25,7 +25,12 @@ export const useAuditStore = create<AuditState>()((set, get) => ({
     set({ isFetching: true })
     try {
       const data = await api.audit.list()
-      set({ logs: data as AuditLog[], isFetching: false })
+      set((state) => {
+        if (JSON.stringify(state.logs) === JSON.stringify(data)) {
+          return { isFetching: false }
+        }
+        return { logs: data as AuditLog[], isFetching: false }
+      })
     } catch (e) {
       set({ logs: [], isFetching: false })
     }
@@ -44,6 +49,7 @@ export const useAuditStore = create<AuditState>()((set, get) => ({
       toast.success('Sucesso', { description: 'Histórico de auditoria limpo.' })
     } catch (e) {
       toast.error('Erro', { description: 'Falha ao limpar histórico de auditoria.' })
+      throw e
     } finally {
       get().fetchLogs()
     }

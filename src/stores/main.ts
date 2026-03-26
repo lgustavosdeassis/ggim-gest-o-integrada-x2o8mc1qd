@@ -21,7 +21,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set({ isFetching: true })
     try {
       const data = await api.activities.list()
-      set({ activities: data as ActivityRecord[], isFetching: false })
+      set((state) => {
+        // Prevent unnecessary re-renders and form resets during background polling
+        const isSame = JSON.stringify(state.activities) === JSON.stringify(data)
+        if (isSame) {
+          return { isFetching: false }
+        }
+        return { activities: data as ActivityRecord[], isFetching: false }
+      })
     } catch (e) {
       console.error(e)
       set({ isFetching: false })
@@ -35,6 +42,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     } catch (e: any) {
       console.error(e)
       toast.error('Erro', { description: 'Falha ao salvar atividade na nuvem.' })
+      throw e
     }
   },
   updateActivity: async (id, updated) => {
@@ -47,6 +55,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     } catch (e: any) {
       console.error(e)
       toast.error('Erro', { description: 'Falha ao atualizar atividade na nuvem.' })
+      throw e
     }
   },
   deleteActivity: async (id) => {
@@ -59,6 +68,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     } catch (e: any) {
       console.error(e)
       toast.error('Erro', { description: 'Falha ao excluir a atividade.' })
+      throw e
     }
   },
   bulkDeleteActivities: async (ids) => {
@@ -71,6 +81,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     } catch (e: any) {
       console.error(e)
       toast.error('Erro', { description: 'Falha na exclusão em lote.' })
+      throw e
     }
   },
   importActivities: async (newActivities) => {
@@ -83,6 +94,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     } catch (e: any) {
       console.error(e)
       toast.error('Erro', { description: 'Falha ao importar atividades.' })
+      throw e
     }
   },
 }))

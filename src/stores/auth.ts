@@ -39,9 +39,15 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     try {
       const data = await api.users.list()
       set((state) => {
+        const isSameUsers = JSON.stringify(state.users) === JSON.stringify(data)
         const updatedCurrentUser = state.user
           ? data.find((u: any) => u.id === state.user!.id) || state.user
           : null
+
+        if (isSameUsers && JSON.stringify(state.user) === JSON.stringify(updatedCurrentUser)) {
+          return { isFetching: false }
+        }
+
         return { users: data as User[], user: updatedCurrentUser as User, isFetching: false }
       })
     } catch (e) {
@@ -62,6 +68,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       toast.success('Sucesso', { description: 'Avatar atualizado com sucesso.' })
     } catch (e) {
       toast.error('Erro', { description: 'Erro ao salvar avatar.' })
+      throw e
     }
   },
   updateProfile: async (data) => {
@@ -73,6 +80,7 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
       toast.success('Sucesso', { description: 'Perfil atualizado.' })
     } catch (e) {
       toast.error('Erro', { description: 'Erro ao atualizar perfil.' })
+      throw e
     }
   },
   addUser: async (newUser) => {

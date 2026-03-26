@@ -28,47 +28,28 @@ function mapFromDB(item: any): ActivityRecord {
 }
 
 function mapToDB(item: any) {
-  const {
-    id,
-    eventName,
-    instance,
-    eventType,
-    modality,
-    location,
-    meetingStart,
-    meetingEnd,
-    hasAdditionalDays,
-    additionalDays,
-    hasAction,
-    actionStart,
-    actionEnd,
-    actions,
-    participantsPF,
-    participantsPJ,
-    documents,
-    deliberations,
-    description,
-  } = item
-  return {
-    event_name: eventName || null,
-    instance,
-    event_type: eventType,
-    modality,
-    location,
-    meeting_start: meetingStart,
-    meeting_end: meetingEnd,
-    has_additional_days: hasAdditionalDays || false,
-    additional_days: additionalDays || [],
-    has_action: hasAction || false,
-    action_start: actionStart || null,
-    action_end: actionEnd || null,
-    actions: actions || [],
-    participants_pf: participantsPF || '',
-    participants_pj: participantsPJ || '',
-    documents: documents || [],
-    deliberations: deliberations || '',
-    description: description || '',
-  }
+  const payload: any = {}
+
+  if (item.eventName !== undefined) payload.event_name = item.eventName || null
+  if (item.instance !== undefined) payload.instance = item.instance
+  if (item.eventType !== undefined) payload.event_type = item.eventType
+  if (item.modality !== undefined) payload.modality = item.modality
+  if (item.location !== undefined) payload.location = item.location
+  if (item.meetingStart !== undefined) payload.meeting_start = item.meetingStart
+  if (item.meetingEnd !== undefined) payload.meeting_end = item.meetingEnd
+  if (item.hasAdditionalDays !== undefined) payload.has_additional_days = item.hasAdditionalDays
+  if (item.additionalDays !== undefined) payload.additional_days = item.additionalDays
+  if (item.hasAction !== undefined) payload.has_action = item.hasAction
+  if (item.actionStart !== undefined) payload.action_start = item.actionStart || null
+  if (item.actionEnd !== undefined) payload.action_end = item.actionEnd || null
+  if (item.actions !== undefined) payload.actions = item.actions
+  if (item.participantsPF !== undefined) payload.participants_pf = item.participantsPF || ''
+  if (item.participantsPJ !== undefined) payload.participants_pj = item.participantsPJ || ''
+  if (item.documents !== undefined) payload.documents = item.documents
+  if (item.deliberations !== undefined) payload.deliberations = item.deliberations || ''
+  if (item.description !== undefined) payload.description = item.description || ''
+
+  return payload
 }
 
 export const api = {
