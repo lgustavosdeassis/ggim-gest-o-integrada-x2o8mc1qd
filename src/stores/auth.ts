@@ -76,7 +76,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           } else {
             try {
               parsedTabs = JSON.parse(rawTabs)
-            } catch (e) {}
+            } catch (e) {
+              // Ignore parse error if not valid JSON
+            }
           }
         }
       } catch (e) {
