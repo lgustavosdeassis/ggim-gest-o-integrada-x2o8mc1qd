@@ -12,9 +12,11 @@ import {
 export function DocumentList({
   documents,
   activity,
+  hideExport,
 }: {
   documents?: ActivityDocument[]
   activity: ActivityRecord
+  hideExport?: boolean
 }) {
   if (!documents || documents.length === 0) {
     return (
@@ -77,24 +79,28 @@ export function DocumentList({
                 >
                   <Eye className="w-4 h-4 text-muted-foreground" /> Visualizar
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer font-medium flex items-center gap-2 py-2"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    downloadDocument(doc, activity)
-                  }}
-                >
-                  <Download className="w-4 h-4 text-muted-foreground" /> Baixar
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="cursor-pointer font-medium flex items-center gap-2 py-2"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    printDocument(doc, activity)
-                  }}
-                >
-                  <Printer className="w-4 h-4 text-muted-foreground" /> Imprimir
-                </DropdownMenuItem>
+                {!hideExport && (
+                  <>
+                    <DropdownMenuItem
+                      className="cursor-pointer font-medium flex items-center gap-2 py-2"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        downloadDocument(doc, activity)
+                      }}
+                    >
+                      <Download className="w-4 h-4 text-muted-foreground" /> Baixar
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer font-medium flex items-center gap-2 py-2"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        printDocument(doc, activity)
+                      }}
+                    >
+                      <Printer className="w-4 h-4 text-muted-foreground" /> Imprimir
+                    </DropdownMenuItem>
+                  </>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

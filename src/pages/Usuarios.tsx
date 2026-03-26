@@ -40,6 +40,7 @@ type User = {
   job_title: string
   is_admin: boolean
   can_generate_reports: boolean
+  can_delete_reports: boolean
   allowed_tabs: string[]
 }
 
@@ -50,6 +51,7 @@ const TABS_AVAILABLE = [
   'Acervo Histórico',
   'Videomonitoramento',
   'Observatório',
+  'Relatórios GGIM',
 ]
 
 export default function Usuarios() {
@@ -67,6 +69,7 @@ export default function Usuarios() {
     job_title: 'Visualizador',
     is_admin: false,
     can_generate_reports: false,
+    can_delete_reports: false,
     allowed_tabs: [],
   })
 
@@ -101,6 +104,7 @@ export default function Usuarios() {
       job_title: 'Visualizador',
       is_admin: false,
       can_generate_reports: false,
+      can_delete_reports: false,
       allowed_tabs: [],
     })
     setIsEditing(false)
@@ -167,7 +171,7 @@ export default function Usuarios() {
               <Plus className="mr-2 h-4 w-4" /> Novo Usuário
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px]">
+          <DialogContent className="sm:max-w-[550px] max-h-screen overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{isEditing ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
             </DialogHeader>
@@ -275,15 +279,27 @@ export default function Usuarios() {
                 </div>
               )}
 
-              <div className="flex items-center space-x-2 pt-2 border-t mt-4">
-                <Switch
-                  id="reports"
-                  checked={formData.can_generate_reports || false}
-                  onCheckedChange={(checked) =>
-                    setFormData({ ...formData, can_generate_reports: checked })
-                  }
-                />
-                <Label htmlFor="reports">Pode gerar relatórios gerenciais</Label>
+              <div className="flex flex-col gap-3 pt-2 border-t mt-4">
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="reports"
+                    checked={formData.can_generate_reports || false}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, can_generate_reports: checked })
+                    }
+                  />
+                  <Label htmlFor="reports">Pode gerar relatórios gerenciais</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="deleteReports"
+                    checked={formData.can_delete_reports || false}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, can_delete_reports: checked })
+                    }
+                  />
+                  <Label htmlFor="deleteReports">Pode excluir relatórios anexados</Label>
+                </div>
               </div>
 
               <Button type="submit" className="w-full mt-4" disabled={saving}>

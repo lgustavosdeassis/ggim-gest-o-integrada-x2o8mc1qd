@@ -18,6 +18,7 @@ import {
   Users,
   ShieldAlert,
   UploadCloud,
+  FolderKanban,
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth'
 import { cn } from '@/lib/utils'
@@ -35,6 +36,7 @@ export function AppSidebar() {
     { title: 'Acervo Histórico', path: '/historico', icon: History },
     { title: 'Videomonitoramento', path: '/videomonitoramento', icon: MonitorPlay },
     { title: 'Observatório', path: '/observatorio', icon: BarChart3 },
+    { title: 'Relatórios GGIM', path: '/relatorios', icon: FolderKanban },
   ]
 
   const adminItems = [

@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useVideoStore } from '@/stores/video'
 import { useObsStore } from '@/stores/obs'
 import { useAuditStore } from '@/stores/audit'
+import { useReportStore } from '@/stores/reports'
 import { Loader2 } from 'lucide-react'
 
 export function GlobalDataSync({ children }: { children: React.ReactNode }) {
@@ -19,10 +20,10 @@ export function GlobalDataSync({ children }: { children: React.ReactNode }) {
       try {
         await Promise.allSettled([
           useAppStore.getState().fetchActivities(),
-          useAuthStore.getState().fetchUsers(),
           useVideoStore.getState().fetchRecords(),
           useObsStore.getState().fetchRecords(),
           useAuditStore.getState().fetchLogs(),
+          useReportStore.getState().fetchReports(),
         ])
       } catch (err) {
         console.warn('Sync issues', err)
@@ -33,16 +34,10 @@ export function GlobalDataSync({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Initial Load ensures everything is fetched correctly before interaction
     fetchAll()
-
-    // Real-time synchronization polling (10s)
     const interval = setInterval(fetchAll, 10000)
 
-    // Listener for cross-tab or cross-session rapid updates
     window.addEventListener('db_updated', fetchAll)
-
-    // Trigger recovery automatically when network is back
     window.addEventListener('online', fetchAll)
 
     return () => {

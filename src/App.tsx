@@ -9,6 +9,7 @@ import Importar from '@/pages/Importar'
 import Historico from '@/pages/Historico'
 import Videomonitoramento from '@/pages/Videomonitoramento'
 import Observatorio from '@/pages/Observatorio'
+import Relatorios from '@/pages/Relatorios'
 import NotFound from '@/pages/NotFound'
 import Profile from '@/pages/Profile'
 import Login from '@/pages/Login'
@@ -66,6 +67,7 @@ const AppContent = () => {
               jobTitle: profile.job_title,
               avatarUrl: profile.avatar_url,
               canGenerateReports: profile.can_generate_reports,
+              canDeleteReports: profile.can_delete_reports,
               allowedTabs: profile.allowed_tabs === null ? undefined : profile.allowed_tabs,
             })
           } else {
@@ -116,6 +118,7 @@ const AppContent = () => {
           <Route path="historico" element={<Historico />} />
           <Route path="videomonitoramento" element={<Videomonitoramento />} />
           <Route path="observatorio" element={<Observatorio />} />
+          <Route path="relatorios" element={<Relatorios />} />
           <Route path="profile" element={<Profile />} />
           <Route path="usuarios" element={<Usuarios />} />
           <Route path="audit-logs" element={<AuditLogs />} />

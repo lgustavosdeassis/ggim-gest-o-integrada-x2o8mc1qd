@@ -43,7 +43,6 @@ Deno.serve(async (req) => {
       console.error('Error fetching profile:', profileError)
     }
 
-    // Permissão garantida caso a role no profile seja admin/owner ou as flags estejam true
     const isAdmin =
       profile?.role === 'admin' ||
       profile?.role === 'owner' ||
@@ -77,6 +76,7 @@ Deno.serve(async (req) => {
           is_admin: u.user_metadata?.is_admin || p?.is_admin || p?.role === 'admin' || false,
           can_generate_reports:
             u.user_metadata?.can_generate_reports || p?.can_generate_reports || false,
+          can_delete_reports: u.user_metadata?.can_delete_reports || p?.can_delete_reports || false,
           allowed_tabs: u.user_metadata?.allowed_tabs || p?.allowed_tabs || [],
         }
       })
@@ -95,6 +95,7 @@ Deno.serve(async (req) => {
         job_title: userData.job_title || '',
         is_admin: userData.is_admin || userData.role === 'admin',
         can_generate_reports: userData.can_generate_reports || false,
+        can_delete_reports: userData.can_delete_reports || false,
         allowed_tabs: userData.allowed_tabs || [],
       }
 
@@ -113,6 +114,7 @@ Deno.serve(async (req) => {
         job_title: userData.job_title || '',
         is_admin: userData.is_admin || userData.role === 'admin',
         can_generate_reports: userData.can_generate_reports || false,
+        can_delete_reports: userData.can_delete_reports || false,
         allowed_tabs: userData.allowed_tabs || [],
       }
 
@@ -135,6 +137,7 @@ Deno.serve(async (req) => {
         status,
         job_title,
         can_generate_reports,
+        can_delete_reports,
         allowed_tabs,
       } = userData
 
@@ -155,6 +158,8 @@ Deno.serve(async (req) => {
           can_generate_reports !== undefined
             ? can_generate_reports
             : currentMeta.can_generate_reports,
+        can_delete_reports:
+          can_delete_reports !== undefined ? can_delete_reports : currentMeta.can_delete_reports,
         allowed_tabs: allowed_tabs !== undefined ? allowed_tabs : currentMeta.allowed_tabs,
       }
 
@@ -175,6 +180,7 @@ Deno.serve(async (req) => {
       if (is_admin !== undefined) profileData.is_admin = is_admin
       if (can_generate_reports !== undefined)
         profileData.can_generate_reports = can_generate_reports
+      if (can_delete_reports !== undefined) profileData.can_delete_reports = can_delete_reports
       if (allowed_tabs !== undefined) profileData.allowed_tabs = allowed_tabs
 
       if (Object.keys(profileData).length > 0) {

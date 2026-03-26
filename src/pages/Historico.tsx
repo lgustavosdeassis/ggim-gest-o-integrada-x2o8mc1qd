@@ -325,7 +325,11 @@ export default function Historico() {
         </Table>
       </div>
 
-      <ViewDialog viewActivity={viewActivity} setViewActivity={setViewActivity} />
+      <ViewDialog
+        viewActivity={viewActivity}
+        setViewActivity={setViewActivity}
+        isViewer={isViewer}
+      />
     </div>
   )
 }

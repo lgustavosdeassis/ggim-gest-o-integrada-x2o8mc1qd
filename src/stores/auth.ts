@@ -11,6 +11,7 @@ export interface AppUser {
   jobTitle?: string | null
   avatarUrl?: string | null
   canGenerateReports?: boolean
+  canDeleteReports?: boolean
   allowedTabs?: string[] | null
 }
 
@@ -69,6 +70,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           jobTitle: profile.job_title,
           avatarUrl: profile.avatar_url,
           canGenerateReports: profile.can_generate_reports,
+          canDeleteReports: profile.can_delete_reports,
           allowedTabs: profile.allowed_tabs,
         },
         isAuthenticated: true,

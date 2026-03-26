@@ -19,9 +19,11 @@ import { DocumentList } from '@/components/historico/DocumentList'
 export function ViewDialog({
   viewActivity,
   setViewActivity,
+  isViewer,
 }: {
   viewActivity: ActivityRecord | null
   setViewActivity: (v: ActivityRecord | null) => void
+  isViewer?: boolean
 }) {
   if (!viewActivity) return null
 
@@ -197,7 +199,11 @@ export function ViewDialog({
                 {viewActivity.documents?.length || 0}
               </span>
             </span>
-            <DocumentList documents={viewActivity.documents} activity={viewActivity} />
+            <DocumentList
+              documents={viewActivity.documents}
+              activity={viewActivity}
+              hideExport={isViewer}
+            />
           </div>
         </div>
       </DialogContent>
