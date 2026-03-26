@@ -68,7 +68,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         if (Array.isArray(rawTabs)) {
           parsedTabs = rawTabs
         } else if (typeof rawTabs === 'string') {
-          parsedTabs = JSON.parse(rawTabs)
+          if (rawTabs.startsWith('{') && rawTabs.endsWith('}')) {
+            const inner = rawTabs.slice(1, -1).trim()
+            if (inner) {
+              parsedTabs = inner.split(',').map((s) => s.trim().replace(/(^"|"$)/g, ''))
+            }
+          } else {
+            try {
+              parsedTabs = JSON.parse(rawTabs)
+            } catch (e) {}
+          }
         }
       } catch (e) {
         console.error('Error parsing allowedTabs', e)

@@ -8,8 +8,14 @@
   "theme_color": "#0f172a",
   "icons": [
     {
-      "src": "/logo-hexagonal.png",
-      "sizes": "any",
+      "src": "https://img.usecurling.com/i?q=hexagon-logo&color=gradient&shape=fill&size=192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://img.usecurling.com/i?q=hexagon-logo&color=gradient&shape=fill&size=512",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
     }

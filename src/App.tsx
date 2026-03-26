@@ -28,7 +28,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#020617]">
+      <div className="min-h-screen flex items-center justify-center bg-[#020617] relative z-50">
         <Loader2 className="h-12 w-12 animate-spin text-[#eab308]" />
       </div>
     )
@@ -52,13 +52,18 @@ const AppContent = () => {
 
     let mounted = true
     if (authUser) {
+      setProfileLoading(true)
       supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
         .single()
-        .then(({ data }) => {
+        .then(({ data, error }) => {
           if (!mounted) return
+          if (error && error.code !== 'PGRST116') {
+            console.error('Erro ao buscar perfil:', error)
+          }
+
           const profile = data as any
 
           let parsedTabs: string[] = []
@@ -67,7 +72,18 @@ const AppContent = () => {
             if (Array.isArray(rawTabs)) {
               parsedTabs = rawTabs
             } else if (typeof rawTabs === 'string') {
-              parsedTabs = JSON.parse(rawTabs)
+              if (rawTabs.startsWith('{') && rawTabs.endsWith('}')) {
+                const inner = rawTabs.slice(1, -1).trim()
+                if (inner) {
+                  parsedTabs = inner.split(',').map((s) => s.trim().replace(/(^"|"$)/g, ''))
+                }
+              } else {
+                try {
+                  parsedTabs = JSON.parse(rawTabs)
+                } catch (e) {
+                  // Ignora parse se não for json
+                }
+              }
             }
           } catch (e) {
             console.error('Error parsing allowedTabs', e)
@@ -100,7 +116,8 @@ const AppContent = () => {
           }
           setProfileLoading(false)
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error('Profile catch block:', err)
           if (!mounted) return
           login({
             id: authUser.id,
@@ -125,7 +142,7 @@ const AppContent = () => {
 
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#020617]">
+      <div className="min-h-screen flex items-center justify-center bg-[#020617] relative z-50">
         <Loader2 className="h-12 w-12 animate-spin text-[#eab308]" />
       </div>
     )

@@ -25,19 +25,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return
       setSession(session)
       setUser(session?.user ?? null)
       setLoading(false)
     })
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-    return () => subscription.unsubscribe()
+
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        if (!mounted) return
+        setSession(session)
+        setUser(session?.user ?? null)
+      })
+      .catch((err) => {
+        console.error('Erro ao recuperar sessão:', err)
+      })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signUp = async (email: string, password: string) => {
