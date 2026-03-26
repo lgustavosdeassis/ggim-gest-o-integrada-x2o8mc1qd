@@ -44,7 +44,7 @@ export const DOC_TYPES = [
 ] as const
 
 export const formSchema = z.object({
-  eventName: z.string().optional(),
+  eventName: z.string().nullish(),
   instance: z.string().min(1, 'Instância é obrigatória.'),
   eventType: z.string().min(1, 'Tipo de evento é obrigatório.'),
   modality: z.string().min(1, 'Modalidade é obrigatória.'),
@@ -62,14 +62,14 @@ export const formSchema = z.object({
     )
     .optional(),
   hasAction: z.boolean().default(false),
-  actionStart: z.string().optional(),
-  actionEnd: z.string().optional(),
+  actionStart: z.string().nullish(),
+  actionEnd: z.string().nullish(),
   actions: z
     .array(
       z.object({
         id: z.string().optional(),
-        start: z.string().optional(),
-        end: z.string().optional(),
+        start: z.string().nullish(),
+        end: z.string().nullish(),
         periods: z
           .array(
             z.object({
@@ -82,16 +82,16 @@ export const formSchema = z.object({
       }),
     )
     .optional(),
-  participantsPF: z.string().optional(),
-  participantsPJ: z.string().optional(),
-  deliberations: z.string().optional(),
+  participantsPF: z.string().nullish(),
+  participantsPJ: z.string().nullish(),
+  deliberations: z.string().nullish(),
   documents: z
     .array(
       z.object({
         id: z.string().optional(),
         name: z.string().min(1, 'Nome do arquivo é obrigatório.'),
         type: z.string().min(1, 'Categoria é obrigatória.'),
-        url: z.string().optional(),
+        url: z.string().nullish(),
       }),
     )
     .optional(),

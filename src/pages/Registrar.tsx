@@ -14,7 +14,7 @@ import { DuracaoCard } from '@/components/registrar/DuracaoCard'
 import { EngajamentoCard } from '@/components/registrar/EngajamentoCard'
 import { ProdutividadeCard } from '@/components/registrar/ProdutividadeCard'
 
-const formatForDatetimeLocal = (isoStr?: string) => {
+const formatForDatetimeLocal = (isoStr?: string | null) => {
   if (!isoStr) return ''
   if (isoStr.includes('Z') || isoStr.length > 16) {
     const d = new Date(isoStr)
@@ -93,6 +93,11 @@ export default function Registrar() {
       return {
         ...defaultActivity,
         eventName: defaultActivity.eventName || '',
+        actionStart: formatForDatetimeLocal(defaultActivity.actionStart) || '',
+        actionEnd: formatForDatetimeLocal(defaultActivity.actionEnd) || '',
+        participantsPF: defaultActivity.participantsPF || '',
+        participantsPJ: defaultActivity.participantsPJ || '',
+        deliberations: defaultActivity.deliberations || '',
         meetingStart: formatForDatetimeLocal(defaultActivity.meetingStart),
         meetingEnd: formatForDatetimeLocal(defaultActivity.meetingEnd),
         hasAdditionalDays: defaultActivity.hasAdditionalDays || false,
@@ -104,6 +109,8 @@ export default function Registrar() {
         hasAction: initialHasAction,
         actions: initialActions.map((a) => ({
           ...a,
+          start: formatForDatetimeLocal(a.start) || '',
+          end: formatForDatetimeLocal(a.end) || '',
           periods:
             a.periods && a.periods.length > 0
               ? a.periods.map((p) => ({
@@ -133,6 +140,8 @@ export default function Registrar() {
       hasAdditionalDays: false,
       additionalDays: [],
       hasAction: false,
+      actionStart: '',
+      actionEnd: '',
       actions: [],
       participantsPF: '',
       participantsPJ: '',
