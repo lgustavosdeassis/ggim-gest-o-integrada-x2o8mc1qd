@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
-      .select('is_admin, role')
+      .select('*')
       .eq('id', user.id)
       .single()
 
@@ -44,7 +44,10 @@ Deno.serve(async (req) => {
     }
 
     // Allow access if user is marked as admin either by boolean flag or by role string
-    if (!profile?.is_admin && profile?.role !== 'admin' && profile?.role !== 'owner') {
+    const isAdmin =
+      profile?.is_admin === true || profile?.role === 'admin' || profile?.role === 'owner'
+
+    if (!isAdmin) {
       throw new Error('Unauthorized')
     }
 
@@ -61,18 +64,19 @@ Deno.serve(async (req) => {
 
       if (createError) throw createError
 
-      await supabaseAdmin
-        .from('profiles')
-        .update({
-          name: userData.name,
-          role: userData.role || 'user',
-          is_admin: userData.is_admin || false,
-          status: userData.status || 'active',
-          job_title: userData.job_title || null,
-          can_generate_reports: userData.can_generate_reports || false,
-          allowed_tabs: userData.allowed_tabs || null,
-        })
-        .eq('id', newUser.user.id)
+      const profileData: any = {
+        name: userData.name,
+        role: userData.role || 'user',
+        status: userData.status || 'active',
+        job_title: userData.job_title || null,
+      }
+
+      if (userData.is_admin !== undefined) profileData.is_admin = userData.is_admin
+      if (userData.can_generate_reports !== undefined)
+        profileData.can_generate_reports = userData.can_generate_reports
+      if (userData.allowed_tabs !== undefined) profileData.allowed_tabs = userData.allowed_tabs
+
+      await supabaseAdmin.from('profiles').update(profileData).eq('id', newUser.user.id)
 
       return new Response(JSON.stringify({ user: newUser.user }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -106,17 +110,21 @@ Deno.serve(async (req) => {
         if (updateAuthError) throw updateAuthError
       }
 
+      const profileData: any = {
+        name,
+        role,
+        status,
+        job_title: job_title || null,
+      }
+
+      if (is_admin !== undefined) profileData.is_admin = is_admin
+      if (can_generate_reports !== undefined)
+        profileData.can_generate_reports = can_generate_reports
+      if (allowed_tabs !== undefined) profileData.allowed_tabs = allowed_tabs
+
       const { error: updateProfileError } = await supabaseAdmin
         .from('profiles')
-        .update({
-          name,
-          role,
-          is_admin,
-          status,
-          job_title: job_title || null,
-          can_generate_reports: can_generate_reports || false,
-          allowed_tabs: allowed_tabs || null,
-        })
+        .update(profileData)
         .eq('id', id)
 
       if (updateProfileError) throw updateProfileError
