@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -35,6 +35,8 @@ export default function Registrar() {
   const { user } = useAuthStore()
   const isViewer = user?.role === 'viewer'
   const addLog = useAuditStore((state) => state.addLog)
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const defaultActivity = useMemo(() => {
     return editId ? activities.find((a) => a.id === editId) : null
@@ -148,49 +150,68 @@ export default function Registrar() {
     if (defaultActivity) form.reset(initialValues)
   }, [initialValues, form, defaultActivity])
 
-  const onSubmit = (data: FormValues) => {
+  const onSubmit = async (data: FormValues) => {
     if (isViewer) return
-    const payload = {
-      ...data,
-      additionalDays: data.hasAdditionalDays
-        ? (data.additionalDays || []).map((ad) => ({
-            ...ad,
-            id: ad.id || Math.random().toString(36).substr(2, 9),
-          }))
-        : [],
-      actions: data.hasAction
-        ? (data.actions || []).map((act) => ({
-            ...act,
-            id: act.id || Math.random().toString(36).substr(2, 9),
-            periods: (act.periods || []).map((p) => ({
-              ...p,
-              id: p.id || Math.random().toString(36).substr(2, 9),
-            })),
-          }))
-        : [],
-      documents: (data.documents || []).map((doc) => ({
-        ...doc,
-        id: doc.id || Math.random().toString(36).substr(2, 9),
-      })),
-    } as any
-    if (editId) {
-      updateActivity(editId, payload)
-      addLog({
-        userName: user?.name || 'Sistema',
-        userEmail: user?.email || '',
-        action: `Editou os dados do evento: ${payload.eventName ? payload.eventName + ' - ' : ''}${payload.eventType} (${payload.instance})`,
-      })
-      toast({ title: 'Atividade atualizada com sucesso.' })
-    } else {
-      addActivity(payload)
-      addLog({
-        userName: user?.name || 'Sistema',
-        userEmail: user?.email || '',
-        action: `Registrou uma nova atividade: ${payload.eventName ? payload.eventName + ' - ' : ''}${payload.eventType} (${payload.instance})`,
-      })
-      toast({ title: 'Atividade registrada com sucesso.' })
+    setIsSubmitting(true)
+
+    try {
+      const payload = {
+        ...data,
+        additionalDays: data.hasAdditionalDays
+          ? (data.additionalDays || []).map((ad) => ({
+              ...ad,
+              id: ad.id || Math.random().toString(36).substr(2, 9),
+            }))
+          : [],
+        actions: data.hasAction
+          ? (data.actions || []).map((act) => ({
+              ...act,
+              id: act.id || Math.random().toString(36).substr(2, 9),
+              periods: (act.periods || []).map((p) => ({
+                ...p,
+                id: p.id || Math.random().toString(36).substr(2, 9),
+              })),
+            }))
+          : [],
+        documents: (data.documents || []).map((doc) => ({
+          ...doc,
+          id: doc.id || Math.random().toString(36).substr(2, 9),
+        })),
+      } as any
+
+      if (editId) {
+        await updateActivity(editId, payload)
+        addLog({
+          userName: user?.name || 'Sistema',
+          userEmail: user?.email || '',
+          action: `Editou os dados do evento: ${payload.eventName ? payload.eventName + ' - ' : ''}${payload.eventType} (${payload.instance})`,
+        })
+        toast({ title: 'Atividade atualizada com sucesso.' })
+      } else {
+        await addActivity(payload)
+        addLog({
+          userName: user?.name || 'Sistema',
+          userEmail: user?.email || '',
+          action: `Registrou uma nova atividade: ${payload.eventName ? payload.eventName + ' - ' : ''}${payload.eventType} (${payload.instance})`,
+        })
+        toast({ title: 'Atividade registrada com sucesso.' })
+      }
+      navigate('/historico')
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsSubmitting(false)
     }
-    navigate('/historico')
+  }
+
+  const onError = (errors: any) => {
+    console.error('Erros de validação do formulário:', errors)
+    toast({
+      title: 'Atenção: Campos Incompletos',
+      description:
+        'Por favor, preencha corretamente os campos obrigatórios destacados em vermelho antes de salvar.',
+      variant: 'destructive',
+    })
   }
 
   return (
@@ -210,7 +231,7 @@ export default function Registrar() {
         </p>
       </div>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit, onError)} className="space-y-8">
           <IdentificacaoCard />
           <DuracaoCard />
           <EngajamentoCard />
@@ -220,6 +241,7 @@ export default function Registrar() {
               variant={isViewer ? 'default' : 'ghost'}
               type="button"
               onClick={() => navigate('/historico')}
+              disabled={isSubmitting}
               className={`w-full h-12 rounded-xl font-bold transition-all ${
                 isViewer
                   ? 'sm:w-64 bg-[#0f172a] text-white hover:bg-[#1e293b]'
@@ -231,9 +253,14 @@ export default function Registrar() {
             {!isViewer && (
               <Button
                 type="submit"
-                className="w-full sm:w-64 h-12 font-black text-base bg-[#eab308] text-[#0f172a] hover:bg-[#ca8a04] shadow-md transition-all rounded-xl"
+                disabled={isSubmitting}
+                className="w-full sm:w-64 h-12 font-black text-base bg-[#eab308] text-[#0f172a] hover:bg-[#ca8a04] shadow-md transition-all rounded-xl disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {editId ? 'ATUALIZAR REGISTRO' : 'SALVAR NOVO REGISTRO'}
+                {isSubmitting
+                  ? 'SALVANDO...'
+                  : editId
+                    ? 'ATUALIZAR REGISTRO'
+                    : 'SALVAR NOVO REGISTRO'}
               </Button>
             )}
           </div>
