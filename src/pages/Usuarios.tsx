@@ -4,6 +4,8 @@ import { useAuthStore } from '@/stores/auth'
 import { useAuditStore } from '@/stores/audit'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Switch } from '@/components/ui/switch'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Table,
   TableBody,
@@ -60,6 +62,8 @@ const formSchema = z.object({
   password: z.string().min(4, 'A senha deve ter pelo menos 4 caracteres'),
   role: z.enum(['owner', 'editor', 'viewer'], { required_error: 'Selecione um perfil' }),
   avatarUrl: z.string().optional(),
+  canGenerateReports: z.boolean().optional(),
+  allowedTabs: z.array(z.string()).optional(),
 })
 
 export default function Usuarios() {
@@ -71,7 +75,15 @@ export default function Usuarios() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { name: '', email: '', password: '', role: 'viewer', avatarUrl: '' },
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      role: 'viewer',
+      avatarUrl: '',
+      canGenerateReports: false,
+      allowedTabs: [],
+    },
   })
 
   if (currentUser?.role !== 'owner') return <Navigate to="/" replace />
@@ -155,7 +167,13 @@ export default function Usuarios() {
           </p>
         </div>
 
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <Dialog
+          open={isOpen}
+          onOpenChange={(open) => {
+            setIsOpen(open)
+            if (!open) form.reset()
+          }}
+        >
           <DialogTrigger asChild>
             <Button className="h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground shadow-md">
               <UserPlus className="mr-2 h-5 w-5" /> Novo Usuário
@@ -276,6 +294,75 @@ export default function Usuarios() {
                     </FormItem>
                   )}
                 />
+
+                {form.watch('role') === 'viewer' && (
+                  <FormField
+                    control={form.control}
+                    name="canGenerateReports"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-xl border border-border p-4 bg-muted/20">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-xs font-bold text-foreground uppercase tracking-widest">
+                            Gerar Relatórios
+                          </FormLabel>
+                          <div className="text-xs text-muted-foreground font-medium">
+                            Permitir que este usuário gere relatórios.
+                          </div>
+                        </div>
+                        <FormControl>
+                          <Switch checked={field.value} onCheckedChange={field.onChange} />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {form.watch('role') === 'editor' && (
+                  <FormField
+                    control={form.control}
+                    name="allowedTabs"
+                    render={({ field }) => (
+                      <FormItem className="p-4 rounded-xl border border-border bg-muted/20">
+                        <FormLabel className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                          Permissões de Edição (Abas)
+                        </FormLabel>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                          {[
+                            'Dashboard BI',
+                            'Registrar Atividade',
+                            'Importar Arquivo',
+                            'Acervo Histórico',
+                            'Videomonitoramento',
+                            'Observatório',
+                          ].map((tab) => (
+                            <div key={tab} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`tab-${tab.replace(/\s+/g, '-')}`}
+                                checked={field.value?.includes(tab)}
+                                onCheckedChange={(checked) => {
+                                  const current = field.value || []
+                                  if (checked) {
+                                    field.onChange([...current, tab])
+                                  } else {
+                                    field.onChange(current.filter((t) => t !== tab))
+                                  }
+                                }}
+                              />
+                              <label
+                                htmlFor={`tab-${tab.replace(/\s+/g, '-')}`}
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                              >
+                                {tab}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <DialogFooter className="pt-2">
                   <Button
                     type="button"

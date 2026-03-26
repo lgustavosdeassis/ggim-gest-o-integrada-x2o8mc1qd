@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { api } from '@/lib/api'
 import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
@@ -13,6 +12,8 @@ export interface User {
   role: Role
   jobTitle?: string
   password?: string
+  canGenerateReports?: boolean
+  allowedTabs?: string[]
 }
 
 interface AuthState {
@@ -37,18 +38,34 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   fetchUsers: async () => {
     set({ isFetching: true })
     try {
-      const data = await api.users.list()
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+
+      const mappedUsers = data.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        email: p.email,
+        role: p.role as Role,
+        avatarUrl: p.avatar_url,
+        jobTitle: p.job_title,
+        canGenerateReports: p.can_generate_reports,
+        allowedTabs: p.allowed_tabs,
+      }))
+
       set((state) => {
-        const isSameUsers = JSON.stringify(state.users) === JSON.stringify(data)
+        const isSameUsers = JSON.stringify(state.users) === JSON.stringify(mappedUsers)
         const updatedCurrentUser = state.user
-          ? data.find((u: any) => u.id === state.user!.id) || state.user
+          ? mappedUsers.find((u: any) => u.id === state.user!.id) || state.user
           : null
 
         if (isSameUsers && JSON.stringify(state.user) === JSON.stringify(updatedCurrentUser)) {
           return { isFetching: false }
         }
 
-        return { users: data as User[], user: updatedCurrentUser as User, isFetching: false }
+        return { users: mappedUsers as User[], user: updatedCurrentUser as User, isFetching: false }
       })
     } catch (e) {
       set({ isFetching: false })
@@ -63,7 +80,11 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const state = get()
     if (!state.user) return
     try {
-      await api.users.update(state.user.id, { avatarUrl: url })
+      const { error } = await supabase
+        .from('profiles')
+        .update({ avatar_url: url })
+        .eq('id', state.user.id)
+      if (error) throw error
       set({ user: { ...state.user, avatarUrl: url } })
       toast.success('Sucesso', { description: 'Avatar atualizado com sucesso.' })
     } catch (e) {
@@ -75,7 +96,19 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
     const state = get()
     if (!state.user) return
     try {
-      await api.users.update(state.user.id, data)
+      const updates: any = {}
+      if (data.name !== undefined) updates.name = data.name
+      if (data.email !== undefined) updates.email = data.email
+      if (data.role !== undefined) updates.role = data.role
+      if (data.jobTitle !== undefined) updates.job_title = data.jobTitle
+      if (data.avatarUrl !== undefined) updates.avatar_url = data.avatarUrl
+      if (data.canGenerateReports !== undefined)
+        updates.can_generate_reports = data.canGenerateReports
+      if (data.allowedTabs !== undefined) updates.allowed_tabs = data.allowedTabs
+
+      const { error } = await supabase.from('profiles').update(updates).eq('id', state.user.id)
+      if (error) throw error
+
       set({ user: { ...state.user, ...data } })
       toast.success('Sucesso', { description: 'Perfil atualizado.' })
     } catch (e) {
@@ -85,14 +118,28 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
   addUser: async (newUser) => {
     try {
-      await api.users.create({
-        name: newUser.name,
-        email: newUser.email,
-        password: newUser.password,
-        role: newUser.role,
-        avatarUrl: newUser.avatarUrl,
-        jobTitle: newUser.jobTitle,
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData?.session) throw new Error('Sessão não encontrada.')
+
+      const { error } = await supabase.functions.invoke('manage-user', {
+        body: {
+          action: 'create',
+          payload: {
+            email: newUser.email,
+            password: newUser.password,
+            name: newUser.name,
+            role: newUser.role,
+            avatarUrl: newUser.avatarUrl,
+            jobTitle: newUser.jobTitle,
+            canGenerateReports: newUser.canGenerateReports,
+            allowedTabs: newUser.allowedTabs,
+          },
+        },
+        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
       })
+
+      if (error) throw error
+
       toast.success('Sucesso', { description: 'Usuário cadastrado com sucesso.' })
       get().fetchUsers()
     } catch (e: any) {
@@ -102,7 +149,16 @@ export const useAuthStore = create<AuthState>()((set, get) => ({
   },
   removeUser: async (id) => {
     try {
-      await api.users.delete(id)
+      const { data: sessionData } = await supabase.auth.getSession()
+      if (!sessionData?.session) throw new Error('Sessão não encontrada.')
+
+      const { error } = await supabase.functions.invoke('manage-user', {
+        body: { action: 'delete', payload: { id } },
+        headers: { Authorization: `Bearer ${sessionData.session.access_token}` },
+      })
+
+      if (error) throw error
+
       toast.success('Sucesso', { description: 'Usuário removido com sucesso.' })
       get().fetchUsers()
     } catch (e: any) {

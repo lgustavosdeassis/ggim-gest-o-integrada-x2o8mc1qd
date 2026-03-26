@@ -33,7 +33,13 @@ export default function Registrar() {
 
   const { activities, addActivity, updateActivity } = useAppStore()
   const { user } = useAuthStore()
-  const isViewer = user?.role === 'viewer'
+
+  const isViewer =
+    user?.role === 'viewer' ||
+    (user?.role === 'editor' &&
+      Array.isArray(user?.allowedTabs) &&
+      !user.allowedTabs.includes('Registrar Atividade'))
+
   const addLog = useAuditStore((state) => state.addLog)
 
   const [isSubmitting, setIsSubmitting] = useState(false)

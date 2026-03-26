@@ -17,7 +17,6 @@ Deno.serve(async (req: Request) => {
 
     const token = authHeader.replace('Bearer ', '')
 
-    // Utilize o client anônimo configurando o header global de Authorization
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
       auth: {
@@ -27,18 +26,15 @@ Deno.serve(async (req: Request) => {
       },
     })
 
-    // Em Edge Functions, quando o client tem persistSession: false,
-    // deve-se passar o token explicitamente para getUser
     const {
       data: { user },
       error: authError,
     } = await supabaseClient.auth.getUser(token)
 
     if (authError || !user) {
-      throw new Error(`Unauthorized: ${authError?.message || 'No user found'}`)
+      throw new Error(`Unauthorized: Auth session missing!`)
     }
 
-    // Utilize o admin client apenas para as operações privilegiadas
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
       auth: {
         persistSession: false,
@@ -61,7 +57,8 @@ Deno.serve(async (req: Request) => {
     const { action, payload } = body
 
     if (action === 'create') {
-      const { email, password, name, role, avatarUrl, jobTitle } = payload
+      const { email, password, name, role, avatarUrl, jobTitle, canGenerateReports, allowedTabs } =
+        payload
 
       const { data: newAuthUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
         email,
@@ -72,7 +69,6 @@ Deno.serve(async (req: Request) => {
 
       if (createError) throw createError
 
-      // Update the profile created by the database trigger
       await supabaseAdmin
         .from('profiles')
         .update({
@@ -80,6 +76,8 @@ Deno.serve(async (req: Request) => {
           role,
           avatar_url: avatarUrl,
           job_title: jobTitle,
+          can_generate_reports: canGenerateReports ?? false,
+          allowed_tabs: allowedTabs ?? [],
         })
         .eq('id', newAuthUser.user.id)
 
@@ -99,12 +97,10 @@ Deno.serve(async (req: Request) => {
 
       const { error } = await supabaseAdmin.auth.admin.deleteUser(id)
 
-      // Ignore error if user is already deleted or not found
       if (error && !error.message.includes('User not found') && error.status !== 404) {
         throw error
       }
 
-      // Ensure profile is deleted even if auth user wasn't found
       await supabaseAdmin.from('profiles').delete().eq('id', id)
 
       return new Response(JSON.stringify({ success: true }), {

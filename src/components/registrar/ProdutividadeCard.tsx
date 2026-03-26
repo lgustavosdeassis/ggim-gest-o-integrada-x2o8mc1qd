@@ -26,7 +26,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useRef, useState } from 'react'
-import { cn, openDocumentViewer, downloadDocument, printDocument } from '@/lib/utils'
+import {
+  cn,
+  openDocumentViewer,
+  downloadDocument,
+  printDocument,
+  parseSemicolonList,
+} from '@/lib/utils'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -130,9 +136,14 @@ export function ProdutividadeCard() {
           name="deliberations"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
-                Deliberações Firmadas (separadas por ponto e vírgula)
-              </FormLabel>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-1">
+                <FormLabel className="text-[#0f172a] font-bold text-xs uppercase tracking-widest">
+                  Deliberações Firmadas (separadas por ponto e vírgula)
+                </FormLabel>
+                <span className="text-[10px] font-black bg-[#0f172a]/10 text-[#0f172a] px-3 py-1 rounded-full uppercase tracking-widest border border-[#0f172a]/20 w-fit">
+                  Total Deliberações: {parseSemicolonList(field.value || '').length}
+                </span>
+              </div>
               <FormControl>
                 <Textarea
                   className="min-h-[100px] resize-y bg-white border-[#0f172a]/20 shadow-sm rounded-xl text-[#0f172a] p-4 placeholder:text-[#0f172a]/40 text-base focus-visible:ring-[#eab308]"

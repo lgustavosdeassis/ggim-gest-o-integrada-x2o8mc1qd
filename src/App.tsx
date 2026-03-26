@@ -65,6 +65,8 @@ const AppContent = () => {
               role: profile.role as any,
               jobTitle: profile.job_title,
               avatarUrl: profile.avatar_url,
+              canGenerateReports: profile.can_generate_reports,
+              allowedTabs: profile.allowed_tabs === null ? undefined : profile.allowed_tabs,
             })
           } else {
             login({
