@@ -43,10 +43,11 @@ Deno.serve(async (req) => {
       console.error('Error fetching profile:', profileError)
     }
 
-    // Allow access if user is marked as admin either by boolean flag in metadata or by role string
+    // Permissão garantida caso a role no profile seja admin/owner ou as flags estejam true
     const isAdmin =
       profile?.role === 'admin' ||
       profile?.role === 'owner' ||
+      profile?.is_admin === true ||
       user.user_metadata?.is_admin === true ||
       user.user_metadata?.role === 'admin'
 
@@ -73,9 +74,10 @@ Deno.serve(async (req) => {
           role: u.user_metadata?.role || p?.role || 'user',
           status: u.user_metadata?.status || p?.status || 'active',
           job_title: u.user_metadata?.job_title || p?.job_title || '',
-          is_admin: u.user_metadata?.is_admin || p?.role === 'admin' || false,
-          can_generate_reports: u.user_metadata?.can_generate_reports || false,
-          allowed_tabs: u.user_metadata?.allowed_tabs || [],
+          is_admin: u.user_metadata?.is_admin || p?.is_admin || p?.role === 'admin' || false,
+          can_generate_reports:
+            u.user_metadata?.can_generate_reports || p?.can_generate_reports || false,
+          allowed_tabs: u.user_metadata?.allowed_tabs || p?.allowed_tabs || [],
         }
       })
 
@@ -105,10 +107,13 @@ Deno.serve(async (req) => {
 
       if (createError) throw createError
 
-      // Update basic fields in profile (ignore custom columns as they might not exist in db schema)
       const profileData: any = {
         name: userData.name,
         role: userData.role || 'user',
+        job_title: userData.job_title || '',
+        is_admin: userData.is_admin || userData.role === 'admin',
+        can_generate_reports: userData.can_generate_reports || false,
+        allowed_tabs: userData.allowed_tabs || [],
       }
 
       await supabaseAdmin.from('profiles').update(profileData).eq('id', newUser.user.id)
@@ -166,6 +171,11 @@ Deno.serve(async (req) => {
       const profileData: any = {}
       if (name !== undefined) profileData.name = name
       if (role !== undefined) profileData.role = role
+      if (job_title !== undefined) profileData.job_title = job_title
+      if (is_admin !== undefined) profileData.is_admin = is_admin
+      if (can_generate_reports !== undefined)
+        profileData.can_generate_reports = can_generate_reports
+      if (allowed_tabs !== undefined) profileData.allowed_tabs = allowed_tabs
 
       if (Object.keys(profileData).length > 0) {
         await supabaseAdmin.from('profiles').update(profileData).eq('id', id)

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useAppStore } from '@/stores/main'
+import { useAuthStore } from '@/stores/auth'
 import { calculateDashboardStats } from '@/components/dashboard/StatsUtils'
 import { DashboardOverview } from '@/components/dashboard/DashboardOverview'
 import { DashboardEngagement } from '@/components/dashboard/DashboardEngagement'
@@ -29,9 +30,16 @@ const INSTANCIAS = [
 
 export default function Index() {
   const { activities } = useAppStore()
+  const { user } = useAuthStore()
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [selectedInstances, setSelectedInstances] = useState<string[]>([])
+
+  const isViewer =
+    user?.role === 'viewer' ||
+    (user?.role === 'editor' &&
+      Array.isArray(user?.allowedTabs) &&
+      !user.allowedTabs.includes('Dashboard BI'))
 
   const filteredData = useMemo(() => {
     return activities.filter((a) => {
@@ -81,13 +89,15 @@ export default function Index() {
             Acompanhamento consolidado de atividades, produtividade e engajamento em tempo real.
           </p>
         </div>
-        <Button
-          onClick={handlePrint}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg transition-all rounded-xl h-11 px-6"
-        >
-          <FileDown className="mr-2 h-5 w-5" />
-          GERAR RELATÓRIO
-        </Button>
+        {!isViewer && (
+          <Button
+            onClick={handlePrint}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg transition-all rounded-xl h-11 px-6"
+          >
+            <FileDown className="mr-2 h-5 w-5" />
+            GERAR RELATÓRIO
+          </Button>
+        )}
       </div>
 
       {/* Filters */}

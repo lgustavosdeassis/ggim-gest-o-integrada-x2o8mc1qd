@@ -20,6 +20,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -42,6 +43,15 @@ type User = {
   allowed_tabs: string[]
 }
 
+const TABS_AVAILABLE = [
+  'Dashboard BI',
+  'Registrar Atividade',
+  'Importar Arquivo',
+  'Acervo Histórico',
+  'Videomonitoramento',
+  'Observatório',
+]
+
 export default function Usuarios() {
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
@@ -52,9 +62,9 @@ export default function Usuarios() {
   const [formData, setFormData] = useState<Partial<User> & { password?: string }>({
     name: '',
     email: '',
-    role: 'user',
+    role: 'viewer',
     status: 'active',
-    job_title: '',
+    job_title: 'Visualizador',
     is_admin: false,
     can_generate_reports: false,
     allowed_tabs: [],
@@ -86,9 +96,9 @@ export default function Usuarios() {
     setFormData({
       name: '',
       email: '',
-      role: 'user',
+      role: 'viewer',
       status: 'active',
-      job_title: '',
+      job_title: 'Visualizador',
       is_admin: false,
       can_generate_reports: false,
       allowed_tabs: [],
@@ -157,7 +167,7 @@ export default function Usuarios() {
               <Plus className="mr-2 h-4 w-4" /> Novo Usuário
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
               <DialogTitle>{isEditing ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
             </DialogHeader>
@@ -188,21 +198,30 @@ export default function Usuarios() {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 />
               </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Função</Label>
+                  <Label>Cargo / Título (Opcional)</Label>
                   <Select
-                    value={formData.role || 'user'}
-                    onValueChange={(val) =>
-                      setFormData({ ...formData, role: val, is_admin: val === 'admin' })
-                    }
+                    value={formData.job_title || ''}
+                    onValueChange={(val) => {
+                      const isAdm = val === 'Administrador'
+                      setFormData({
+                        ...formData,
+                        job_title: val,
+                        role: isAdm ? 'admin' : val === 'Editor' ? 'editor' : 'viewer',
+                        is_admin: isAdm,
+                        allowed_tabs: val === 'Editor' ? formData.allowed_tabs || [] : [],
+                      })
+                    }}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Selecione o cargo..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">Usuário</SelectItem>
-                      <SelectItem value="admin">Administrador</SelectItem>
+                      <SelectItem value="Editor">Editor</SelectItem>
+                      <SelectItem value="Visualizador">Visualizador</SelectItem>
+                      <SelectItem value="Administrador">Administrador</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -222,14 +241,41 @@ export default function Usuarios() {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>Cargo / Título (Opcional)</Label>
-                <Input
-                  value={formData.job_title || ''}
-                  onChange={(e) => setFormData({ ...formData, job_title: e.target.value })}
-                />
-              </div>
-              <div className="flex items-center space-x-2 pt-2 border-t">
+
+              {formData.job_title === 'Editor' && (
+                <div className="space-y-3 pt-2">
+                  <Label className="font-bold text-sm text-foreground">
+                    Permissões de Edição (Abas)
+                  </Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-muted/40 p-4 rounded-lg border border-border">
+                    {TABS_AVAILABLE.map((tab) => (
+                      <div key={tab} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`tab-${tab}`}
+                          checked={formData.allowed_tabs?.includes(tab)}
+                          onCheckedChange={(checked) => {
+                            const current = formData.allowed_tabs || []
+                            setFormData({
+                              ...formData,
+                              allowed_tabs: checked
+                                ? [...current, tab]
+                                : current.filter((t) => t !== tab),
+                            })
+                          }}
+                        />
+                        <Label
+                          htmlFor={`tab-${tab}`}
+                          className="text-sm font-medium cursor-pointer"
+                        >
+                          {tab}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center space-x-2 pt-2 border-t mt-4">
                 <Switch
                   id="reports"
                   checked={formData.can_generate_reports || false}
@@ -239,6 +285,7 @@ export default function Usuarios() {
                 />
                 <Label htmlFor="reports">Pode gerar relatórios gerenciais</Label>
               </div>
+
               <Button type="submit" className="w-full mt-4" disabled={saving}>
                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {isEditing ? 'Salvar Alterações' : 'Criar Usuário'}
@@ -254,7 +301,7 @@ export default function Usuarios() {
             <TableRow>
               <TableHead>Nome</TableHead>
               <TableHead>E-mail</TableHead>
-              <TableHead>Função</TableHead>
+              <TableHead>Cargo / Função</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
@@ -275,19 +322,18 @@ export default function Usuarios() {
             ) : (
               users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">
-                    {user.name}
-                    {user.job_title && (
-                      <div className="text-xs text-muted-foreground">{user.job_title}</div>
-                    )}
-                  </TableCell>
+                  <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Badge
-                      variant={user.is_admin || user.role === 'admin' ? 'default' : 'secondary'}
-                    >
-                      {user.role === 'admin' || user.is_admin ? 'Admin' : 'Usuário'}
-                    </Badge>
+                    <div className="flex flex-col gap-1 items-start">
+                      <span className="text-sm font-semibold">{user.job_title}</span>
+                      <Badge
+                        variant={user.is_admin || user.role === 'admin' ? 'default' : 'secondary'}
+                        className="text-[10px]"
+                      >
+                        {user.role === 'admin' || user.is_admin ? 'Admin' : user.role}
+                      </Badge>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge

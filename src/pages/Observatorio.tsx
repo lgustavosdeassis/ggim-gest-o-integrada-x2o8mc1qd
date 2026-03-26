@@ -27,7 +27,13 @@ const getYYYYMM = (d: Date) => {
 
 export default function Observatorio() {
   const { records, deleteRecord } = useObsStore()
-  const isViewer = useAuthStore((state) => state.user?.role === 'viewer')
+  const user = useAuthStore((state) => state.user)
+  const isViewer =
+    user?.role === 'viewer' ||
+    (user?.role === 'editor' &&
+      Array.isArray(user?.allowedTabs) &&
+      !user.allowedTabs.includes('Observatório'))
+
   const [customStart, setCustomStart] = useState<Date | undefined>(new Date(2026, 0, 1))
   const [customEnd, setCustomEnd] = useState<Date | undefined>(new Date(2026, 11, 31))
   const [isFormOpen, setIsFormOpen] = useState(false)
@@ -143,23 +149,25 @@ export default function Observatorio() {
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
-            <Button
-              variant="outline"
-              onClick={() => window.print()}
-              className="flex-1 md:flex-none h-12 px-6 rounded-xl font-bold bg-background border-border text-foreground hover:bg-muted shadow-sm whitespace-nowrap"
-            >
-              <Printer className="w-4 h-4 mr-2" /> Gerar Relatório
-            </Button>
             {!isViewer && (
-              <Button
-                onClick={() => {
-                  setEditDate(getYYYYMM(customStart || new Date()))
-                  setIsFormOpen(true)
-                }}
-                className="flex-1 md:flex-none h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap"
-              >
-                <Plus className="w-5 h-5 mr-2" /> Lançar Dados
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => window.print()}
+                  className="flex-1 md:flex-none h-12 px-6 rounded-xl font-bold bg-background border-border text-foreground hover:bg-muted shadow-sm whitespace-nowrap"
+                >
+                  <Printer className="w-4 h-4 mr-2" /> Gerar Relatório
+                </Button>
+                <Button
+                  onClick={() => {
+                    setEditDate(getYYYYMM(customStart || new Date()))
+                    setIsFormOpen(true)
+                  }}
+                  className="flex-1 md:flex-none h-12 px-6 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-md whitespace-nowrap"
+                >
+                  <Plus className="w-5 h-5 mr-2" /> Lançar Dados
+                </Button>
+              </>
             )}
           </div>
         </div>
