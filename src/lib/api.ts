@@ -55,12 +55,54 @@ function mapToDB(item: any) {
 export const api = {
   activities: {
     list: async () => {
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .order('created_at', { ascending: false })
-      if (error) throw error
-      return (data || []).map(mapFromDB)
+      try {
+        const { data, error } = await supabase
+          .from('activities')
+          .select('*')
+          .order('created_at', { ascending: false })
+        if (error) throw error
+        return (data || []).map(mapFromDB)
+      } catch (error: any) {
+        console.warn(
+          'Erro ao buscar todas as atividades, tentando em lotes menores para contornar payload muito grande ou falhas de fetch...',
+          error,
+        )
+        try {
+          const allData: any[] = []
+          const pageSize = 15 // Lote pequeno para mitigar "Unterminated string in JSON" ou "Failed to fetch"
+
+          for (let i = 0; i < 50; i++) {
+            // Limite de lotes para evitar loops infinitos
+            try {
+              const { data, error: chunkError } = await supabase
+                .from('activities')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .range(i * pageSize, (i + 1) * pageSize - 1)
+
+              if (chunkError) {
+                console.error(`Erro ao buscar lote ${i}:`, chunkError)
+                continue // Ignora o lote defeituoso e segue para tentar processar os demais
+              }
+
+              if (data) {
+                allData.push(...data)
+              }
+
+              if (!data || data.length < pageSize) {
+                break // Fim dos registros
+              }
+            } catch (chunkException) {
+              console.error(`Exceção ao buscar lote ${i}:`, chunkException)
+              // Continua para o próximo lote
+            }
+          }
+          return allData.map(mapFromDB)
+        } catch (fallbackError) {
+          console.error('Falha total no fallback de busca em lotes:', fallbackError)
+          throw fallbackError
+        }
+      }
     },
     create: async (activity: any) => {
       const { data, error } = await supabase
