@@ -15,16 +15,15 @@ Deno.serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) throw new Error('Missing Authorization header')
 
-    const token = authHeader.replace('Bearer ', '').trim()
+    // Utilize o client anônimo configurando o header global de Authorization
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    })
 
-    // Utilize o client anônimo para validar o token atual
-    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey)
-
-    // Pass the token directly to getUser to avoid 'Auth session missing!' errors
     const {
       data: { user },
       error: authError,
-    } = await supabaseClient.auth.getUser(token)
+    } = await supabaseClient.auth.getUser()
 
     if (authError || !user) {
       throw new Error(`Unauthorized: ${authError?.message || 'No user found'}`)
