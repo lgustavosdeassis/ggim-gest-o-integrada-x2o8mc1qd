@@ -45,12 +45,22 @@ export default function Login() {
       const { error } = await signIn(email, password)
 
       if (error) {
-        setErrorMsg(
-          'E-mail ou senha incorretos. Verifique as credenciais digitadas e tente novamente.',
-        )
+        let msg =
+          'E-mail ou senha incorretos. Verifique as credenciais digitadas e tente novamente.'
+
+        if (
+          error.name === 'AuthRetryableFetchError' ||
+          error.message?.toLowerCase().includes('fetch') ||
+          error.message?.toLowerCase().includes('network')
+        ) {
+          msg =
+            'Falha de conexão com o servidor de autenticação. Por favor, tente novamente em instantes.'
+        }
+
+        setErrorMsg(msg)
         toast({
           title: 'Acesso Negado',
-          description: 'E-mail ou senha incorretos. Verifique as credenciais.',
+          description: msg,
           variant: 'destructive',
         })
         setIsLoading(false)

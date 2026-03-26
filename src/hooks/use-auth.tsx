@@ -36,19 +36,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false)
     })
 
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
-        if (!mounted) return
-        setSession(session)
-        setUser(session?.user ?? null)
-      })
-      .catch((err) => {
-        console.error('Erro ao recuperar sessão:', err)
-      })
-      .finally(() => {
+    const initAuth = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession()
+        if (error) {
+          console.warn('Erro ao recuperar sessão:', error)
+        }
+        if (mounted) {
+          setSession(data?.session ?? null)
+          setUser(data?.session?.user ?? null)
+        }
+      } catch (err) {
+        console.warn('Exceção ao recuperar sessão (possível falha de rede):', err)
+      } finally {
         if (mounted) setLoading(false)
-      })
+      }
+    }
+
+    initAuth()
 
     return () => {
       mounted = false
@@ -57,20 +62,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   const signUp = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/` },
-    })
-    return { error }
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      })
+      return { error }
+    } catch (error: any) {
+      return { error }
+    }
   }
+
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    return { error }
+    try {
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
+      return { error }
+    } catch (error: any) {
+      return { error }
+    }
   }
+
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
+    try {
+      const { error } = await supabase.auth.signOut()
+      return { error }
+    } catch (error: any) {
+      return { error }
+    }
   }
 
   return (
