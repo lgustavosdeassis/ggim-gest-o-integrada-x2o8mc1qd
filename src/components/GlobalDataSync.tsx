@@ -17,6 +17,15 @@ export function GlobalDataSync({ children }: { children: React.ReactNode }) {
 
     let isMounted = true
 
+    // Timeout de segurança: força o desbloqueio da interface após 4 segundos,
+    // garantindo que o usuário acesse o sistema mesmo se houver erro temporário
+    // no servidor (como o HTTP 503 de cache de esquema) ou instabilidade na rede.
+    const forceUnlock = setTimeout(() => {
+      if (isMounted) {
+        setInitialLoad(false)
+      }
+    }, 4000)
+
     const fetchAll = async () => {
       if (syncInProgress.current) return
       syncInProgress.current = true
@@ -40,7 +49,7 @@ export function GlobalDataSync({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.warn('Problemas na sincronização. Nova tentativa ocorrerá no próximo ciclo.', err)
       } finally {
-        if (isMounted && initialLoad) {
+        if (isMounted) {
           setInitialLoad(false)
         }
         syncInProgress.current = false
@@ -63,11 +72,12 @@ export function GlobalDataSync({ children }: { children: React.ReactNode }) {
 
     return () => {
       isMounted = false
+      clearTimeout(forceUnlock)
       clearInterval(interval)
       window.removeEventListener('db_updated', handleEvent)
       window.removeEventListener('online', handleEvent)
     }
-  }, [isAuthenticated, initialLoad])
+  }, [isAuthenticated])
 
   if (isAuthenticated && initialLoad) {
     return (
@@ -76,7 +86,7 @@ export function GlobalDataSync({ children }: { children: React.ReactNode }) {
         <h2 className="text-2xl font-black tracking-tight mb-2 drop-shadow-sm text-center">
           Sincronizando Sistema Central
         </h2>
-        <p className="text-white/60 font-medium max-w-sm text-center">
+        <p className="text-white/60 font-medium max-w-sm text-center px-4">
           Estabelecendo comunicação com a nuvem e obtendo os registros de forma segura. Isso pode
           levar alguns segundos...
         </p>
