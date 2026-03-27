@@ -22,7 +22,6 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Ref para garantir que não alteramos o estado em um componente desmontado
   const mounted = useRef(true)
 
   useEffect(() => {
@@ -60,7 +59,6 @@ export default function Login() {
           error.message?.toLowerCase().includes('signal')
 
         if (isAbortError) {
-          // Requisição cancelada silenciosamente por navegação/timeout
           setIsLoading(false)
           return
         }
@@ -75,19 +73,7 @@ export default function Login() {
           error.message?.toLowerCase().includes('network') ||
           error.message?.toLowerCase().includes('timeout')
         ) {
-          msg =
-            'Falha de conexão com o servidor de autenticação. Por favor, tente novamente em instantes.'
-
-          // Limpa possíveis vestígios de sessão corrompida em falha de rede contínua
-          try {
-            Object.keys(localStorage).forEach((key) => {
-              if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
-                localStorage.removeItem(key)
-              }
-            })
-          } catch (err) {
-            // Ignora erro
-          }
+          msg = 'O servidor demorou muito para responder. Verifique sua conexão e tente novamente.'
         }
 
         setErrorMsg(msg)
@@ -98,7 +84,6 @@ export default function Login() {
         })
         setIsLoading(false)
       }
-      // Em caso de sucesso, o isLoading permanece true até o redirecionamento disparado pelo useEffect
     } catch (error: any) {
       if (!mounted.current) return
 

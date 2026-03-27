@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setSession(session)
-      // Mantém a mesma referência de objeto se o ID do usuário não mudou, evitando re-renders infinitos
+      // Mantém a mesma referência se o ID não mudou
       setUser((prevUser) =>
         prevUser?.id === session?.user?.id ? prevUser : (session?.user ?? null),
       )
@@ -68,17 +68,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (error) {
           if (isAbortError(error)) {
-            console.warn('Busca de sessão interrompida (abort): ignorando silenciosamente.')
+            console.warn('Busca de sessão interrompida (abort): ignorando.')
           } else {
-            console.warn('Erro ao recuperar sessão:', error)
-            // Não desloga o usuário por falha de rede/timeout, apenas por token inválido
             if (
               error.name === 'AuthSessionMissingError' ||
               error.message?.toLowerCase().includes('invalid') ||
               error.message?.toLowerCase().includes('expired') ||
               error.message?.toLowerCase().includes('corrupted')
             ) {
-              console.warn('Limpando sessão devido a falha de validação de token.')
               clearCorruptedSession()
               if (mounted) {
                 setSession(null)
@@ -96,10 +93,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           )
         }
       } catch (err: any) {
-        if (!isAbortError(err)) {
-          console.warn('Exceção ao recuperar sessão (possível falha de rede/CORS):', err)
-        }
-        // Em exceções puras de rede (ex: Failed to fetch), preservamos o estado para manter resiliência
+        // Fallback em falha de rede
       } finally {
         if (mounted) setLoading(false)
       }
@@ -127,7 +121,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const signIn = async (email: string, password: string) => {
-    // Lock local de autenticação para não enfileirar requisições repetidas na UI
+    // Isolamento da requisição de login - evita conflitos/loopings
     if (isAuthenticating.current) {
       const err = new Error('AbortError')
       err.name = 'AbortError'
@@ -136,6 +130,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     isAuthenticating.current = true
     try {
+      // Forçar revalidação da sessão (limpeza de estado zumbi)
+      try {
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key)
+          }
+        })
+      } catch (e) {
+        // Ignora
+      }
+
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       return { error }
     } catch (error: any) {

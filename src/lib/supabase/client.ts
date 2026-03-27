@@ -4,26 +4,17 @@ import type { Database } from './types'
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
 
-// Gerenciamento de concorrência e resiliência de requisições de autenticação
-let authLock = Promise.resolve()
-let activeRefreshPromise: Promise<{
-  status: number
-  statusText: string
-  headers: Headers
-  body: string
-}> | null = null
-
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
   const urlString = url.toString()
+  // Endpoints de autenticação recebem um tratamento de timeout mais ágil
   const isAuthRequest = urlString.includes('/auth/v1/')
-  const isTokenRefresh = urlString.includes('grant_type=refresh_token')
+
+  // Timeout dinâmico: 10s para autenticação (evita looping infinito na UI), 30s para operações no BD
+  const timeoutLimit = isAuthRequest ? 10000 : 30000
 
   const executeFetch = async (retryCount = 0): Promise<Response> => {
     const controller = new AbortController()
 
-    // Timeout estendido para 120s garantindo estabilidade em conexões intermitentes
     const timeoutId = setTimeout(() => {
       try {
         const err = new Error('Request timeout')
@@ -32,7 +23,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
       } catch (e) {
         controller.abort()
       }
-    }, 120000)
+    }, timeoutLimit)
 
     if (options?.signal) {
       if (options.signal.aborted) {
@@ -70,9 +61,11 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
       const isTimeout =
         error?.name === 'TimeoutError' || error?.message?.toLowerCase().includes('timeout')
 
-      // Estratégia de Retry: se for falha de rede/timeout (mas não cancelado ativamente) tenta de novo
-      if ((isTimeout || !isAbort) && retryCount < 2 && !options?.signal?.aborted) {
-        await sleep(1000 * (retryCount + 1)) // Backoff: 1s, 2s
+      // Não realiza retry para requisições de autenticação (falha rápida para liberar a UI)
+      const maxRetries = isAuthRequest ? 0 : 2
+
+      if ((isTimeout || !isAbort) && retryCount < maxRetries && !options?.signal?.aborted) {
+        await new Promise((resolve) => setTimeout(resolve, 1000 * (retryCount + 1)))
         return executeFetch(retryCount + 1)
       }
 
@@ -80,84 +73,6 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
     }
   }
 
-  // Controle estrito para endpoints de autenticação (Mutex e Debouncing)
-  if (isAuthRequest) {
-    // Desduplicação de chamadas de refresh token (ex: disparadas ao mudar de aba)
-    if (isTokenRefresh) {
-      if (activeRefreshPromise) {
-        try {
-          const cached = await activeRefreshPromise
-          const headers = new Headers()
-          cached.headers.forEach((value, key) => headers.append(key, value))
-
-          return new Response(cached.body, {
-            status: cached.status,
-            statusText: cached.statusText,
-            headers: headers,
-          })
-        } catch (e) {
-          // Falhou, tentará na sequência normalmente
-        }
-      }
-
-      const refreshTask = (async () => {
-        const previousLock = authLock
-        let releaseLock: () => void
-        authLock = new Promise((resolve) => {
-          releaseLock = resolve
-        })
-        try {
-          // Aguarda requisições anteriores terminarem (limite de 5s para não travar a fila eternamente)
-          await Promise.race([previousLock, sleep(5000)])
-          const res = await executeFetch()
-          const body = await res.text()
-
-          const headers = new Headers()
-          res.headers.forEach((value, key) => headers.append(key, value))
-
-          return {
-            status: res.status,
-            statusText: res.statusText,
-            headers,
-            body,
-          }
-        } finally {
-          releaseLock!()
-          if (activeRefreshPromise === refreshTask) {
-            activeRefreshPromise = null
-          }
-        }
-      })()
-
-      activeRefreshPromise = refreshTask
-
-      const cached = await refreshTask
-      const headers = new Headers()
-      cached.headers.forEach((value, key) => headers.append(key, value))
-
-      return new Response(cached.body, {
-        status: cached.status,
-        statusText: cached.statusText,
-        headers,
-      })
-    }
-
-    // Para requisições comuns de auth (ex: signInWithPassword)
-    const previousLock = authLock
-    let releaseLock: () => void
-    authLock = new Promise((resolve) => {
-      releaseLock = resolve
-    })
-
-    try {
-      await Promise.race([previousLock, sleep(5000)])
-      return await executeFetch()
-    } finally {
-      releaseLock!()
-    }
-  }
-
-  // Consultas não-auth (DB) vão direto para o executor (que já inclui retry)
   return executeFetch()
 }
 
