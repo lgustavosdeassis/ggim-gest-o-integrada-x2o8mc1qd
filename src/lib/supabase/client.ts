@@ -28,12 +28,16 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
       if (options.signal.aborted) {
         try {
           controller.abort(options.signal.reason || new Error('Aborted by client'))
-        } catch (e) {}
+        } catch (e) {
+          // ignore error
+        }
       } else {
         options.signal.addEventListener('abort', () => {
           try {
             controller.abort(options.signal?.reason || new Error('Aborted by client'))
-          } catch (e) {}
+          } catch (e) {
+            // ignore error
+          }
         })
       }
     }

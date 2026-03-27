@@ -35,7 +35,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             localStorage.removeItem(key)
           }
         })
-      } catch (e) {}
+      } catch (e) {
+        // ignore error
+      }
     }
 
     const isAbortError = (err: any) => {
@@ -132,7 +134,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             localStorage.removeItem(key)
           }
         })
-      } catch (e) {}
+      } catch (e) {
+        // ignore error
+      }
 
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
