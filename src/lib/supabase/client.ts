@@ -131,19 +131,15 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
 
       activeRefreshPromise = refreshTask
 
-      try {
-        const cached = await refreshTask
-        const headers = new Headers()
-        cached.headers.forEach((value, key) => headers.append(key, value))
+      const cached = await refreshTask
+      const headers = new Headers()
+      cached.headers.forEach((value, key) => headers.append(key, value))
 
-        return new Response(cached.body, {
-          status: cached.status,
-          statusText: cached.statusText,
-          headers,
-        })
-      } catch (e) {
-        throw e
-      }
+      return new Response(cached.body, {
+        status: cached.status,
+        statusText: cached.statusText,
+        headers,
+      })
     }
 
     // Para requisições comuns de auth (ex: signInWithPassword)
