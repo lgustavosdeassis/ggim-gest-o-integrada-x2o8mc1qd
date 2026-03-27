@@ -39,6 +39,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
+    const isAbortError = (err: any) => {
+      const msg = err?.message?.toLowerCase() || ''
+      return err?.name === 'AbortError' || msg.includes('abort') || msg.includes('signal')
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
@@ -61,38 +66,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const { data, error } = await supabase.auth.getSession()
 
         if (error) {
-          console.warn('Erro ao recuperar sessão:', error)
-          if (
-            error.name === 'AuthRetryableFetchError' ||
-            error.message?.toLowerCase().includes('fetch') ||
-            error.message?.toLowerCase().includes('network')
-          ) {
-            console.warn('Limpando sessão corrompida devido a falha de rede/token.')
-            clearCorruptedSession()
-            if (mounted) {
-              setSession(null)
-              setUser(null)
+          if (isAbortError(error)) {
+            console.warn('Busca de sessão interrompida (abort): ignorando silenciosamente.')
+          } else {
+            console.warn('Erro ao recuperar sessão:', error)
+            if (
+              error.name === 'AuthRetryableFetchError' ||
+              error.message?.toLowerCase().includes('fetch') ||
+              error.message?.toLowerCase().includes('network')
+            ) {
+              console.warn('Limpando sessão corrompida devido a falha de rede/token.')
+              clearCorruptedSession()
+              if (mounted) {
+                setSession(null)
+                setUser(null)
+              }
+              return
             }
-            return
           }
         }
 
         if (mounted) {
           setSession(data?.session ?? null)
-          // Mantém a mesma referência de objeto para evitar loops de efeito
           setUser((prevUser) =>
             prevUser?.id === data?.session?.user?.id ? prevUser : (data?.session?.user ?? null),
           )
         }
       } catch (err: any) {
-        // Captura falhas de rede severas (ex: CORS, Failed to fetch) de forma silenciosa
-        console.warn('Exceção ao recuperar sessão (possível falha de rede/CORS):', err)
-        if (
-          err?.name === 'AuthRetryableFetchError' ||
-          err?.message?.toLowerCase().includes('fetch') ||
-          err?.message?.toLowerCase().includes('network')
-        ) {
-          clearCorruptedSession()
+        if (!isAbortError(err)) {
+          // Captura falhas de rede severas de forma silenciosa se não for aborto
+          console.warn('Exceção ao recuperar sessão (possível falha de rede/CORS):', err)
+          if (
+            err?.name === 'AuthRetryableFetchError' ||
+            err?.message?.toLowerCase().includes('fetch') ||
+            err?.message?.toLowerCase().includes('network')
+          ) {
+            clearCorruptedSession()
+          }
         }
         if (mounted) {
           setSession(null)

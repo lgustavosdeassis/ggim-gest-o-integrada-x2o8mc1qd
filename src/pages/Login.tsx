@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth'
 import { useAuth } from '@/hooks/use-auth'
@@ -22,13 +22,20 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
+  // Ref para garantir que não alteramos o estado em um componente desmontado
+  const mounted = useRef(true)
+
   useEffect(() => {
+    mounted.current = true
     if (isAuthenticated) {
       let fromPath = location.state?.from?.pathname || '/'
       if (fromPath === '/login') {
         fromPath = '/'
       }
       navigate(fromPath, { replace: true })
+    }
+    return () => {
+      mounted.current = false
     }
   }, [isAuthenticated, navigate, location])
 
@@ -44,7 +51,20 @@ export default function Login() {
     try {
       const { error } = await signIn(email, password)
 
+      if (!mounted.current) return
+
       if (error) {
+        const isAbortError =
+          error.name === 'AbortError' ||
+          error.message?.toLowerCase().includes('abort') ||
+          error.message?.toLowerCase().includes('signal')
+
+        if (isAbortError) {
+          // Requisição cancelada silenciosamente por navegação/timeout
+          setIsLoading(false)
+          return
+        }
+
         let msg =
           'E-mail ou senha incorretos. Verifique as credenciais digitadas e tente novamente.'
 
@@ -76,8 +96,20 @@ export default function Login() {
         })
         setIsLoading(false)
       }
-      // Em caso de sucesso, o isLoading permanece true até o redirecionamento
+      // Em caso de sucesso, o isLoading permanece true até o redirecionamento disparado pelo useEffect
     } catch (error: any) {
+      if (!mounted.current) return
+
+      const isAbortError =
+        error?.name === 'AbortError' ||
+        error?.message?.toLowerCase().includes('abort') ||
+        error?.message?.toLowerCase().includes('signal')
+
+      if (isAbortError) {
+        setIsLoading(false)
+        return
+      }
+
       setErrorMsg('Ocorreu uma falha de comunicação com o servidor de autenticação.')
       setIsLoading(false)
     }
