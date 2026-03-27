@@ -6,11 +6,10 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY a
 
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
   const urlString = url.toString()
-  // Endpoints de autenticação recebem um tratamento de timeout mais ágil
   const isAuthRequest = urlString.includes('/auth/v1/')
 
-  // Timeout dinâmico: 10s para autenticação (evita looping infinito na UI), 30s para operações no BD
-  const timeoutLimit = isAuthRequest ? 10000 : 30000
+  // Timeout ampliado para 60 segundos para suportar "cold starts" de instâncias pausadas
+  const timeoutLimit = 60000
 
   const executeFetch = async (retryCount = 0): Promise<Response> => {
     const controller = new AbortController()
@@ -29,16 +28,12 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
       if (options.signal.aborted) {
         try {
           controller.abort(options.signal.reason || new Error('Aborted by client'))
-        } catch (e) {
-          controller.abort()
-        }
+        } catch (e) {}
       } else {
         options.signal.addEventListener('abort', () => {
           try {
             controller.abort(options.signal?.reason || new Error('Aborted by client'))
-          } catch (e) {
-            controller.abort()
-          }
+          } catch (e) {}
         })
       }
     }
@@ -61,7 +56,7 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
       const isTimeout =
         error?.name === 'TimeoutError' || error?.message?.toLowerCase().includes('timeout')
 
-      // Não realiza retry para requisições de autenticação (falha rápida para liberar a UI)
+      // Sem retentativas para requisições de autenticação para evitar race conditions do gotrue
       const maxRetries = isAuthRequest ? 0 : 2
 
       if ((isTimeout || !isAbort) && retryCount < maxRetries && !options?.signal?.aborted) {

@@ -35,9 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             localStorage.removeItem(key)
           }
         })
-      } catch (e) {
-        // Ignora erros de acesso ao localStorage
-      }
+      } catch (e) {}
     }
 
     const isAbortError = (err: any) => {
@@ -55,7 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       setSession(session)
-      // Mantém a mesma referência se o ID não mudou
       setUser((prevUser) =>
         prevUser?.id === session?.user?.id ? prevUser : (session?.user ?? null),
       )
@@ -121,27 +118,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const signIn = async (email: string, password: string) => {
-    // Isolamento da requisição de login - evita conflitos/loopings
     if (isAuthenticating.current) {
-      const err = new Error('AbortError')
+      const err = new Error('Autenticação em andamento. Aguarde.')
       err.name = 'AbortError'
       return { error: err }
     }
 
     isAuthenticating.current = true
     try {
-      // Forçar revalidação da sessão (limpeza de estado zumbi)
       try {
         Object.keys(localStorage).forEach((key) => {
           if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
             localStorage.removeItem(key)
           }
         })
-      } catch (e) {
-        // Ignora
+      } catch (e) {}
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+
+      // Sincronização forçada imediata caso o evento onAuthStateChange atrase
+      if (data?.session) {
+        setSession(data.session)
+        setUser(data.session.user)
       }
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password })
       return { error }
     } catch (error: any) {
       return { error }

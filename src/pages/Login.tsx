@@ -53,15 +53,12 @@ export default function Login() {
       if (!mounted.current) return
 
       if (error) {
-        const isAbortError =
-          error.name === 'AbortError' ||
-          error.message?.toLowerCase().includes('abort') ||
-          error.message?.toLowerCase().includes('signal')
-
-        if (isAbortError) {
-          setIsLoading(false)
+        if (error.name === 'AbortError' && error.message.includes('andamento')) {
+          // Ignora submissões duplas sem quebrar o estado de carregamento original
           return
         }
+
+        setIsLoading(false)
 
         let msg =
           'E-mail ou senha incorretos. Verifique as credenciais digitadas e tente novamente.'
@@ -73,7 +70,8 @@ export default function Login() {
           error.message?.toLowerCase().includes('network') ||
           error.message?.toLowerCase().includes('timeout')
         ) {
-          msg = 'O servidor demorou muito para responder. Verifique sua conexão e tente novamente.'
+          msg =
+            'O servidor está iniciando ou demorou para responder. Aguarde alguns segundos e tente novamente.'
         }
 
         setErrorMsg(msg)
@@ -82,23 +80,13 @@ export default function Login() {
           description: msg,
           variant: 'destructive',
         })
-        setIsLoading(false)
       }
+      // Se não houver erro, mantemos o isLoading true enquanto a store processa o perfil
     } catch (error: any) {
-      if (!mounted.current) return
-
-      const isAbortError =
-        error?.name === 'AbortError' ||
-        error?.message?.toLowerCase().includes('abort') ||
-        error?.message?.toLowerCase().includes('signal')
-
-      if (isAbortError) {
+      if (mounted.current) {
+        setErrorMsg('Ocorreu uma falha de comunicação com o servidor de autenticação.')
         setIsLoading(false)
-        return
       }
-
-      setErrorMsg('Ocorreu uma falha de comunicação com o servidor de autenticação.')
-      setIsLoading(false)
     }
   }
 
