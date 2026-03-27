@@ -5,9 +5,6 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string
 
 const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promise<Response> => {
-  const urlString = url.toString()
-  const isAuthRequest = urlString.includes('/auth/v1/')
-
   // Timeout ampliado para 60 segundos para suportar "cold starts" de instâncias pausadas
   const timeoutLimit = 60000
 
@@ -48,6 +45,19 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
         signal: controller.signal,
       })
       clearTimeout(timeoutId)
+
+      // Tratamento para Cold Start do banco: intercepts 502, 503 e 504 e tenta novamente
+      if (
+        !response.ok &&
+        [502, 503, 504].includes(response.status) &&
+        retryCount < 3 &&
+        !options?.signal?.aborted
+      ) {
+        const delay = Math.pow(2, retryCount) * 1000 // Backoff: 1s, 2s, 4s
+        await new Promise((resolve) => setTimeout(resolve, delay))
+        return executeFetch(retryCount + 1)
+      }
+
       return response
     } catch (error: any) {
       clearTimeout(timeoutId)
@@ -58,13 +68,17 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit): Promi
         error?.message?.toLowerCase().includes('signal')
 
       const isTimeout =
-        error?.name === 'TimeoutError' || error?.message?.toLowerCase().includes('timeout')
+        error?.name === 'TimeoutError' ||
+        error?.message?.toLowerCase().includes('timeout') ||
+        error?.message?.toLowerCase().includes('network') ||
+        error?.message?.toLowerCase().includes('fetch')
 
-      // Sem retentativas para requisições de autenticação para evitar race conditions do gotrue
-      const maxRetries = isAuthRequest ? 0 : 2
+      // Sem restrição de rotas: em caso de erro 5xx ou timeout, tenta novamente até 3x
+      const maxRetries = 3
 
       if ((isTimeout || !isAbort) && retryCount < maxRetries && !options?.signal?.aborted) {
-        await new Promise((resolve) => setTimeout(resolve, 1000 * (retryCount + 1)))
+        const delay = Math.pow(2, retryCount) * 1000
+        await new Promise((resolve) => setTimeout(resolve, delay))
         return executeFetch(retryCount + 1)
       }
 
