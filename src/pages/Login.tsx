@@ -55,6 +55,17 @@ export default function Login() {
         ) {
           msg =
             'Falha de conexão com o servidor de autenticação. Por favor, tente novamente em instantes.'
+
+          // Limpa possíveis vestígios de sessão corrompida em falha de rede contínua
+          try {
+            Object.keys(localStorage).forEach((key) => {
+              if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+                localStorage.removeItem(key)
+              }
+            })
+          } catch (err) {
+            // Ignora erro
+          }
         }
 
         setErrorMsg(msg)

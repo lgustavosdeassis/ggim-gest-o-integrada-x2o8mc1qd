@@ -27,10 +27,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true
 
+    const clearCorruptedSession = () => {
+      try {
+        Object.keys(localStorage).forEach((key) => {
+          if (key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key)
+          }
+        })
+      } catch (e) {
+        // Ignora erros de acesso ao localStorage
+      }
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (!mounted) return
+
+      if (event === 'SIGNED_OUT') {
+        clearCorruptedSession()
+      }
+
       setSession(session)
       // Mantém a mesma referência de objeto se o ID do usuário não mudou, evitando re-renders infinitos
       setUser((prevUser) =>
@@ -42,9 +59,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const initAuth = async () => {
       try {
         const { data, error } = await supabase.auth.getSession()
+
         if (error) {
           console.warn('Erro ao recuperar sessão:', error)
+          if (
+            error.name === 'AuthRetryableFetchError' ||
+            error.message?.toLowerCase().includes('fetch') ||
+            error.message?.toLowerCase().includes('network')
+          ) {
+            console.warn('Limpando sessão corrompida devido a falha de rede/token.')
+            clearCorruptedSession()
+            if (mounted) {
+              setSession(null)
+              setUser(null)
+            }
+            return
+          }
         }
+
         if (mounted) {
           setSession(data?.session ?? null)
           // Mantém a mesma referência de objeto para evitar loops de efeito
@@ -52,9 +84,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             prevUser?.id === data?.session?.user?.id ? prevUser : (data?.session?.user ?? null),
           )
         }
-      } catch (err) {
+      } catch (err: any) {
         // Captura falhas de rede severas (ex: CORS, Failed to fetch) de forma silenciosa
         console.warn('Exceção ao recuperar sessão (possível falha de rede/CORS):', err)
+        if (
+          err?.name === 'AuthRetryableFetchError' ||
+          err?.message?.toLowerCase().includes('fetch') ||
+          err?.message?.toLowerCase().includes('network')
+        ) {
+          clearCorruptedSession()
+        }
+        if (mounted) {
+          setSession(null)
+          setUser(null)
+        }
       } finally {
         if (mounted) setLoading(false)
       }
