@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from 'react'
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 
@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const isAuthenticating = useRef(false)
 
   useEffect(() => {
     let mounted = true
@@ -70,14 +71,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.warn('Busca de sessão interrompida (abort): ignorando silenciosamente.')
           } else {
             console.warn('Erro ao recuperar sessão:', error)
+            // Não desloga o usuário por falha de rede/timeout, apenas por token inválido
             if (
-              error.name === 'AuthRetryableFetchError' ||
-              error.name === 'TimeoutError' ||
-              error.message?.toLowerCase().includes('fetch') ||
-              error.message?.toLowerCase().includes('network') ||
-              error.message?.toLowerCase().includes('timeout')
+              error.name === 'AuthSessionMissingError' ||
+              error.message?.toLowerCase().includes('invalid') ||
+              error.message?.toLowerCase().includes('expired') ||
+              error.message?.toLowerCase().includes('corrupted')
             ) {
-              console.warn('Limpando sessão corrompida devido a falha de rede/token.')
+              console.warn('Limpando sessão devido a falha de validação de token.')
               clearCorruptedSession()
               if (mounted) {
                 setSession(null)
@@ -96,22 +97,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       } catch (err: any) {
         if (!isAbortError(err)) {
-          // Captura falhas de rede severas de forma silenciosa se não for aborto
           console.warn('Exceção ao recuperar sessão (possível falha de rede/CORS):', err)
-          if (
-            err?.name === 'AuthRetryableFetchError' ||
-            err?.name === 'TimeoutError' ||
-            err?.message?.toLowerCase().includes('fetch') ||
-            err?.message?.toLowerCase().includes('network') ||
-            err?.message?.toLowerCase().includes('timeout')
-          ) {
-            clearCorruptedSession()
-          }
         }
-        if (mounted) {
-          setSession(null)
-          setUser(null)
-        }
+        // Em exceções puras de rede (ex: Failed to fetch), preservamos o estado para manter resiliência
       } finally {
         if (mounted) setLoading(false)
       }
@@ -139,11 +127,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const signIn = async (email: string, password: string) => {
+    // Lock local de autenticação para não enfileirar requisições repetidas na UI
+    if (isAuthenticating.current) {
+      const err = new Error('AbortError')
+      err.name = 'AbortError'
+      return { error: err }
+    }
+
+    isAuthenticating.current = true
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       return { error }
     } catch (error: any) {
       return { error }
+    } finally {
+      isAuthenticating.current = false
     }
   }
 
