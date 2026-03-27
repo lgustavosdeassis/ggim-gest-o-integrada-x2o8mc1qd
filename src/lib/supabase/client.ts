@@ -11,11 +11,13 @@ const customFetch = async (url: RequestInfo | URL, options?: RequestInit) => {
   const timeoutId = setTimeout(() => {
     try {
       // Passa uma razão para evitar o erro genérico "signal is aborted without reason"
-      controller.abort(new Error('Request timeout'))
+      const err = new Error('Request timeout')
+      err.name = 'TimeoutError'
+      controller.abort(err)
     } catch (e) {
       controller.abort()
     }
-  }, 15000) // 15 segundos para redes mais instáveis
+  }, 60000) // Aumentado para 60 segundos para evitar abortos prematuros em conexões lentas ou requisições pesadas
 
   // Sincroniza o abort signal original enviado pelo Supabase (se houver)
   if (options?.signal) {

@@ -72,8 +72,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.warn('Erro ao recuperar sessão:', error)
             if (
               error.name === 'AuthRetryableFetchError' ||
+              error.name === 'TimeoutError' ||
               error.message?.toLowerCase().includes('fetch') ||
-              error.message?.toLowerCase().includes('network')
+              error.message?.toLowerCase().includes('network') ||
+              error.message?.toLowerCase().includes('timeout')
             ) {
               console.warn('Limpando sessão corrompida devido a falha de rede/token.')
               clearCorruptedSession()
@@ -98,8 +100,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           console.warn('Exceção ao recuperar sessão (possível falha de rede/CORS):', err)
           if (
             err?.name === 'AuthRetryableFetchError' ||
+            err?.name === 'TimeoutError' ||
             err?.message?.toLowerCase().includes('fetch') ||
-            err?.message?.toLowerCase().includes('network')
+            err?.message?.toLowerCase().includes('network') ||
+            err?.message?.toLowerCase().includes('timeout')
           ) {
             clearCorruptedSession()
           }

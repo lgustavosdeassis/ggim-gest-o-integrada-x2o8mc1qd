@@ -70,8 +70,10 @@ export default function Login() {
 
         if (
           error.name === 'AuthRetryableFetchError' ||
+          error.name === 'TimeoutError' ||
           error.message?.toLowerCase().includes('fetch') ||
-          error.message?.toLowerCase().includes('network')
+          error.message?.toLowerCase().includes('network') ||
+          error.message?.toLowerCase().includes('timeout')
         ) {
           msg =
             'Falha de conexão com o servidor de autenticação. Por favor, tente novamente em instantes.'
