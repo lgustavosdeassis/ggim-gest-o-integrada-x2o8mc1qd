@@ -48,11 +48,11 @@ export function AppSidebar() {
     <Sidebar variant="sidebar" className="border-r border-border bg-sidebar z-40">
       <SidebarHeader className="h-20 flex items-center px-4 border-b border-border justify-center bg-sidebar">
         <div className="flex items-center gap-3 w-full justify-center">
-          <div className="h-11 w-11 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center p-0 border-none bg-white">
+          <div className="h-11 w-11 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center p-0 border-none bg-transparent">
             <img
               src={sealLogo}
               alt="GGIM Foz do Iguaçu"
-              className="w-full h-full object-cover scale-[1.15]"
+              className="w-full h-full object-cover scale-[1.6]"
             />
           </div>
           <div className="flex flex-col truncate">
