@@ -1,12 +1,19 @@
-import React from 'react'
 import { cn } from '@/lib/utils'
+import logoGgim from '@/assets/logo-ggim-fundo-transparente-pb-5f316.png'
 
-export function GgimHexLogo({ className }: { className?: string }) {
+interface GgimHexLogoProps {
+  className?: string
+}
+
+export function GgimHexLogo({ className }: GgimHexLogoProps) {
   return (
     <img
-      src="https://img.usecurling.com/i?q=hexagon-logo&color=gradient&shape=fill&size=512"
+      src={logoGgim}
       alt="GGIM Hexagonal Logo"
-      className={cn('h-full w-auto object-contain drop-shadow-md', className)}
+      className={cn(
+        'object-contain w-full h-full drop-shadow-[0_0_20px_rgba(255,255,255,0.1)]',
+        className,
+      )}
     />
   )
 }
