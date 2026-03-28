@@ -1,3 +1,4 @@
+import logoGgim from '@/assets/logo-ggim-texto-branco-sem-fundo-91086.png'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Bell, User, LogOut, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -33,7 +34,7 @@ export function Header() {
       <div className="hidden lg:flex flex-1 items-center justify-center gap-4">
         <div className="flex h-16 w-auto shrink-0 items-center justify-center bg-transparent">
           <img
-            src="/logo-hexagonal.png"
+            src={logoGgim}
             alt="GGIM Hexagonal"
             className="h-full w-auto object-contain drop-shadow-md"
             onError={(e) => {
