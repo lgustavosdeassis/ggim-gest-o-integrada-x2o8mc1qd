@@ -36,7 +36,7 @@ export function Header() {
           <img
             src={logoGgim}
             alt="GGIM Hexagonal"
-            className="h-full w-auto object-contain drop-shadow-md text-[0.14rem]"
+            className="h-full w-auto object-contain drop-shadow-md text-[0.3rem]"
             onError={(e) => {
               // Fallback to placeholder if the high-res asset is not yet placed in public/
               e.currentTarget.src =
