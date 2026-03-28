@@ -57,10 +57,10 @@ export function AppSidebar() {
           </div>
           <div className="flex flex-col truncate">
             <span className="font-black text-lg tracking-tight text-sidebar-foreground truncate leading-none">
-              GGIM
+              CMTecs
             </span>
             <span className="text-[10px] font-bold uppercase tracking-widest text-sidebar-foreground/60 truncate mt-0.5">
-              Foz do Iguaçu
+              Suporte Técnico
             </span>
           </div>
         </div>
