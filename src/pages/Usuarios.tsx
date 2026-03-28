@@ -83,12 +83,22 @@ export default function Usuarios() {
       if (error) throw error
       if (data?.users) {
         const parsedUsers = data.users.map((u: any) => {
-          let tabs = u.allowed_tabs || []
-          if (typeof tabs === 'string') {
-            try {
-              tabs = JSON.parse(tabs)
-            } catch (e) {
-              tabs = []
+          let tabs: string[] = []
+          const rawTabs = u.allowed_tabs
+          if (Array.isArray(rawTabs)) {
+            tabs = rawTabs
+          } else if (typeof rawTabs === 'string') {
+            if (rawTabs.startsWith('{') && rawTabs.endsWith('}')) {
+              const inner = rawTabs.slice(1, -1).trim()
+              if (inner) {
+                tabs = inner.split(',').map((s) => s.trim().replace(/(^"|"$)/g, ''))
+              }
+            } else {
+              try {
+                tabs = JSON.parse(rawTabs)
+              } catch (e) {
+                tabs = []
+              }
             }
           }
           return { ...u, allowed_tabs: tabs }
@@ -123,12 +133,22 @@ export default function Usuarios() {
   }
 
   const handleOpenEdit = (user: User) => {
-    let parsedTabs = user.allowed_tabs || []
-    if (typeof parsedTabs === 'string') {
-      try {
-        parsedTabs = JSON.parse(parsedTabs as string)
-      } catch (e) {
-        parsedTabs = []
+    let parsedTabs: string[] = []
+    const rawTabs = user.allowed_tabs
+    if (Array.isArray(rawTabs)) {
+      parsedTabs = rawTabs
+    } else if (typeof rawTabs === 'string') {
+      if (rawTabs.startsWith('{') && rawTabs.endsWith('}')) {
+        const inner = rawTabs.slice(1, -1).trim()
+        if (inner) {
+          parsedTabs = inner.split(',').map((s) => s.trim().replace(/(^"|"$)/g, ''))
+        }
+      } else {
+        try {
+          parsedTabs = JSON.parse(rawTabs)
+        } catch (e) {
+          parsedTabs = []
+        }
       }
     }
 
@@ -231,12 +251,17 @@ export default function Usuarios() {
                     value={formData.job_title || ''}
                     onValueChange={(val) => {
                       const isAdm = val === 'Administrador'
+                      const isEditor = val === 'Editor'
                       setFormData({
                         ...formData,
                         job_title: val,
-                        role: isAdm ? 'admin' : val === 'Editor' ? 'editor' : 'viewer',
+                        role: isAdm ? 'admin' : isEditor ? 'editor' : 'viewer',
                         is_admin: isAdm,
-                        allowed_tabs: val === 'Editor' ? formData.allowed_tabs || [] : [],
+                        allowed_tabs: isEditor
+                          ? Array.isArray(formData.allowed_tabs)
+                            ? formData.allowed_tabs
+                            : []
+                          : [],
                       })
                     }}
                   >
@@ -267,7 +292,7 @@ export default function Usuarios() {
                 </div>
               </div>
 
-              {formData.job_title === 'Editor' && (
+              {(formData.job_title === 'Editor' || formData.role === 'editor') && (
                 <div className="space-y-3 pt-2">
                   <Label className="font-bold text-sm text-foreground">
                     Permissões de Edição (Abas)
@@ -277,9 +302,15 @@ export default function Usuarios() {
                       <div key={tab} className="flex items-center space-x-2">
                         <Checkbox
                           id={`tab-${tab}`}
-                          checked={formData.allowed_tabs?.includes(tab)}
+                          checked={
+                            Array.isArray(formData.allowed_tabs)
+                              ? formData.allowed_tabs.includes(tab)
+                              : false
+                          }
                           onCheckedChange={(checked) => {
-                            const current = formData.allowed_tabs || []
+                            const current = Array.isArray(formData.allowed_tabs)
+                              ? formData.allowed_tabs
+                              : []
                             setFormData({
                               ...formData,
                               allowed_tabs: checked
