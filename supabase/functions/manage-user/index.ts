@@ -49,13 +49,16 @@ Deno.serve(async (req) => {
       profile?.is_admin === true ||
       user.user_metadata?.is_admin === true ||
       user.user_metadata?.role === 'admin'
-
-    if (!isAdmin) {
-      throw new Error('Unauthorized')
-    }
+    const isEditor = profile?.role === 'editor' || user.user_metadata?.role === 'editor'
 
     const body = await req.json()
     const { action, userData } = body
+
+    if (!isAdmin) {
+      if (!(isEditor && action === 'list')) {
+        throw new Error('Unauthorized')
+      }
+    }
 
     if (action === 'list') {
       const { data: authData, error: listError } = await supabaseAdmin.auth.admin.listUsers()
