@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth'
 import { cn } from '@/lib/utils'
-import sealLogo from '@/assets/logo-cmtecs-fe595.jpg'
+import sealLogo from '@/assets/logo-cmtecs-5a7a8.jpg'
 
 export function AppSidebar() {
   const { pathname } = useLocation()
