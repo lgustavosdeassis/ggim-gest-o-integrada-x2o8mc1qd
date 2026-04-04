@@ -24,6 +24,7 @@ import {
   Printer,
   Eye,
   ChevronDown,
+  Loader2,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -49,7 +50,7 @@ const MONTHS = [
 ]
 
 export default function Relatorios() {
-  const { reports, addReport, deleteReport } = useReportStore()
+  const { reports, addReport, deleteReport, fetchReports, isFetching, hasMore } = useReportStore()
   const { user } = useAuthStore()
 
   const isOwnerOrAdmin = user?.role === 'owner' || user?.role === 'admin'
@@ -206,6 +207,23 @@ export default function Relatorios() {
     </div>
   )
 
+  const renderLoadMore = () => {
+    if (!hasMore) return null
+    return (
+      <div className="flex justify-center pt-4 pb-8">
+        <Button
+          variant="outline"
+          onClick={() => fetchReports(true)}
+          disabled={isFetching}
+          className="h-12 px-8 rounded-xl font-bold bg-card shadow-sm border-border hover:bg-muted"
+        >
+          {isFetching && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          Carregar Mais
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-6 max-w-[1200px] mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -343,6 +361,7 @@ export default function Relatorios() {
                 ))
             )}
           </div>
+          {renderLoadMore()}
         </TabsContent>
 
         <TabsContent value="anuais" className="space-y-6">
@@ -425,6 +444,7 @@ export default function Relatorios() {
                 ))
             )}
           </div>
+          {renderLoadMore()}
         </TabsContent>
       </Tabs>
 

@@ -16,7 +16,9 @@ export interface ReportRecord {
 interface ReportState {
   reports: ReportRecord[]
   isFetching: boolean
-  fetchReports: () => Promise<void>
+  hasMore: boolean
+  page: number
+  fetchReports: (loadMore?: boolean) => Promise<void>
   addReport: (report: Omit<ReportRecord, 'id' | 'created_at'>) => Promise<void>
   deleteReport: (id: string) => Promise<void>
 }
@@ -24,50 +26,74 @@ interface ReportState {
 export const useReportStore = create<ReportState>()((set, get) => ({
   reports: [],
   isFetching: false,
-  fetchReports: async () => {
+  hasMore: true,
+  page: 0,
+  fetchReports: async (loadMore = false) => {
+    const state = get()
+    if (state.isFetching) return
+
     set({ isFetching: true })
     try {
-      const allData: ReportRecord[] = []
       let from = 0
-      const step = 25 // Chunk pequeno para prevenir erros de timeout com arquivos em Base64
-      let hasMore = true
-      let retryCount = 0
+      let to = 49
+      let isAppending = false
 
-      while (hasMore) {
-        try {
-          const { data, error } = await supabase
-            .from('ggim_reports')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .range(from, from + step - 1)
-
-          if (error) throw error
-
-          if (data && data.length > 0) {
-            allData.push(...(data as ReportRecord[]))
-            from += step
-            if (data.length < step) hasMore = false
-            retryCount = 0
-          } else {
-            hasMore = false
-          }
-        } catch (error) {
-          console.warn(`Erro ao buscar ggim_reports lote ${from}. Retentando...`, error)
-          retryCount++
-          if (retryCount > 3) {
-            console.error(`Falha ao buscar relatórios após 3 tentativas. Interrompendo lote.`)
-            hasMore = false
-          } else {
-            await new Promise((r) => setTimeout(r, 2000 * retryCount))
-          }
+      if (loadMore) {
+        if (!state.hasMore) {
+          set({ isFetching: false })
+          return
         }
+        from = state.page * 50
+        to = from + 49
+        isAppending = true
+      } else {
+        const currentLoadedCount = Math.max(50, state.page * 50)
+        from = 0
+        to = currentLoadedCount - 1
+        isAppending = false
       }
 
-      set((state) => {
-        if (JSON.stringify(state.reports) === JSON.stringify(allData)) {
-          return { isFetching: false }
+      const { data, error } = await supabase
+        .from('ggim_reports')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, to)
+
+      if (error) throw error
+
+      const fetchedData = (data || []) as ReportRecord[]
+
+      set((prev) => {
+        let newReports = []
+        let newPage = prev.page
+        let newHasMore = prev.hasMore
+
+        if (isAppending) {
+          newReports = [...prev.reports, ...fetchedData]
+          newPage = prev.page + 1
+          newHasMore = fetchedData.length === 50
+        } else {
+          newReports = fetchedData
+          if (prev.page === 0) newPage = 1
+          if (fetchedData.length < to - from + 1) {
+            newHasMore = false
+          } else if (fetchedData.length === to - from + 1) {
+            newHasMore = true
+          }
         }
-        return { reports: allData, isFetching: false }
+
+        const unique = Array.from(new Map(newReports.map((item) => [item.id, item])).values())
+
+        if (JSON.stringify(prev.reports) === JSON.stringify(unique)) {
+          return { isFetching: false, page: newPage, hasMore: newHasMore }
+        }
+
+        return {
+          reports: unique,
+          isFetching: false,
+          page: newPage,
+          hasMore: newHasMore,
+        }
       })
     } catch (e) {
       console.error(e)

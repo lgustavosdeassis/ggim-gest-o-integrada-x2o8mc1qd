@@ -11,7 +11,31 @@ import {
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { ListPlus } from 'lucide-react'
-import { INSTANCIAS, EVENTOS_TIPO, FormValues } from './schema'
+import { INSTANCIAS, FormValues } from './schema'
+
+const NOVOS_EVENTOS_TIPO = [
+  'Blitz',
+  'Campanha',
+  'Colóquio',
+  'Conferência',
+  'Confraternização',
+  'Congresso',
+  'Convenção',
+  'Curso',
+  'Exposição',
+  'Feira',
+  'Fórum',
+  'Mesa Redonda',
+  'Networking',
+  'Oficina',
+  'Operação',
+  'Painel',
+  'Programa',
+  'Projeto',
+  'Roadshow',
+  'Treinamento',
+  'Webinário',
+]
 
 export function IdentificacaoCard() {
   const { control } = useFormContext<FormValues>()
@@ -92,7 +116,7 @@ export function IdentificacaoCard() {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent className="bg-white border-[#0f172a]/10 text-[#0f172a] rounded-xl shadow-lg">
-                  {EVENTOS_TIPO.map((i) => (
+                  {NOVOS_EVENTOS_TIPO.map((i) => (
                     <SelectItem
                       key={i}
                       value={i}

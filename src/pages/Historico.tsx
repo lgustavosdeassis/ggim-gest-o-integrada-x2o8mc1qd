@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { MoreHorizontal, Trash, Eye, Pencil, Clock, FileText } from 'lucide-react'
+import { MoreHorizontal, Trash, Eye, Pencil, Clock, FileText, Loader2 } from 'lucide-react'
 import {
   formatDateTime,
   parseSemicolonList,
@@ -42,7 +42,8 @@ export default function Historico() {
       user.allowedTabs.includes('Acervo Histórico')
     )
 
-  const { activities, deleteActivity, bulkDeleteActivities } = useAppStore()
+  const { activities, deleteActivity, bulkDeleteActivities, fetchActivities, isFetching, hasMore } =
+    useAppStore()
   const addLog = useAuditStore((state) => state.addLog)
 
   const [searchTerm, setSearchTerm] = useState('')
@@ -324,6 +325,20 @@ export default function Historico() {
           </TableBody>
         </Table>
       </div>
+
+      {hasMore && (
+        <div className="flex justify-center pb-8">
+          <Button
+            variant="outline"
+            onClick={() => fetchActivities(true)}
+            disabled={isFetching}
+            className="h-12 px-8 rounded-xl font-bold bg-card shadow-sm border-border hover:bg-muted"
+          >
+            {isFetching && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Carregar Mais
+          </Button>
+        </div>
+      )}
 
       <ViewDialog
         viewActivity={viewActivity}

@@ -1,12 +1,15 @@
 import { create } from 'zustand'
 import { ActivityRecord } from '@/lib/types'
 import { api } from '@/lib/api'
+import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 
 interface AppState {
   activities: ActivityRecord[]
   isFetching: boolean
-  fetchActivities: () => Promise<void>
+  hasMore: boolean
+  page: number
+  fetchActivities: (loadMore?: boolean) => Promise<void>
   addActivity: (activity: Omit<ActivityRecord, 'id' | 'createdAt'>) => Promise<void>
   updateActivity: (id: string, activity: Partial<ActivityRecord>) => Promise<void>
   deleteActivity: (id: string) => Promise<void>
@@ -17,17 +20,95 @@ interface AppState {
 export const useAppStore = create<AppState>()((set, get) => ({
   activities: [],
   isFetching: false,
-  fetchActivities: async () => {
+  hasMore: true,
+  page: 0,
+  fetchActivities: async (loadMore = false) => {
+    const state = get()
+    if (state.isFetching) return
+
     set({ isFetching: true })
     try {
-      const data = await api.activities.list()
-      set((state) => {
-        // Prevent unnecessary re-renders and form resets during background polling
-        const isSame = JSON.stringify(state.activities) === JSON.stringify(data)
-        if (isSame) {
-          return { isFetching: false }
+      let from = 0
+      let to = 49
+      let isAppending = false
+
+      if (loadMore) {
+        if (!state.hasMore) {
+          set({ isFetching: false })
+          return
         }
-        return { activities: data as ActivityRecord[], isFetching: false }
+        from = state.page * 50
+        to = from + 49
+        isAppending = true
+      } else {
+        const currentLoadedCount = Math.max(50, state.page * 50)
+        from = 0
+        to = currentLoadedCount - 1
+        isAppending = false
+      }
+
+      const { data, error } = await supabase
+        .from('activities')
+        .select('*')
+        .order('meeting_start', { ascending: false })
+        .range(from, to)
+
+      if (error) throw error
+
+      const formattedData = (data || []).map((d: any) => ({
+        id: d.id,
+        eventName: d.event_name,
+        instance: d.instance,
+        eventType: d.event_type,
+        modality: d.modality,
+        location: d.location,
+        meetingStart: d.meeting_start,
+        meetingEnd: d.meeting_end,
+        hasAdditionalDays: d.has_additional_days,
+        additionalDays: d.additional_days,
+        hasAction: d.has_action,
+        actionStart: d.action_start,
+        actionEnd: d.action_end,
+        actions: d.actions,
+        participantsPF: d.participants_pf,
+        participantsPJ: d.participants_pj,
+        documents: d.documents,
+        deliberations: d.deliberations,
+        description: d.description,
+        createdAt: d.created_at,
+      })) as ActivityRecord[]
+
+      set((prev) => {
+        let newActivities = []
+        let newPage = prev.page
+        let newHasMore = prev.hasMore
+
+        if (isAppending) {
+          newActivities = [...prev.activities, ...formattedData]
+          newPage = prev.page + 1
+          newHasMore = formattedData.length === 50
+        } else {
+          newActivities = formattedData
+          if (prev.page === 0) newPage = 1
+          if (formattedData.length < to - from + 1) {
+            newHasMore = false
+          } else if (formattedData.length === to - from + 1) {
+            newHasMore = true
+          }
+        }
+
+        const unique = Array.from(new Map(newActivities.map((item) => [item.id, item])).values())
+
+        if (JSON.stringify(prev.activities) === JSON.stringify(unique)) {
+          return { isFetching: false, page: newPage, hasMore: newHasMore }
+        }
+
+        return {
+          activities: unique,
+          isFetching: false,
+          page: newPage,
+          hasMore: newHasMore,
+        }
       })
     } catch (e) {
       console.error(e)
