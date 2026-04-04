@@ -4,12 +4,12 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE',
 }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
   try {
@@ -23,14 +23,18 @@ Deno.serve(async (req) => {
       throw new Error('No authorization header')
     }
 
-    const token = authHeader.replace('Bearer ', '')
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim()
     const {
       data: { user },
       error: userError,
     } = await supabaseAdmin.auth.getUser(token)
 
     if (userError || !user) {
-      throw new Error('Invalid token')
+      const errorMsg = userError?.message || 'User not found'
+      if (errorMsg.includes('Unexpected token') || errorMsg.includes('<!DOCTYPE') || errorMsg.includes('fetch')) {
+        throw new Error('O serviço de autenticação está temporariamente instável (Gateway).')
+      }
+      throw new Error(`Sessão inválida ou expirada: ${errorMsg}`)
     }
 
     const { data: profile, error: profileError } = await supabaseAdmin
@@ -49,15 +53,12 @@ Deno.serve(async (req) => {
       profile?.is_admin === true ||
       user.user_metadata?.is_admin === true ||
       user.user_metadata?.role === 'admin'
-    const isEditor = profile?.role === 'editor' || user.user_metadata?.role === 'editor'
 
     const body = await req.json()
     const { action, userData } = body
 
-    if (!isAdmin) {
-      if (!(isEditor && action === 'list')) {
-        throw new Error('Unauthorized')
-      }
+    if (!isAdmin && action !== 'list') {
+      throw new Error('Unauthorized')
     }
 
     if (action === 'list') {
@@ -81,6 +82,8 @@ Deno.serve(async (req) => {
             u.user_metadata?.can_generate_reports || p?.can_generate_reports || false,
           can_delete_reports: u.user_metadata?.can_delete_reports || p?.can_delete_reports || false,
           allowed_tabs: u.user_metadata?.allowed_tabs || p?.allowed_tabs || [],
+          avatar_url: u.user_metadata?.avatar_url || p?.avatar_url || null,
+          created_at: p?.created_at || u.created_at || new Date().toISOString(),
         }
       })
 
@@ -91,6 +94,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'create') {
+      const validTabs = Array.isArray(userData.allowed_tabs) ? userData.allowed_tabs : [];
       const userMeta = {
         name: userData.name,
         role: userData.role || 'user',
@@ -99,7 +103,7 @@ Deno.serve(async (req) => {
         is_admin: userData.is_admin || userData.role === 'admin',
         can_generate_reports: userData.can_generate_reports || false,
         can_delete_reports: userData.can_delete_reports || false,
-        allowed_tabs: userData.allowed_tabs || [],
+        allowed_tabs: validTabs,
       }
 
       const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
@@ -118,10 +122,13 @@ Deno.serve(async (req) => {
         is_admin: userData.is_admin || userData.role === 'admin',
         can_generate_reports: userData.can_generate_reports || false,
         can_delete_reports: userData.can_delete_reports || false,
-        allowed_tabs: userData.allowed_tabs || [],
+        allowed_tabs: validTabs,
       }
 
-      await supabaseAdmin.from('profiles').update(profileData).eq('id', newUser.user.id)
+      const { error: profileCreateError } = await supabaseAdmin.from('profiles').update(profileData).eq('id', newUser.user.id)
+      if (profileCreateError) {
+        console.error('Error updating profile on create in manage-user:', profileCreateError)
+      }
 
       return new Response(JSON.stringify({ user: newUser.user }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -149,6 +156,8 @@ Deno.serve(async (req) => {
       if (getUserError) throw getUserError
 
       const currentMeta = currentUser.user.user_metadata || {}
+      
+      const validTabs = Array.isArray(allowed_tabs) ? allowed_tabs : (currentMeta.allowed_tabs || []);
 
       const newMeta = {
         ...currentMeta,
@@ -163,7 +172,7 @@ Deno.serve(async (req) => {
             : currentMeta.can_generate_reports,
         can_delete_reports:
           can_delete_reports !== undefined ? can_delete_reports : currentMeta.can_delete_reports,
-        allowed_tabs: allowed_tabs !== undefined ? allowed_tabs : currentMeta.allowed_tabs,
+        allowed_tabs: validTabs,
       }
 
       const updateData: any = { user_metadata: newMeta }
@@ -184,10 +193,14 @@ Deno.serve(async (req) => {
       if (can_generate_reports !== undefined)
         profileData.can_generate_reports = can_generate_reports
       if (can_delete_reports !== undefined) profileData.can_delete_reports = can_delete_reports
-      if (allowed_tabs !== undefined) profileData.allowed_tabs = allowed_tabs
+      if (allowed_tabs !== undefined) profileData.allowed_tabs = validTabs
 
       if (Object.keys(profileData).length > 0) {
-        await supabaseAdmin.from('profiles').update(profileData).eq('id', id)
+        const { error: profileUpdateError } = await supabaseAdmin.from('profiles').update(profileData).eq('id', id)
+        if (profileUpdateError) {
+          console.error('Error updating profile in manage-user:', profileUpdateError)
+          throw profileUpdateError
+        }
       }
 
       return new Response(JSON.stringify({ success: true }), {
