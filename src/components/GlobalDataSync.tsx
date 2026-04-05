@@ -6,6 +6,7 @@ import { useObsStore } from '@/stores/obs'
 import { useAuditStore } from '@/stores/audit'
 import { useReportStore } from '@/stores/reports'
 import { Loader2 } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
 
 export function GlobalDataSync({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -26,11 +27,50 @@ export function GlobalDataSync({ children }: { children: React.ReactNode }) {
       }
     }, 4000)
 
-    const fetchAll = async () => {
+    const getDbState = async () => {
+      try {
+        // Sincronização Diferencial: Verifica se houve alterações antes de carregar tudo
+        const getLatest = async (table: string, timeCol: string = 'created_at') => {
+          const { data, count } = await supabase
+            .from(table)
+            .select(timeCol, { count: 'exact' })
+            .order(timeCol, { ascending: false })
+            .limit(1)
+          return `${count}_${data?.[0]?.[timeCol] || ''}`
+        }
+
+        const states = await Promise.all([
+          getLatest('activities'),
+          getLatest('ggim_reports'),
+          getLatest('video_records'),
+          getLatest('obs_records'),
+          getLatest('audit_logs', 'timestamp'),
+        ])
+
+        return states.join('|')
+      } catch (e) {
+        return null
+      }
+    }
+
+    let lastDbState: string | null = null
+
+    const fetchAll = async (force = false) => {
       if (syncInProgress.current) return
       syncInProgress.current = true
 
       try {
+        if (!force) {
+          const currentState = await getDbState()
+          if (currentState && lastDbState === currentState) {
+            // Nenhuma alteração detectada no banco, ignora a atualização local
+            syncInProgress.current = false
+            if (isMounted) setInitialLoad(false)
+            return
+          }
+          lastDbState = currentState
+        }
+
         // Encadeamento sequencial de chamadas com pequenos delays
         // Isso previne congestionamento de conexões no Supabase (Erro 504 / 500)
         await useAppStore.getState().fetchActivities()
@@ -56,14 +96,14 @@ export function GlobalDataSync({ children }: { children: React.ReactNode }) {
       }
     }
 
-    fetchAll()
+    fetchAll(true)
 
     // Ampliado o tempo de checagem para aliviar a carga no servidor (de 10s para 30s)
-    const interval = setInterval(fetchAll, 30000)
+    const interval = setInterval(() => fetchAll(false), 30000)
 
     const handleEvent = () => {
       if (!syncInProgress.current) {
-        fetchAll()
+        fetchAll(true)
       }
     }
 

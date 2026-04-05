@@ -84,15 +84,12 @@ export default function Relatorios() {
   const [pageAnual, setPageAnual] = useState(0)
 
   useEffect(() => {
-    const interval = setInterval(
-      () => {
-        useReportStore.setState({ reports: [], page: 0, hasMore: true })
-        fetchReports()
-      },
-      30 * 60 * 1000,
-    )
-    return () => clearInterval(interval)
-  }, [fetchReports])
+    // Removido o setInterval de recarregamento redundante
+    // A limpeza agora ocorre apenas no unmount para evitar retenção de memória prolongada
+    return () => {
+      useReportStore.setState({ reports: [], page: 0, hasMore: true })
+    }
+  }, [])
 
   const uploadToStorage = async (file: File, folder: string) => {
     const fileExt = file.name.split('.').pop()

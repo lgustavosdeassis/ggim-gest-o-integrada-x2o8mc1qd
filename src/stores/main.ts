@@ -99,7 +99,14 @@ export const useAppStore = create<AppState>()((set, get) => ({
 
         const unique = Array.from(new Map(newActivities.map((item) => [item.id, item])).values())
 
-        if (JSON.stringify(prev.activities) === JSON.stringify(unique)) {
+        // Evita retenção desnecessária: verifica por ID/Timestamp em vez de stringify completo
+        const isSame =
+          prev.activities.length === unique.length &&
+          prev.activities.every(
+            (a, i) => a.id === unique[i].id && a.createdAt === unique[i].createdAt,
+          )
+
+        if (isSame) {
           return { isFetching: false, page: newPage, hasMore: newHasMore }
         }
 

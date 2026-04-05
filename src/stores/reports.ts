@@ -84,7 +84,14 @@ export const useReportStore = create<ReportState>()((set, get) => ({
 
         const unique = Array.from(new Map(newReports.map((item) => [item.id, item])).values())
 
-        if (JSON.stringify(prev.reports) === JSON.stringify(unique)) {
+        // Evita retenção desnecessária: se não houver registros ou for mesma lista, não re-aloca
+        const isSame =
+          prev.reports.length === unique.length &&
+          prev.reports.every(
+            (r, i) => r.id === unique[i].id && r.created_at === unique[i].created_at,
+          )
+
+        if (isSame) {
           return { isFetching: false, page: newPage, hasMore: newHasMore }
         }
 
