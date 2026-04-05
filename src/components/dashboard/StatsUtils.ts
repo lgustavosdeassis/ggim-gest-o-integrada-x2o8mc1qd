@@ -93,12 +93,17 @@ export function calculateDashboardStats(
       reports.forEach((r: any) => {
         const fileType = r.file_type?.toLowerCase() || ''
         const reportType = r.report_type?.toLowerCase() || ''
+        const name = r.name?.toLowerCase() || ''
+
         const isVideo =
           fileType === 'vídeo' ||
           fileType === 'video' ||
           fileType.startsWith('video/') ||
           reportType === 'vídeo' ||
-          reportType === 'video'
+          reportType === 'video' ||
+          name.endsWith('.mp4') ||
+          name.endsWith('.webm') ||
+          name.endsWith('.mov')
 
         if (isVideo) {
           ggimVideosCount++

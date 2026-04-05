@@ -84,12 +84,11 @@ export default function Relatorios() {
   const [pageAnual, setPageAnual] = useState(0)
 
   useEffect(() => {
-    // Removido o setInterval de recarregamento redundante
-    // A limpeza agora ocorre apenas no unmount para evitar retenção de memória prolongada
+    fetchReports()
     return () => {
-      useReportStore.setState({ reports: [], page: 0, hasMore: true })
+      useReportStore.setState({ reports: [], page: 0, hasMore: false })
     }
-  }, [])
+  }, [fetchReports])
 
   const uploadToStorage = async (file: File, folder: string) => {
     const fileExt = file.name.split('.').pop()
@@ -269,10 +268,6 @@ export default function Relatorios() {
     const handleNext = () => {
       if (currentPage < totalPages - 1) {
         setCurrentPage((p) => p + 1)
-      } else if (hasMore) {
-        fetchReports(true).then(() => {
-          setCurrentPage((p) => p + 1)
-        })
       }
     }
 
@@ -389,7 +384,7 @@ export default function Relatorios() {
           </Table>
         </div>
 
-        {(totalPages > 1 || hasMore) && (
+        {totalPages > 1 && (
           <div className="flex justify-between items-center pt-2">
             <Button
               variant="outline"
@@ -405,14 +400,10 @@ export default function Relatorios() {
             <Button
               variant="outline"
               size="sm"
-              disabled={currentPage >= totalPages - 1 && !hasMore}
+              disabled={currentPage >= totalPages - 1}
               onClick={handleNext}
             >
-              {isFetching && currentPage >= totalPages - 1 ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                'Próxima'
-              )}
+              Próxima
             </Button>
           </div>
         )}
