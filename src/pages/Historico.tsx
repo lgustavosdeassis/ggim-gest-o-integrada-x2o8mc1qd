@@ -33,14 +33,10 @@ import { ViewDialog } from '@/components/historico/ViewDialog'
 export default function Historico() {
   const navigate = useNavigate()
   const { user } = useAuthStore()
-  const isViewer =
-    user?.role !== 'admin' &&
-    user?.role !== 'owner' &&
-    !(
-      user?.role === 'editor' &&
-      Array.isArray(user?.allowedTabs) &&
-      user.allowedTabs.includes('Acervo Histórico')
-    )
+  const isOwnerOrAdmin = user?.role === 'admin' || user?.role === 'owner'
+  const isViewer = user?.role === 'viewer' || (!isOwnerOrAdmin && user?.role !== 'editor')
+  const canEdit = isOwnerOrAdmin || user?.role === 'editor'
+  const canDelete = isOwnerOrAdmin || user?.canDeleteReports
 
   const { activities, deleteActivity, bulkDeleteActivities, fetchActivities, isFetching, hasMore } =
     useAppStore()
@@ -139,7 +135,7 @@ export default function Historico() {
           </p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          {selectedIds.size > 0 && !isViewer && (
+          {selectedIds.size > 0 && canDelete && (
             <Button
               variant="destructive"
               onClick={handleBulkDelete}
@@ -147,7 +143,7 @@ export default function Historico() {
             >
               <Trash className="h-4 w-4 mr-2" /> Excluir ({selectedIds.size})
             </Button>
-          )}
+          )}{' '}
         </div>
       </div>
 
@@ -164,7 +160,7 @@ export default function Historico() {
         <Table>
           <TableHeader className="bg-muted/50">
             <TableRow className="border-border hover:bg-transparent">
-              {!isViewer && (
+              {canDelete && (
                 <TableHead className="w-[60px] pl-6 py-5">
                   <Checkbox
                     checked={
@@ -196,7 +192,7 @@ export default function Historico() {
             {filteredActivities.length === 0 ? (
               <TableRow className="border-border">
                 <TableCell
-                  colSpan={isViewer ? 5 : 6}
+                  colSpan={canDelete ? 6 : 5}
                   className="text-center py-16 text-muted-foreground font-medium text-base"
                 >
                   <FileText className="h-10 w-10 mx-auto mb-4 opacity-20" />
@@ -212,7 +208,7 @@ export default function Historico() {
                     key={act.id}
                     className="border-border hover:bg-muted/50 transition-colors group"
                   >
-                    {!isViewer && (
+                    {canDelete && (
                       <TableCell className="pl-6 py-4">
                         <Checkbox
                           checked={selectedIds.has(act.id)}
@@ -299,7 +295,7 @@ export default function Historico() {
                           >
                             <Eye className="mr-3 h-4 w-4 text-primary" /> Inspecionar Total
                           </DropdownMenuItem>
-                          {!isViewer && (
+                          {canEdit && (
                             <DropdownMenuItem
                               onClick={() => navigate(`/registrar?edit=${act.id}`)}
                               className="cursor-pointer py-2.5 font-medium focus:bg-accent focus:text-accent-foreground"
@@ -307,7 +303,7 @@ export default function Historico() {
                               <Pencil className="mr-3 h-4 w-4 text-chart-2" /> Editar Dados
                             </DropdownMenuItem>
                           )}
-                          {!isViewer && (
+                          {canDelete && (
                             <DropdownMenuItem
                               className="cursor-pointer py-2.5 font-bold text-destructive focus:bg-destructive/10 focus:text-destructive mt-1"
                               onClick={() => handleDelete(act.id)}

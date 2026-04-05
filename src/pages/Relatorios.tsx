@@ -60,8 +60,12 @@ export default function Relatorios() {
 
   const isOwnerOrAdmin = user?.role === 'owner' || user?.role === 'admin'
   const isEditor = user?.role === 'editor'
-  const isViewer = !isOwnerOrAdmin && !(isEditor && user?.allowedTabs?.includes('Relatórios GGIM'))
-  const canDelete = isOwnerOrAdmin || (isEditor && user?.canDeleteReports)
+  const isViewer = user?.role === 'viewer' || (!isOwnerOrAdmin && !isEditor)
+  const canDelete = isOwnerOrAdmin || user?.canDeleteReports
+
+  // Se for Visualizador, não pode enviar novos, só visualizar.
+  // Se for Editor ou Admin, pode enviar novos.
+  const canUpload = isOwnerOrAdmin || isEditor
 
   const [tab, setTab] = useState('mensais')
   const [uploadYear, setUploadYear] = useState<string>(new Date().getFullYear().toString())
@@ -215,7 +219,8 @@ export default function Relatorios() {
         })
 
         if (!patchRes.ok) {
-          throw new Error('Falha ao enviar chunk do vídeo')
+          const errorText = await patchRes.text()
+          throw new Error(`Falha ao enviar chunk do vídeo: ${errorText}`)
         }
 
         const newOffset = patchRes.headers.get('Upload-Offset')
@@ -229,6 +234,7 @@ export default function Relatorios() {
         setVideoUploadProgress(progress)
       }
 
+      // IMPORTANTE: Após finalizar o upload por chunks (TUS), a URL pública é gerada normalmente
       const { data: publicUrlData } = supabase.storage.from('reports').getPublicUrl(filePath)
 
       await addReport({
@@ -240,7 +246,7 @@ export default function Relatorios() {
         url: publicUrlData.publicUrl,
       })
 
-      toast.success('Vídeo comprimido e enviado com sucesso!')
+      toast.success('Vídeo validado, comprimido e enviado em partes com sucesso!')
     } catch (err: any) {
       console.error(err)
       toast.error(err.message || 'Erro ao processar e enviar vídeo')
@@ -525,7 +531,7 @@ export default function Relatorios() {
         </TabsList>
 
         <TabsContent value="mensais" className="space-y-6">
-          {!isViewer && (
+          {canUpload && (
             <Card className="border-border shadow-sm rounded-2xl bg-card">
               <CardHeader className="border-b border-border pb-4 bg-muted/20">
                 <CardTitle className="text-lg font-bold">Anexar Novo Relatório Mensal</CardTitle>
@@ -582,7 +588,7 @@ export default function Relatorios() {
         </TabsContent>
 
         <TabsContent value="anuais" className="space-y-6">
-          {!isViewer && (
+          {canUpload && (
             <Card className="border-border shadow-sm rounded-2xl bg-card">
               <CardHeader className="border-b border-border pb-4 bg-muted/20">
                 <CardTitle className="text-lg font-bold">Anexar Novo Relatório Anual</CardTitle>

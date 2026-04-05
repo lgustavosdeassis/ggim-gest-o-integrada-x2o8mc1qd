@@ -31,7 +31,11 @@ Deno.serve(async (req) => {
 
     if (userError || !user) {
       const errorMsg = userError?.message || 'User not found'
-      if (errorMsg.includes('Unexpected token') || errorMsg.includes('<!DOCTYPE') || errorMsg.includes('fetch')) {
+      if (
+        errorMsg.includes('Unexpected token') ||
+        errorMsg.includes('<!DOCTYPE') ||
+        errorMsg.includes('fetch')
+      ) {
         throw new Error('O serviço de autenticação está temporariamente instável (Gateway).')
       }
       throw new Error(`Sessão inválida ou expirada: ${errorMsg}`)
@@ -94,7 +98,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'create') {
-      const validTabs = Array.isArray(userData.allowed_tabs) ? userData.allowed_tabs : [];
+      const validTabs = Array.isArray(userData.allowed_tabs) ? userData.allowed_tabs : []
       const userMeta = {
         name: userData.name,
         role: userData.role || 'user',
@@ -125,7 +129,10 @@ Deno.serve(async (req) => {
         allowed_tabs: validTabs,
       }
 
-      const { error: profileCreateError } = await supabaseAdmin.from('profiles').update(profileData).eq('id', newUser.user.id)
+      const { error: profileCreateError } = await supabaseAdmin
+        .from('profiles')
+        .update(profileData)
+        .eq('id', newUser.user.id)
       if (profileCreateError) {
         console.error('Error updating profile on create in manage-user:', profileCreateError)
       }
@@ -156,8 +163,8 @@ Deno.serve(async (req) => {
       if (getUserError) throw getUserError
 
       const currentMeta = currentUser.user.user_metadata || {}
-      
-      const validTabs = Array.isArray(allowed_tabs) ? allowed_tabs : (currentMeta.allowed_tabs || []);
+
+      const validTabs = Array.isArray(allowed_tabs) ? allowed_tabs : currentMeta.allowed_tabs || []
 
       const newMeta = {
         ...currentMeta,
@@ -196,7 +203,10 @@ Deno.serve(async (req) => {
       if (allowed_tabs !== undefined) profileData.allowed_tabs = validTabs
 
       if (Object.keys(profileData).length > 0) {
-        const { error: profileUpdateError } = await supabaseAdmin.from('profiles').update(profileData).eq('id', id)
+        const { error: profileUpdateError } = await supabaseAdmin
+          .from('profiles')
+          .update(profileData)
+          .eq('id', id)
         if (profileUpdateError) {
           console.error('Error updating profile in manage-user:', profileUpdateError)
           throw profileUpdateError

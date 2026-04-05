@@ -28,8 +28,9 @@ export function AppSidebar() {
   const { pathname } = useLocation()
   const { user } = useAuthStore()
   const isOwner = user?.role === 'owner' || user?.role === 'admin'
+  const allowedTabs = user?.allowedTabs || []
 
-  const menuItems = [
+  const allMenuItems = [
     { title: 'Dashboard BI', path: '/', icon: LayoutDashboard },
     { title: 'Registrar Atividade', path: '/registrar', icon: FilePlus2 },
     { title: 'Importar Arquivo', path: '/importar', icon: UploadCloud },
@@ -38,6 +39,8 @@ export function AppSidebar() {
     { title: 'Observatório', path: '/observatorio', icon: BarChart3 },
     { title: 'Relatórios GGIM', path: '/relatorios', icon: FolderKanban },
   ]
+
+  const menuItems = allMenuItems.filter((item) => isOwner || allowedTabs.includes(item.title))
 
   const adminItems = [
     { title: 'Usuários', path: '/usuarios', icon: Users },
