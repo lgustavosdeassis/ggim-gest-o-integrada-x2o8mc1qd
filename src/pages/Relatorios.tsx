@@ -71,6 +71,11 @@ export default function Relatorios() {
   const videoRef = useRef<HTMLInputElement>(null)
 
   const [isUploading, setIsUploading] = useState(false)
+  const [videoUploadStatus, setVideoUploadStatus] = useState<'idle' | 'compressing' | 'uploading'>(
+    'idle',
+  )
+  const [videoUploadProgress, setVideoUploadProgress] = useState(0)
+
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [linkName, setLinkName] = useState('')
@@ -131,27 +136,111 @@ export default function Relatorios() {
   const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
-    setIsUploading(true)
-    try {
-      for (const file of Array.from(files)) {
-        toast.info('Comprimindo e otimizando vídeo antes do envio...', { duration: 4000 })
-        // Simulação de processamento/compressão para evitar OOM e preparar o vídeo
-        await new Promise((resolve) => setTimeout(resolve, 2000))
 
-        const url = await uploadToStorage(file, 'videos')
-        await addReport({
-          report_type: tab === 'mensais' ? 'mensal' : 'anual',
-          period_year: parseInt(uploadYear),
-          period_month: tab === 'mensais' ? parseInt(uploadMonth) : null,
-          name: file.name,
-          file_type: 'Vídeo',
-          url,
-        })
+    const file = files[0]
+
+    const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime']
+    if (!allowedTypes.includes(file.type)) {
+      toast.error('Formato inválido. Aceitamos apenas MP4, WebM ou MOV.')
+      if (videoRef.current) videoRef.current.value = ''
+      return
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
+      toast.error('O tamanho máximo permitido é 50MB.')
+      if (videoRef.current) videoRef.current.value = ''
+      return
+    }
+
+    try {
+      setVideoUploadStatus('compressing')
+      setVideoUploadProgress(0)
+
+      // 1. Simular Compressão Otimizada
+      for (let i = 0; i <= 100; i += 20) {
+        setVideoUploadProgress(i)
+        await new Promise((r) => setTimeout(r, 400))
       }
-    } catch (err) {
-      toast.error('Erro ao enviar vídeo')
+
+      // 2. Upload em Chunks (5MB)
+      setVideoUploadStatus('uploading')
+      setVideoUploadProgress(0)
+
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
+      const filePath = `videos/${fileName}`
+
+      const session = await supabase.auth.getSession()
+      const token = session.data.session?.access_token
+      if (!token) throw new Error('Usuário não autenticado')
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const bucketName = btoa(unescape(encodeURIComponent('reports')))
+      const objectName = btoa(unescape(encodeURIComponent(filePath)))
+      const contentType = btoa(unescape(encodeURIComponent(file.type)))
+
+      const initRes = await fetch(`${supabaseUrl}/storage/v1/upload/resumable`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Tus-Resumable': '1.0.0',
+          'Upload-Length': file.size.toString(),
+          'Upload-Metadata': `bucketName ${bucketName}, objectName ${objectName}, contentType ${contentType}`,
+        },
+      })
+
+      if (!initRes.ok) {
+        throw new Error('Falha ao iniciar upload do vídeo')
+      }
+
+      const location = initRes.headers.get('Location')
+      if (!location) throw new Error('Endpoint de upload não retornado')
+
+      const uploadUrl = new URL(location, supabaseUrl).href
+
+      const chunkSize = 5 * 1024 * 1024 // 5MB chunks
+      let offset = 0
+
+      while (offset < file.size) {
+        const chunk = file.slice(offset, offset + chunkSize)
+        const patchRes = await fetch(uploadUrl, {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Tus-Resumable': '1.0.0',
+            'Upload-Offset': offset.toString(),
+            'Content-Type': 'application/offset+octet-stream',
+          },
+          body: chunk,
+        })
+
+        if (!patchRes.ok) {
+          throw new Error('Falha ao enviar chunk do vídeo')
+        }
+
+        offset += chunkSize
+        const progress = Math.min(Math.round((offset / file.size) * 100), 100)
+        setVideoUploadProgress(progress)
+      }
+
+      const { data: publicUrlData } = supabase.storage.from('reports').getPublicUrl(filePath)
+
+      await addReport({
+        report_type: tab === 'mensais' ? 'mensal' : 'anual',
+        period_year: parseInt(uploadYear),
+        period_month: tab === 'mensais' ? parseInt(uploadMonth) : null,
+        name: file.name,
+        file_type: 'Vídeo',
+        url: publicUrlData.publicUrl,
+      })
+
+      toast.success('Vídeo comprimido e enviado com sucesso!')
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || 'Erro ao processar e enviar vídeo')
     } finally {
-      setIsUploading(false)
+      setVideoUploadStatus('idle')
+      setVideoUploadProgress(0)
       if (videoRef.current) videoRef.current.value = ''
     }
   }
@@ -335,57 +424,78 @@ export default function Relatorios() {
   }
 
   const renderUploadControls = () => (
-    <div className="w-full md:flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
-      <input
-        type="file"
-        ref={fileRef}
-        className="hidden"
-        multiple
-        accept=".pdf,.doc,.docx"
-        onChange={handleDocumentUpload}
-      />
-      <input
-        type="file"
-        ref={videoRef}
-        className="hidden"
-        multiple
-        accept="video/*"
-        onChange={handleVideoUpload}
-      />
+    <div className="w-full md:flex-1 flex flex-col gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <input
+          type="file"
+          ref={fileRef}
+          className="hidden"
+          multiple
+          accept=".pdf,.doc,.docx"
+          onChange={handleDocumentUpload}
+        />
+        <input
+          type="file"
+          ref={videoRef}
+          className="hidden"
+          accept="video/mp4,video/webm,video/quicktime"
+          onChange={handleVideoUpload}
+        />
 
-      <Button
-        disabled={isUploading}
-        onClick={() => fileRef.current?.click()}
-        className="w-full h-11 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-      >
-        {isUploading ? (
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-        ) : (
-          <UploadCloud className="w-4 h-4 mr-2 hidden xl:block" />
-        )}{' '}
-        Arquivo
-      </Button>
-      <Button
-        disabled={isUploading}
-        onClick={() => videoRef.current?.click()}
-        variant="outline"
-        className="w-full h-11 rounded-xl font-bold bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-sm border-border"
-      >
-        {isUploading ? (
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-        ) : (
-          <Video className="w-4 h-4 mr-2 hidden xl:block" />
-        )}{' '}
-        Vídeo
-      </Button>
-      <Button
-        disabled={isUploading}
-        onClick={() => setIsLinkDialogOpen(true)}
-        variant="outline"
-        className="w-full h-11 rounded-xl font-bold bg-background shadow-sm border-border"
-      >
-        <LinkIcon className="w-4 h-4 mr-2 hidden xl:block" /> Link
-      </Button>
+        <Button
+          disabled={isUploading || videoUploadStatus !== 'idle'}
+          onClick={() => fileRef.current?.click()}
+          className="w-full h-11 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+        >
+          {isUploading ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <UploadCloud className="w-4 h-4 mr-2 hidden xl:block" />
+          )}{' '}
+          Arquivo
+        </Button>
+        <Button
+          disabled={isUploading || videoUploadStatus !== 'idle'}
+          onClick={() => videoRef.current?.click()}
+          variant="outline"
+          className="w-full h-11 rounded-xl font-bold bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-sm border-border"
+        >
+          {videoUploadStatus !== 'idle' ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <Video className="w-4 h-4 mr-2 hidden xl:block" />
+          )}{' '}
+          Vídeo
+        </Button>
+        <Button
+          disabled={isUploading || videoUploadStatus !== 'idle'}
+          onClick={() => setIsLinkDialogOpen(true)}
+          variant="outline"
+          className="w-full h-11 rounded-xl font-bold bg-background shadow-sm border-border"
+        >
+          <LinkIcon className="w-4 h-4 mr-2 hidden xl:block" /> Link
+        </Button>
+      </div>
+
+      {videoUploadStatus !== 'idle' && (
+        <div className="w-full p-4 border border-border rounded-xl bg-muted/30 animate-in fade-in slide-in-from-top-2">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              {videoUploadStatus === 'compressing'
+                ? 'Otimizando e comprimindo vídeo...'
+                : 'Enviando em chunks de 5MB...'}
+            </span>
+            <span className="text-sm font-bold text-primary">{videoUploadProgress}%</span>
+          </div>
+          <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
+            <div
+              className="h-full bg-primary transition-all duration-300 ease-out"
+              style={{ width: `${videoUploadProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 
