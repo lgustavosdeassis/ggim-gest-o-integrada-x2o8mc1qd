@@ -1,6 +1,6 @@
 import { ActivityRecord } from '@/lib/types'
 import { calculateHoursDifference, parseSemicolonList } from '@/lib/utils'
-import { useReportsStore } from '@/stores/reports'
+import useReportsStore from '@/stores/reports'
 
 export interface DashboardStats {
   overview: {
