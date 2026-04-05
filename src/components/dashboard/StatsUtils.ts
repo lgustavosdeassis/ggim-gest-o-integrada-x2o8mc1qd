@@ -1,5 +1,6 @@
 import { ActivityRecord } from '@/lib/types'
 import { calculateHoursDifference, parseSemicolonList } from '@/lib/utils'
+import useReportsStore from '@/stores/reports'
 
 export interface DashboardStats {
   overview: {
@@ -35,6 +36,43 @@ export interface DashboardStats {
   }
 }
 
+function getPluralName(word: string, count: number): string {
+  if (count === 1) return word
+
+  const plurals: Record<string, string> = {
+    Ata: 'Atas',
+    Ofício: 'Ofícios',
+    Relatório: 'Relatórios',
+    Transcrição: 'Transcrições',
+    'E-mail': 'E-mails',
+    SID: 'SIDs',
+    Formulário: 'Formulários',
+    Foto: 'Fotos',
+    Áudio: 'Áudios',
+    Vídeo: 'Vídeos',
+    'Lista de Presença': 'Listas de Presença',
+    Link: 'Links',
+    Outros: 'Outros',
+    'Reunião Ordinária': 'Reuniões Ordinárias',
+    'Reunião Extraordinária': 'Reuniões Extraordinárias',
+    'Evento Institucional': 'Eventos Institucionais',
+    Capacitação: 'Capacitações',
+    Operação: 'Operações',
+    'Ação Operacional': 'Ações Operacionais',
+    'Visita Técnica': 'Visitas Técnicas',
+    Palestra: 'Palestras',
+    Workshop: 'Workshops',
+    Treinamento: 'Treinamentos',
+    Seminário: 'Seminários',
+    Congresso: 'Congressos',
+    Fórum: 'Fóruns',
+    'Audiência Pública': 'Audiências Públicas',
+    Solenidade: 'Solenidades',
+  }
+
+  return plurals[word] || word + 's'
+}
+
 export function calculateDashboardStats(
   records: ActivityRecord[],
   ggimReportsCount: number = 0,
@@ -45,6 +83,35 @@ export function calculateDashboardStats(
   let institutionalEvents = 0
   let actionsGenerated = 0
   let totalDeliberations = 0
+
+  let ggimDocsCount = 0
+  let ggimVideosCount = 0
+
+  try {
+    const reports = useReportsStore.getState().reports || []
+    if (reports.length > 0) {
+      reports.forEach((r: any) => {
+        const fileType = r.file_type?.toLowerCase() || ''
+        const reportType = r.report_type?.toLowerCase() || ''
+        const isVideo =
+          fileType === 'vídeo' ||
+          fileType === 'video' ||
+          fileType.startsWith('video/') ||
+          reportType === 'vídeo' ||
+          reportType === 'video'
+
+        if (isVideo) {
+          ggimVideosCount++
+        } else {
+          ggimDocsCount++
+        }
+      })
+    } else {
+      ggimDocsCount = ggimReportsCount
+    }
+  } catch (e) {
+    ggimDocsCount = ggimReportsCount
+  }
 
   const modalityCount: Record<string, number> = { Presencial: 0, Remota: 0, Híbrida: 0 }
   const eventTypeCount: Record<string, number> = {}
@@ -143,7 +210,7 @@ export function calculateDashboardStats(
   const pjStats = getStats(pjCountsPerEvent)
 
   const eventsByType = Object.entries(eventTypeCount)
-    .map(([name, value]) => ({ name, value }))
+    .map(([name, value]) => ({ name: getPluralName(name, value), value }))
     .sort((a, b) => b.value - a.value)
 
   const DOC_TYPES_CHART = [
@@ -185,7 +252,7 @@ export function calculateDashboardStats(
     else if (upper === 'LISTA DE PRESENÇA') mapped = 'Lista de Presença'
     else if (upper === 'LINK') mapped = 'Link'
     else if (upper === 'OUTROS') mapped = 'Outros'
-    else if (docsByType[t]) mapped = t
+    else if (docsByType[t] !== undefined) mapped = t
 
     if (docsByType[mapped] !== undefined) {
       docsByType[mapped]++
@@ -194,13 +261,22 @@ export function calculateDashboardStats(
     }
   })
 
-  // Add GGIM Reports to the "Relatório" count
-  if (ggimReportsCount > 0) {
-    docsByType['Relatório'] = (docsByType['Relatório'] || 0) + ggimReportsCount
+  if (ggimDocsCount > 0) {
+    docsByType['Relatório'] = (docsByType['Relatório'] || 0) + ggimDocsCount
   }
 
-  const docsData = Object.entries(docsByType)
-    .filter(([_, value]) => value > 0)
+  if (ggimVideosCount > 0) {
+    docsByType['Vídeo'] = (docsByType['Vídeo'] || 0) + ggimVideosCount
+  }
+
+  const pluralizedDocsByType: Record<string, number> = {}
+  Object.entries(docsByType).forEach(([k, v]) => {
+    if (v > 0) {
+      pluralizedDocsByType[getPluralName(k, v)] = v
+    }
+  })
+
+  const docsData = Object.entries(pluralizedDocsByType)
     .map(([name, value], i) => ({
       name,
       value,
@@ -251,9 +327,9 @@ export function calculateDashboardStats(
     },
     productivity: {
       totalDeliberations,
-      totalDocs: allDocs.length + ggimReportsCount,
+      totalDocs: allDocs.length + ggimDocsCount + ggimVideosCount,
       docsData,
-      docsByType,
+      docsByType: pluralizedDocsByType,
     },
   }
 }
