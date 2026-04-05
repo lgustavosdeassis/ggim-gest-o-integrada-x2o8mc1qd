@@ -14,7 +14,7 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all rounded-2xl col-span-2 sm:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Participações (PF)
+              {data.pfTotal === 1 ? 'Participação (PF)' : 'Participações (PF)'}
             </CardTitle>
             <div className="p-2 bg-chart-3/10 rounded-lg">
               <Users className="h-5 w-5 text-chart-3" />
@@ -28,7 +28,9 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
               </div>
               <div className="text-right border-l pl-5 border-border">
                 <div className="text-2xl font-black text-primary">{data.pfUnique}</div>
-                <p className="text-xs text-muted-foreground font-medium mt-1">Pessoas Únicas</p>
+                <p className="text-xs text-muted-foreground font-medium mt-1">
+                  {data.pfUnique === 1 ? 'Pessoa Única' : 'Pessoas Únicas'}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -37,7 +39,7 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all rounded-2xl col-span-2 sm:col-span-1">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Instituições (PJ)
+              {data.pjTotal === 1 ? 'Instituição (PJ)' : 'Instituições (PJ)'}
             </CardTitle>
             <div className="p-2 bg-chart-4/10 rounded-lg">
               <Building2 className="h-5 w-5 text-chart-4" />
@@ -51,7 +53,9 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
               </div>
               <div className="text-right border-l pl-5 border-border">
                 <div className="text-2xl font-black text-primary">{data.pjUnique}</div>
-                <p className="text-xs text-muted-foreground font-medium mt-1">Inst. Únicas</p>
+                <p className="text-xs text-muted-foreground font-medium mt-1">
+                  {data.pjUnique === 1 ? 'Inst. Única' : 'Inst. Únicas'}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -61,24 +65,26 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border mb-4">
             <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
               <UserCheck className="h-4 w-4 text-chart-1" />
-              Presença Pessoal Mais Frequente
+              Presença Pessoal Mais Frequente (Top 5)
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {data.topPf.count > 0 ? (
-              <div className="flex items-center justify-between">
-                <div className="text-lg font-bold text-foreground leading-tight pr-4">
-                  {data.topPf.names.join(' / ')}
+          <CardContent className="space-y-3">
+            {data.topPf.length > 0 ? (
+              data.topPf.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between bg-muted/30 p-2.5 rounded-xl border border-border/50"
+                >
+                  <div className="font-bold text-foreground truncate pr-4 text-sm">
+                    {idx + 1}. {item.name}
+                  </div>
+                  <div className="shrink-0 text-center px-3 py-1 bg-secondary/80 rounded-lg shadow-sm">
+                    <span className="text-sm font-black text-secondary-foreground block leading-none">
+                      {item.count} {item.count === 1 ? 'vez' : 'vezes'}
+                    </span>
+                  </div>
                 </div>
-                <div className="shrink-0 text-center px-4 py-2 bg-secondary rounded-xl shadow-sm border border-secondary">
-                  <span className="text-2xl font-black text-secondary-foreground block leading-none">
-                    {data.topPf.count}
-                  </span>
-                  <span className="text-[10px] uppercase tracking-widest font-bold text-secondary-foreground/80 mt-1 block">
-                    {data.topPf.count === 1 ? 'Vez' : 'Vezes'}
-                  </span>
-                </div>
-              </div>
+              ))
             ) : (
               <span className="text-sm text-muted-foreground font-medium">Nenhum registro</span>
             )}
@@ -89,24 +95,26 @@ export function DashboardEngagement({ data }: { data: DashboardStats['engagement
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border mb-4">
             <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
               <Star className="h-4 w-4 text-chart-5" />
-              Instituição Mais Frequente
+              Instituição Mais Frequente (Top 3)
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {data.topPj.count > 0 ? (
-              <div className="flex items-center justify-between">
-                <div className="text-lg font-bold text-foreground leading-tight pr-4">
-                  {data.topPj.names.join(' / ')}
+          <CardContent className="space-y-3">
+            {data.topPj.length > 0 ? (
+              data.topPj.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between bg-muted/30 p-2.5 rounded-xl border border-border/50"
+                >
+                  <div className="font-bold text-foreground truncate pr-4 text-sm">
+                    {idx + 1}. {item.name}
+                  </div>
+                  <div className="shrink-0 text-center px-3 py-1 bg-secondary/80 rounded-lg shadow-sm">
+                    <span className="text-sm font-black text-secondary-foreground block leading-none">
+                      {item.count} {item.count === 1 ? 'vez' : 'vezes'}
+                    </span>
+                  </div>
                 </div>
-                <div className="shrink-0 text-center px-4 py-2 bg-secondary rounded-xl shadow-sm border border-secondary">
-                  <span className="text-2xl font-black text-secondary-foreground block leading-none">
-                    {data.topPj.count}
-                  </span>
-                  <span className="text-[10px] uppercase tracking-widest font-bold text-secondary-foreground/80 mt-1 block">
-                    {data.topPj.count === 1 ? 'Vez' : 'Vezes'}
-                  </span>
-                </div>
-              </div>
+              ))
             ) : (
               <span className="text-sm text-muted-foreground font-medium">Nenhum registro</span>
             )}

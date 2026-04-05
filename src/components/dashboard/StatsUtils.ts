@@ -15,15 +15,15 @@ export interface DashboardStats {
   logistics: {
     totalUsages: number
     uniqueLocations: number
-    topLocation: { names: string[]; count: number }
+    topLocations: { name: string; count: number }[]
   }
   engagement: {
     pfTotal: number
     pfUnique: number
     pjTotal: number
     pjUnique: number
-    topPf: { names: string[]; count: number }
-    topPj: { names: string[]; count: number }
+    topPf: { name: string; count: number }[]
+    topPj: { name: string; count: number }[]
     pfStats: { mean: number; median: number; mode: number[] }
     pjStats: { mean: number; median: number; mode: number[] }
   }
@@ -35,7 +35,10 @@ export interface DashboardStats {
   }
 }
 
-export function calculateDashboardStats(records: ActivityRecord[]): DashboardStats {
+export function calculateDashboardStats(
+  records: ActivityRecord[],
+  ggimReportsCount: number = 0,
+): DashboardStats {
   let eventHours = 0
   let actionHours = 0
   let formalMeetings = 0
@@ -91,12 +94,12 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
 
     if (r.location) locationCount[r.location] = (locationCount[r.location] || 0) + 1
 
-    const pfs = parseSemicolonList(r.participantsPF)
-    const pjs = parseSemicolonList(r.participantsPJ)
+    const pfs = parseSemicolonList(r.participantsPF).filter(Boolean)
+    const pjs = parseSemicolonList(r.participantsPJ).filter(Boolean)
     allPf.push(...pfs)
     allPj.push(...pjs)
-    pfCountsPerEvent.push(pfs.length)
-    pjCountsPerEvent.push(pjs.length)
+    if (pfs.length > 0) pfCountsPerEvent.push(pfs.length)
+    if (pjs.length > 0) pjCountsPerEvent.push(pjs.length)
 
     if (r.documents) {
       r.documents.forEach((d) => {
@@ -104,7 +107,7 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
         else if ((d as any).categories) allDocs.push(...(d as any).categories)
       })
     }
-    totalDeliberations += parseSemicolonList(r.deliberations).length
+    totalDeliberations += parseSemicolonList(r.deliberations).filter(Boolean).length
   })
 
   function getStats(countsArray: number[]) {
@@ -151,7 +154,7 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     'E-mail',
     'SID',
     'Formulário',
-    'Imagens',
+    'Foto',
     'Áudio',
     'Vídeo',
     'Lista de Presença',
@@ -176,7 +179,7 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     else if (upper === 'E-MAIL' || upper === 'EMAIL') mapped = 'E-mail'
     else if (upper === 'SID') mapped = 'SID'
     else if (upper === 'FORMULÁRIO') mapped = 'Formulário'
-    else if (upper === 'IMAGENS' || upper === 'FOTO' || upper === 'FOTOS') mapped = 'Imagens'
+    else if (upper === 'IMAGENS' || upper === 'FOTO' || upper === 'FOTOS') mapped = 'Foto'
     else if (upper === 'ÁUDIO') mapped = 'Áudio'
     else if (upper === 'VÍDEO' || upper === 'VIDEO') mapped = 'Vídeo'
     else if (upper === 'LISTA DE PRESENÇA') mapped = 'Lista de Presença'
@@ -190,6 +193,11 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
       docsByType['Outros']++
     }
   })
+
+  // Add GGIM Reports to the "Relatório" count
+  if (ggimReportsCount > 0) {
+    docsByType['Relatório'] = (docsByType['Relatório'] || 0) + ggimReportsCount
+  }
 
   const docsData = Object.entries(docsByType)
     .filter(([_, value]) => value > 0)
@@ -218,10 +226,11 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
     logistics: {
       totalUsages: Object.values(locationCount).reduce((a, b) => a + b, 0),
       uniqueLocations: Object.keys(locationCount).length,
-      topLocation: getRanking(
+      topLocations: getTopN(
         Object.keys(locationCount).flatMap((k) =>
           Array(locationCount[k]).fill(k.trim().toUpperCase()),
         ),
+        3,
       ),
     },
     engagement: {
@@ -229,27 +238,34 @@ export function calculateDashboardStats(records: ActivityRecord[]): DashboardSta
       pfUnique: new Set(allPf.map((n) => n.toLowerCase())).size,
       pjTotal: allPj.length,
       pjUnique: new Set(allPj.map((n) => n.toLowerCase())).size,
-      topPf: getRanking(allPf.map((n) => n.trim().toUpperCase())),
-      topPj: getRanking(allPj.map((n) => n.trim().toUpperCase())),
+      topPf: getTopN(
+        allPf.map((n) => n.trim().toUpperCase()),
+        5,
+      ),
+      topPj: getTopN(
+        allPj.map((n) => n.trim().toUpperCase()),
+        3,
+      ),
       pfStats,
       pjStats,
     },
     productivity: {
       totalDeliberations,
-      totalDocs: allDocs.length,
+      totalDocs: allDocs.length + ggimReportsCount,
       docsData,
       docsByType,
     },
   }
 }
 
-function getRanking(items: string[]) {
+function getTopN(items: string[], n: number) {
   const counts: Record<string, number> = {}
-  items.forEach((i) => (counts[i] = (counts[i] || 0) + 1))
-  if (Object.keys(counts).length === 0) return { count: 0, names: [] }
-  const max = Math.max(...Object.values(counts))
-  const names = Object.keys(counts)
-    .filter((k) => counts[k] === max)
-    .sort()
-  return { count: max, names }
+  items.forEach((i) => {
+    if (i) counts[i] = (counts[i] || 0) + 1
+  })
+  if (Object.keys(counts).length === 0) return []
+  return Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([name, count]) => ({ name, count }))
 }

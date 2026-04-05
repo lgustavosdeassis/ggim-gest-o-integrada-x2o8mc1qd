@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import { Loader2, Plus, Edit, Trash2 } from 'lucide-react'
 
@@ -42,6 +43,7 @@ type User = {
   can_generate_reports: boolean
   can_delete_reports: boolean
   allowed_tabs: string[]
+  avatar_url?: string | null
 }
 
 const TABS_AVAILABLE = [
@@ -212,7 +214,7 @@ export default function Usuarios() {
               <Plus className="mr-2 h-4 w-4" /> Novo Usuário
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[550px] max-h-screen overflow-y-auto">
+          <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{isEditing ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
             </DialogHeader>
@@ -257,11 +259,6 @@ export default function Usuarios() {
                         job_title: val,
                         role: isAdm ? 'admin' : isEditor ? 'editor' : 'viewer',
                         is_admin: isAdm,
-                        allowed_tabs: isEditor
-                          ? Array.isArray(formData.allowed_tabs)
-                            ? formData.allowed_tabs
-                            : []
-                          : [],
                       })
                     }}
                   >
@@ -292,10 +289,13 @@ export default function Usuarios() {
                 </div>
               </div>
 
-              {(formData.job_title === 'Editor' || formData.role === 'editor') && (
+              {(formData.job_title === 'Editor' ||
+                formData.role === 'editor' ||
+                formData.job_title === 'Visualizador' ||
+                formData.role === 'viewer') && (
                 <div className="space-y-3 pt-2">
                   <Label className="font-bold text-sm text-foreground">
-                    Permissões de Edição (Abas)
+                    Permissões de Acesso (Abas)
                   </Label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-muted/40 p-4 rounded-lg border border-border">
                     {TABS_AVAILABLE.map((tab) => (
@@ -332,26 +332,36 @@ export default function Usuarios() {
               )}
 
               <div className="flex flex-col gap-3 pt-2 border-t mt-4">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="reports"
-                    checked={formData.can_generate_reports || false}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, can_generate_reports: checked })
-                    }
-                  />
-                  <Label htmlFor="reports">Pode gerar relatórios gerenciais</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="deleteReports"
-                    checked={formData.can_delete_reports || false}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, can_delete_reports: checked })
-                    }
-                  />
-                  <Label htmlFor="deleteReports">Pode excluir relatórios anexados</Label>
-                </div>
+                {(formData.job_title === 'Editor' ||
+                  formData.role === 'editor' ||
+                  formData.job_title === 'Visualizador' ||
+                  formData.role === 'viewer' ||
+                  formData.is_admin) && (
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="reports"
+                      checked={formData.can_generate_reports || false}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, can_generate_reports: checked })
+                      }
+                    />
+                    <Label htmlFor="reports">Pode gerar relatórios gerenciais</Label>
+                  </div>
+                )}
+                {(formData.job_title === 'Editor' ||
+                  formData.role === 'editor' ||
+                  formData.is_admin) && (
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="deleteReports"
+                      checked={formData.can_delete_reports || false}
+                      onCheckedChange={(checked) =>
+                        setFormData({ ...formData, can_delete_reports: checked })
+                      }
+                    />
+                    <Label htmlFor="deleteReports">Pode excluir relatórios anexados</Label>
+                  </div>
+                )}
               </div>
 
               <Button type="submit" className="w-full mt-4" disabled={saving}>
@@ -390,7 +400,17 @@ export default function Usuarios() {
             ) : (
               users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user.avatar_url || ''} />
+                        <AvatarFallback className="bg-primary/10 text-primary font-bold">
+                          {user.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="font-medium">{user.name}</span>
+                    </div>
+                  </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1 items-start">

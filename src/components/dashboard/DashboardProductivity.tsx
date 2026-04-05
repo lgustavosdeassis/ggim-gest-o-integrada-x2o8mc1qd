@@ -2,6 +2,26 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FileText, Target, Award } from 'lucide-react'
 import { DashboardStats } from './StatsUtils'
 
+function pluralizeDocType(type: string, count: number) {
+  if (count === 1) return type
+  const map: Record<string, string> = {
+    Ata: 'Atas',
+    Ofício: 'Ofícios',
+    Relatório: 'Relatórios',
+    Transcrição: 'Transcrições',
+    'E-mail': 'E-mails',
+    SID: 'SIDs',
+    Formulário: 'Formulários',
+    Foto: 'Fotos',
+    Áudio: 'Áudios',
+    Vídeo: 'Vídeos',
+    'Lista de Presença': 'Listas de Presença',
+    Link: 'Links',
+    Outros: 'Outros',
+  }
+  return map[type] || type + 's'
+}
+
 export function DashboardProductivity({ data }: { data: DashboardStats['productivity'] }) {
   return (
     <div className="space-y-6 print-break-inside-avoid animate-in fade-in slide-in-from-bottom-6 duration-700">
@@ -14,7 +34,7 @@ export function DashboardProductivity({ data }: { data: DashboardStats['producti
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Total de Deliberações
+              {data.totalDeliberations === 1 ? 'Deliberação' : 'Total de Deliberações'}
             </CardTitle>
             <div className="p-2.5 bg-chart-4/10 rounded-xl">
               <Target className="h-5 w-5 text-chart-4" />
@@ -31,7 +51,7 @@ export function DashboardProductivity({ data }: { data: DashboardStats['producti
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Soma de Anexos
+              {data.totalDocs === 1 ? 'Anexo' : 'Soma de Anexos'}
             </CardTitle>
             <div className="p-2.5 bg-chart-5/10 rounded-xl">
               <FileText className="h-5 w-5 text-chart-5" />
@@ -60,12 +80,12 @@ export function DashboardProductivity({ data }: { data: DashboardStats['producti
                   className="flex flex-col p-4 bg-card rounded-2xl border border-border shadow-sm transition-all hover:border-primary/50 hover:shadow-md group"
                 >
                   <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground group-hover:text-primary transition-colors">
-                    {d.name}
+                    {pluralizeDocType(d.name, d.value)}
                   </span>
                   <div className="flex items-end justify-between mt-2">
                     <span className="text-3xl font-black text-foreground">{d.value}</span>
                     <span className="text-xs font-semibold text-primary/80 mb-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      REGISTROS
+                      {d.value === 1 ? 'REGISTRO' : 'REGISTROS'}
                     </span>
                   </div>
                   <div className="mt-3 w-full bg-muted rounded-full h-1.5 overflow-hidden">

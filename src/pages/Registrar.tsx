@@ -34,14 +34,8 @@ export default function Registrar() {
   const { activities, addActivity, updateActivity } = useAppStore()
   const { user } = useAuthStore()
 
-  const isViewer =
-    user?.role !== 'admin' &&
-    user?.role !== 'owner' &&
-    !(
-      user?.role === 'editor' &&
-      Array.isArray(user?.allowedTabs) &&
-      user.allowedTabs.includes('Registrar Atividade')
-    )
+  const canEdit = user?.role === 'admin' || user?.role === 'owner' || user?.role === 'editor'
+  const isViewer = !canEdit
 
   const addLog = useAuditStore((state) => state.addLog)
 
@@ -87,9 +81,9 @@ export default function Registrar() {
           EMAIL: 'E-mail',
           SID: 'SID',
           FORMULÁRIO: 'Formulário',
-          IMAGENS: 'Imagens',
-          FOTO: 'Imagens',
-          FOTOS: 'Imagens',
+          IMAGENS: 'Foto',
+          FOTO: 'Foto',
+          FOTOS: 'Foto',
           ÁUDIO: 'Áudio',
           OUTROS: 'Outros',
           'LISTA DE PRESENÇA': 'Lista de Presença',

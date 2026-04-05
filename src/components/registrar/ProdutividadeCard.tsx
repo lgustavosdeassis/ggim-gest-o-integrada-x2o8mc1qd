@@ -17,7 +17,7 @@ import {
   ChevronDown,
   ExternalLink,
 } from 'lucide-react'
-import { FormValues, DOC_TYPES } from './schema'
+import { FormValues } from './schema'
 import {
   Select,
   SelectContent,
@@ -39,6 +39,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+
+const LOCAL_DOC_TYPES = [
+  'Ata',
+  'Ofício',
+  'Relatório',
+  'Transcrição',
+  'E-mail',
+  'SID',
+  'Formulário',
+  'Foto',
+  'Áudio',
+  'Vídeo',
+  'Lista de Presença',
+  'Link',
+  'Outros',
+]
 
 export function ProdutividadeCard() {
   const { control } = useFormContext<FormValues>()
@@ -89,7 +105,7 @@ export function ProdutividadeCard() {
       reader.onload = (event) => {
         let defaultType = 'Outros'
         if (ext) {
-          if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) defaultType = 'Imagens'
+          if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) defaultType = 'Foto'
           else if (['mp4', 'webm', 'avi', 'mkv', 'mov'].includes(ext)) defaultType = 'Vídeo'
           else if (['mp3', 'wav', 'ogg', 'm4a'].includes(ext)) defaultType = 'Áudio'
           else if (['pdf'].includes(ext)) defaultType = 'Relatório'
@@ -271,7 +287,7 @@ export function ProdutividadeCard() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {DOC_TYPES.map((t) => (
+                            {LOCAL_DOC_TYPES.map((t) => (
                               <SelectItem key={t} value={t}>
                                 {t}
                               </SelectItem>

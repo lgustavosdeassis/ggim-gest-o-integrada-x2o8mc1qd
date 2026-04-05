@@ -29,7 +29,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-1/10 rounded-full blur-2xl group-hover:bg-chart-1/20 transition-colors" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
               <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Eventos (Únicos)
+                {data.totalEvents === 1 ? 'Evento (Único)' : 'Eventos (Únicos)'}
               </CardTitle>
               <Activity className="h-5 w-5 text-chart-1" />
             </CardHeader>
@@ -42,7 +42,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-2/10 rounded-full blur-2xl group-hover:bg-chart-2/20 transition-colors" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
               <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Formais
+                {data.formalMeetings === 1 ? 'Reunião Formal' : 'Reuniões Formais'}
               </CardTitle>
               <CalendarDays className="h-5 w-5 text-chart-2" />
             </CardHeader>
@@ -55,7 +55,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-3/10 rounded-full blur-2xl group-hover:bg-chart-3/20 transition-colors" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
               <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Institucionais
+                {data.institutionalEvents === 1 ? 'Evento Institucional' : 'Eventos Institucionais'}
               </CardTitle>
               <Landmark className="h-5 w-5 text-chart-3" />
             </CardHeader>
@@ -68,7 +68,7 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
             <div className="absolute -right-6 -top-6 w-24 h-24 bg-chart-4/10 rounded-full blur-2xl group-hover:bg-chart-4/20 transition-colors" />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
               <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Ações Geradas
+                {data.actionsGenerated === 1 ? 'Ação Gerada' : 'Ações Geradas'}
               </CardTitle>
               <CheckCircle2 className="h-5 w-5 text-chart-4" />
             </CardHeader>

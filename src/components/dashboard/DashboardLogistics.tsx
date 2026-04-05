@@ -14,7 +14,7 @@ export function DashboardLogistics({ data }: { data: DashboardStats['logistics']
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Usos Totais
+              {data.totalUsages === 1 ? 'Uso Total' : 'Usos Totais'}
             </CardTitle>
             <div className="p-2 bg-chart-2/10 rounded-lg">
               <MapPin className="h-5 w-5 text-chart-2" />
@@ -29,7 +29,7 @@ export function DashboardLogistics({ data }: { data: DashboardStats['logistics']
         <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all rounded-2xl">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-              Locais Únicos
+              {data.uniqueLocations === 1 ? 'Local Único' : 'Locais Únicos'}
             </CardTitle>
             <div className="p-2 bg-primary/10 rounded-lg">
               <Map className="h-5 w-5 text-primary" />
@@ -47,24 +47,26 @@ export function DashboardLogistics({ data }: { data: DashboardStats['logistics']
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border mb-4">
             <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
               <Trophy className="h-5 w-5 text-secondary" />
-              Local Mais Frequente
+              Local Mais Frequente (Top 3)
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {data.topLocation.count > 0 ? (
-              <div className="flex items-center justify-between">
-                <div className="text-xl font-bold text-foreground leading-snug pr-6 break-words max-w-[70%]">
-                  {data.topLocation.names.join(' / ')}
+          <CardContent className="space-y-3">
+            {data.topLocations.length > 0 ? (
+              data.topLocations.map((item, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between bg-card p-2.5 rounded-xl border border-border shadow-sm"
+                >
+                  <div className="font-bold text-foreground truncate pr-4 text-sm">
+                    {idx + 1}. {item.name}
+                  </div>
+                  <div className="shrink-0 text-center px-3 py-1 bg-secondary/80 rounded-lg shadow-sm">
+                    <span className="text-sm font-black text-secondary-foreground block leading-none">
+                      {item.count} {item.count === 1 ? 'vez' : 'vezes'}
+                    </span>
+                  </div>
                 </div>
-                <div className="shrink-0 text-center px-5 py-3 bg-secondary rounded-xl shadow-sm border border-secondary">
-                  <span className="text-3xl font-black text-secondary-foreground block leading-none">
-                    {data.topLocation.count}
-                  </span>
-                  <span className="text-xs uppercase tracking-widest font-bold text-secondary-foreground/80 mt-1 block">
-                    {data.topLocation.count === 1 ? 'Vez' : 'Vezes'}
-                  </span>
-                </div>
-              </div>
+              ))
             ) : (
               <div className="text-sm text-muted-foreground font-medium py-2">
                 Nenhum local registrado

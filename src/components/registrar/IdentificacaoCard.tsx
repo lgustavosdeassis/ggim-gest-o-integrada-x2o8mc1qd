@@ -14,8 +14,11 @@ import { ListPlus } from 'lucide-react'
 import { INSTANCIAS, FormValues } from './schema'
 
 const NOVOS_EVENTOS_TIPO = [
+  'Apresentação',
+  'Audiência',
   'Blitz',
   'Campanha',
+  'Capacitação',
   'Colóquio',
   'Conferência',
   'Confraternização',
@@ -30,11 +33,18 @@ const NOVOS_EVENTOS_TIPO = [
   'Oficina',
   'Operação',
   'Painel',
+  'Palestra',
   'Programa',
   'Projeto',
+  'Reunião Extraordinária',
+  'Reunião Ordinária',
   'Roadshow',
+  'Seminário',
   'Treinamento',
+  'Visita Técnica',
   'Webinário',
+  'Workshop',
+  'Outros',
 ]
 
 export function IdentificacaoCard() {

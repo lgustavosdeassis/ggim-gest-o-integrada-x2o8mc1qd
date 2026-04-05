@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useAppStore } from '@/stores/main'
 import { useAuthStore } from '@/stores/auth'
 import { calculateDashboardStats } from '@/components/dashboard/StatsUtils'
@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { FileDown, Filter, X } from 'lucide-react'
 import { formatDateTime } from '@/lib/utils'
 import { GgimHexLogo } from '@/components/GgimHexLogo'
+import { supabase } from '@/lib/supabase/client'
 
 const INSTANCIAS = [
   'Colegiado Pleno',
@@ -34,15 +35,20 @@ export default function Index() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [selectedInstances, setSelectedInstances] = useState<string[]>([])
+  const [reportsCount, setReportsCount] = useState(0)
 
-  const isViewer =
-    user?.role !== 'admin' &&
-    user?.role !== 'owner' &&
-    !(
-      user?.role === 'editor' &&
-      Array.isArray(user?.allowedTabs) &&
-      user.allowedTabs.includes('Dashboard BI')
-    )
+  useEffect(() => {
+    const fetchReportsCount = async () => {
+      let query = supabase.from('ggim_reports').select('id', { count: 'exact', head: true })
+      if (startDate) query = query.gte('created_at', startDate + 'T00:00:00')
+      if (endDate) query = query.lte('created_at', endDate + 'T23:59:59')
+      const { count } = await query
+      setReportsCount(count || 0)
+    }
+    fetchReportsCount()
+  }, [startDate, endDate])
+
+  const canGenerate = user?.role === 'admin' || user?.role === 'owner' || user?.canGenerateReports
 
   const filteredData = useMemo(() => {
     return activities.filter((a) => {
@@ -54,7 +60,10 @@ export default function Index() {
     })
   }, [activities, startDate, endDate, selectedInstances])
 
-  const stats = useMemo(() => calculateDashboardStats(filteredData), [filteredData])
+  const stats = useMemo(
+    () => calculateDashboardStats(filteredData, reportsCount),
+    [filteredData, reportsCount],
+  )
 
   const handlePrint = () => window.print()
 
@@ -92,7 +101,7 @@ export default function Index() {
             Acompanhamento consolidado de atividades, produtividade e engajamento em tempo real.
           </p>
         </div>
-        {!isViewer && (
+        {canGenerate && (
           <Button
             onClick={handlePrint}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg transition-all rounded-xl h-11 px-6"
