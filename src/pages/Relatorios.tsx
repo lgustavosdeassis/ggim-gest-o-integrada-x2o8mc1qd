@@ -143,7 +143,7 @@ export default function Relatorios() {
     }
 
     if (file.size > 50 * 1024 * 1024) {
-      toast.error('O tamanho máximo permitido é 50MB.')
+      toast.error('Arquivo muito grande! O tamanho máximo permitido é de 50MB.')
       if (videoRef.current) videoRef.current.value = ''
       return
     }
@@ -171,14 +171,17 @@ export default function Relatorios() {
       if (!token) throw new Error('Usuário não autenticado')
 
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const bucketName = btoa(unescape(encodeURIComponent('reports')))
-      const objectName = btoa(unescape(encodeURIComponent(filePath)))
-      const contentType = btoa(unescape(encodeURIComponent(file.type)))
+      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
+
+      const bucketName = btoa('reports')
+      const objectName = btoa(filePath)
+      const contentType = btoa(file.type || 'video/mp4')
 
       const initRes = await fetch(`${supabaseUrl}/storage/v1/upload/resumable`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
+          apikey: supabaseKey,
           'Tus-Resumable': '1.0.0',
           'Upload-Length': file.size.toString(),
           'Upload-Metadata': `bucketName ${bucketName}, objectName ${objectName}, contentType ${contentType}`,
@@ -203,6 +206,7 @@ export default function Relatorios() {
           method: 'PATCH',
           headers: {
             Authorization: `Bearer ${token}`,
+            apikey: supabaseKey,
             'Tus-Resumable': '1.0.0',
             'Upload-Offset': offset.toString(),
             'Content-Type': 'application/offset+octet-stream',
@@ -214,7 +218,13 @@ export default function Relatorios() {
           throw new Error('Falha ao enviar chunk do vídeo')
         }
 
-        offset += chunkSize
+        const newOffset = patchRes.headers.get('Upload-Offset')
+        if (newOffset) {
+          offset = parseInt(newOffset, 10)
+        } else {
+          offset += chunk.size
+        }
+
         const progress = Math.min(Math.round((offset / file.size) * 100), 100)
         setVideoUploadProgress(progress)
       }
