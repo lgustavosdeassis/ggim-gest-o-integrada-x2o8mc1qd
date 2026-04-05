@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -12,6 +12,14 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { useReportStore } from '@/stores/reports'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -23,16 +31,10 @@ import {
   Download,
   Printer,
   Eye,
-  ChevronDown,
   Loader2,
 } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { openDocumentViewer, downloadDocument, printDocument } from '@/lib/utils'
+import { format } from 'date-fns'
 
 const MONTHS = [
   'Janeiro',
@@ -67,6 +69,25 @@ export default function Relatorios() {
   const [linkUrl, setLinkUrl] = useState('')
   const [linkName, setLinkName] = useState('')
 
+  const [pageMensal, setPageMensal] = useState(0)
+  const [pageAnual, setPageAnual] = useState(0)
+
+  useEffect(() => {
+    // Limpa cache local a cada 30 minutos
+    const interval = setInterval(
+      () => {
+        useReportStore.setState({ reports: [], page: 0, hasMore: true })
+        fetchReports()
+      },
+      30 * 60 * 1000,
+    )
+
+    return () => {
+      // Desativa listeners desnecessários ao sair da página
+      clearInterval(interval)
+    }
+  }, [fetchReports])
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files) return
@@ -80,9 +101,9 @@ export default function Relatorios() {
         else if (['mp4', 'mkv', 'avi', 'mov'].includes(ext || '')) fileType = 'Vídeo'
 
         await addReport({
-          report_type: tab as 'mensal' | 'anual',
+          report_type: tab === 'mensais' ? 'mensal' : 'anual',
           period_year: parseInt(uploadYear),
-          period_month: tab === 'mensal' ? parseInt(uploadMonth) : null,
+          period_month: tab === 'mensais' ? parseInt(uploadMonth) : null,
           name: file.name,
           file_type: fileType,
           url: event.target?.result as string,
@@ -96,9 +117,9 @@ export default function Relatorios() {
   const handleAddLink = async () => {
     if (!linkUrl || !linkName) return
     await addReport({
-      report_type: tab as 'mensal' | 'anual',
+      report_type: tab === 'mensais' ? 'mensal' : 'anual',
       period_year: parseInt(uploadYear),
-      period_month: tab === 'mensal' ? parseInt(uploadMonth) : null,
+      period_month: tab === 'mensais' ? parseInt(uploadMonth) : null,
       name: linkName,
       file_type: 'Link',
       url: linkUrl,
@@ -108,118 +129,165 @@ export default function Relatorios() {
     setLinkName('')
   }
 
-  const getGroupedMensais = () => {
-    const mensais = reports.filter((r) => r.report_type === 'mensal')
-    const grouped: Record<number, Record<number, typeof reports>> = {}
-    mensais.forEach((r) => {
-      if (!grouped[r.period_year]) grouped[r.period_year] = {}
-      if (!grouped[r.period_year][r.period_month!]) grouped[r.period_year][r.period_month!] = []
-      grouped[r.period_year][r.period_month!].push(r)
-    })
-    return grouped
-  }
+  const renderTable = (type: 'mensal' | 'anual') => {
+    const filtered = reports.filter((r) => r.report_type === type)
+    const currentPage = type === 'mensal' ? pageMensal : pageAnual
+    const setCurrentPage = type === 'mensal' ? setPageMensal : setPageAnual
 
-  const getGroupedAnuais = () => {
-    const anuais = reports.filter((r) => r.report_type === 'anual')
-    const grouped: Record<number, typeof reports> = {}
-    anuais.forEach((r) => {
-      if (!grouped[r.period_year]) grouped[r.period_year] = []
-      grouped[r.period_year].push(r)
-    })
-    return grouped
-  }
+    const itemsPerPage = 10
+    const totalPages = Math.ceil(filtered.length / itemsPerPage)
+    const paginated = filtered.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage)
 
-  const groupedMensais = getGroupedMensais()
-  const groupedAnuais = getGroupedAnuais()
+    const handleNext = () => {
+      if (currentPage < totalPages - 1) {
+        setCurrentPage((p) => p + 1)
+      } else if (hasMore) {
+        fetchReports(true).then(() => {
+          setCurrentPage((p) => p + 1)
+        })
+      }
+    }
 
-  const renderReportItem = (r: (typeof reports)[0]) => (
-    <div
-      key={r.id}
-      className="flex flex-col gap-3 bg-card p-4 border border-border rounded-xl shadow-sm hover:border-primary/50 transition-colors"
-    >
-      <div className="flex items-start justify-between gap-2">
-        {r.file_type === 'Link' ||
-        (r.url && (r.url.startsWith('http://') || r.url.startsWith('https://'))) ? (
-          <a
-            href={r.url || '#'}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-sm text-primary hover:underline line-clamp-2 flex items-center gap-1.5"
-            title={r.name}
-          >
-            {r.name} <ExternalLink className="w-3.5 h-3.5 shrink-0" />
-          </a>
-        ) : (
-          <span className="font-semibold text-sm text-foreground line-clamp-2" title={r.name}>
-            {r.name}
-          </span>
-        )}
-        <span className="text-[10px] font-black bg-muted px-2 py-1 rounded uppercase tracking-widest text-primary shrink-0 border border-border mt-0.5">
-          {r.file_type}
-        </span>
-      </div>
-      <div className="flex gap-2 mt-auto pt-3 border-t border-border/50 justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              size="sm"
-              variant="outline"
-              className="w-full text-xs font-bold h-8 flex items-center justify-center gap-1.5"
-            >
-              Opções <ChevronDown className="w-3.5 h-3.5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40 rounded-xl">
-            <DropdownMenuItem
-              className="cursor-pointer font-medium py-2"
-              onClick={() => openDocumentViewer({ name: r.name, url: r.url, type: r.file_type })}
-            >
-              <Eye className="w-4 h-4 mr-2" /> Visualizar
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer font-medium py-2"
-              onClick={() => downloadDocument({ name: r.name, url: r.url, type: r.file_type })}
-            >
-              <Download className="w-4 h-4 mr-2" /> Baixar
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="cursor-pointer font-medium py-2"
-              onClick={() => printDocument({ name: r.name, url: r.url, type: r.file_type })}
-            >
-              <Printer className="w-4 h-4 mr-2" /> Imprimir
-            </DropdownMenuItem>
-            {canDelete && (
-              <>
-                <div className="h-px bg-border my-1" />
-                <DropdownMenuItem
-                  className="cursor-pointer font-bold py-2 text-destructive focus:text-destructive focus:bg-destructive/10"
-                  onClick={() => {
-                    if (window.confirm('Excluir este relatório?')) deleteReport(r.id)
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" /> Excluir
-                </DropdownMenuItem>
-              </>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </div>
-  )
-
-  const renderLoadMore = () => {
-    if (!hasMore) return null
     return (
-      <div className="flex justify-center pt-4 pb-8">
-        <Button
-          variant="outline"
-          onClick={() => fetchReports(true)}
-          disabled={isFetching}
-          className="h-12 px-8 rounded-xl font-bold bg-card shadow-sm border-border hover:bg-muted"
-        >
-          {isFetching && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-          Carregar Mais
-        </Button>
+      <div className="mt-8 space-y-4">
+        <h2 className="text-xl font-bold text-foreground">Relatórios Enviados</h2>
+        <div className="border border-border rounded-xl bg-card overflow-hidden">
+          <Table>
+            <TableHeader className="bg-muted/50">
+              <TableRow>
+                <TableHead>Nome do Arquivo</TableHead>
+                <TableHead>Data de Envio</TableHead>
+                <TableHead>Período (Mês/Ano)</TableHead>
+                <TableHead className="text-right">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginated.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={4}
+                    className="text-center py-8 text-muted-foreground font-medium"
+                  >
+                    Nenhum relatório encontrado
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginated.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {r.file_type === 'Link' || (r.url && r.url.startsWith('http')) ? (
+                          <a
+                            href={r.url || '#'}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline flex items-center gap-1 line-clamp-1"
+                            title={r.name}
+                          >
+                            {r.name} <ExternalLink className="w-3 h-3 shrink-0" />
+                          </a>
+                        ) : (
+                          <span className="line-clamp-1" title={r.name}>
+                            {r.name}
+                          </span>
+                        )}
+                        <span className="text-[10px] font-black bg-muted px-2 py-0.5 rounded uppercase tracking-wider text-primary border border-border shrink-0">
+                          {r.file_type}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap text-muted-foreground">
+                      {r.created_at ? format(new Date(r.created_at), 'dd/MM/yyyy HH:mm') : '-'}
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {r.report_type === 'mensal'
+                        ? `${MONTHS[(r.period_month || 1) - 1]} / ${r.period_year}`
+                        : r.period_year}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() =>
+                            openDocumentViewer({ name: r.name, url: r.url, type: r.file_type })
+                          }
+                          title="Visualizar"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() =>
+                            downloadDocument({ name: r.name, url: r.url, type: r.file_type })
+                          }
+                          title="Baixar"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary"
+                          onClick={() =>
+                            printDocument({ name: r.name, url: r.url, type: r.file_type })
+                          }
+                          title="Imprimir"
+                        >
+                          <Printer className="w-4 h-4" />
+                        </Button>
+                        {canDelete && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              if (window.confirm('Excluir este relatório?')) deleteReport(r.id)
+                            }}
+                            title="Excluir"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {(totalPages > 1 || hasMore) && (
+          <div className="flex justify-between items-center pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage === 0}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
+              Anterior
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Página {currentPage + 1} {totalPages > 0 ? `de ${totalPages}` : ''}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= totalPages - 1 && !hasMore}
+              onClick={handleNext}
+            >
+              {isFetching && currentPage >= totalPages - 1 ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                'Próxima'
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     )
   }
@@ -327,41 +395,7 @@ export default function Relatorios() {
             </Card>
           )}
 
-          <div className="space-y-8">
-            {Object.keys(groupedMensais).length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground font-medium border border-dashed border-border rounded-2xl">
-                Nenhum relatório mensal encontrado.
-              </div>
-            ) : (
-              Object.keys(groupedMensais)
-                .sort((a, b) => Number(b) - Number(a))
-                .map((year) => (
-                  <div key={year} className="space-y-4">
-                    <h2 className="text-2xl font-black text-foreground border-b border-border pb-2">
-                      {year}
-                    </h2>
-                    <div className="grid gap-6">
-                      {Object.keys(groupedMensais[Number(year)])
-                        .sort((a, b) => Number(b) - Number(a))
-                        .map((month) => (
-                          <div
-                            key={month}
-                            className="bg-muted/30 p-5 rounded-2xl border border-border shadow-sm"
-                          >
-                            <h3 className="text-lg font-bold text-foreground mb-4 capitalize">
-                              {MONTHS[Number(month) - 1]}
-                            </h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                              {groupedMensais[Number(year)][Number(month)].map(renderReportItem)}
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                ))
-            )}
-          </div>
-          {renderLoadMore()}
+          {renderTable('mensal')}
         </TabsContent>
 
         <TabsContent value="anuais" className="space-y-6">
@@ -423,28 +457,7 @@ export default function Relatorios() {
             </Card>
           )}
 
-          <div className="space-y-8">
-            {Object.keys(groupedAnuais).length === 0 ? (
-              <div className="text-center py-16 text-muted-foreground font-medium border border-dashed border-border rounded-2xl">
-                Nenhum relatório anual encontrado.
-              </div>
-            ) : (
-              Object.keys(groupedAnuais)
-                .sort((a, b) => Number(b) - Number(a))
-                .map((year) => (
-                  <div
-                    key={year}
-                    className="bg-muted/30 p-5 rounded-2xl border border-border shadow-sm"
-                  >
-                    <h2 className="text-xl font-black text-foreground mb-4">Referência: {year}</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {groupedAnuais[Number(year)].map(renderReportItem)}
-                    </div>
-                  </div>
-                ))
-            )}
-          </div>
-          {renderLoadMore()}
+          {renderTable('anual')}
         </TabsContent>
       </Tabs>
 
