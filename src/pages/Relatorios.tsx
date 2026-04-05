@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { useReportStore } from '@/stores/reports'
+import useReportStore from '@/stores/reports'
 import { useAuthStore } from '@/stores/auth'
 import {
   FolderKanban,

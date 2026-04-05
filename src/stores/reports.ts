@@ -23,7 +23,7 @@ interface ReportState {
   deleteReport: (id: string) => Promise<void>
 }
 
-export const useReportStore = create<ReportState>()((set, get) => ({
+const useReportStore = create<ReportState>()((set, get) => ({
   reports: [],
   isFetching: false,
   hasMore: true,
@@ -88,3 +88,5 @@ export const useReportStore = create<ReportState>()((set, get) => ({
     }
   },
 }))
+
+export default useReportStore

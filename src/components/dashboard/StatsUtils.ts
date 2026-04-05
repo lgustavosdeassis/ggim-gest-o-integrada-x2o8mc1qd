@@ -1,6 +1,6 @@
 import { ActivityRecord } from '@/lib/types'
 import { calculateHoursDifference, parseSemicolonList } from '@/lib/utils'
-import useReportsStore from '@/stores/reports'
+import useReportStore from '@/stores/reports'
 
 export interface DashboardStats {
   overview: {
@@ -88,7 +88,7 @@ export function calculateDashboardStats(
   let ggimVideosCount = 0
 
   try {
-    const reports = useReportsStore.getState().reports || []
+    const reports = useReportStore.getState().reports || []
     if (reports.length > 0) {
       reports.forEach((r: any) => {
         const fileType = r.file_type?.toLowerCase() || ''
