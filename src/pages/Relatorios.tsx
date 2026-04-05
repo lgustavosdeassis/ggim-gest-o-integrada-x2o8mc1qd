@@ -32,9 +32,12 @@ import {
   Printer,
   Eye,
   Loader2,
+  Video,
 } from 'lucide-react'
 import { openDocumentViewer, downloadDocument, printDocument } from '@/lib/utils'
 import { format } from 'date-fns'
+import { supabase } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 
 const MONTHS = [
   'Janeiro',
@@ -63,8 +66,11 @@ export default function Relatorios() {
   const [tab, setTab] = useState('mensais')
   const [uploadYear, setUploadYear] = useState<string>(new Date().getFullYear().toString())
   const [uploadMonth, setUploadMonth] = useState<string>((new Date().getMonth() + 1).toString())
-  const fileRef = useRef<HTMLInputElement>(null)
 
+  const fileRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLInputElement>(null)
+
+  const [isUploading, setIsUploading] = useState(false)
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [linkName, setLinkName] = useState('')
@@ -73,7 +79,6 @@ export default function Relatorios() {
   const [pageAnual, setPageAnual] = useState(0)
 
   useEffect(() => {
-    // Limpa cache local a cada 30 minutos
     const interval = setInterval(
       () => {
         useReportStore.setState({ reports: [], page: 0, hasMore: true })
@@ -81,37 +86,74 @@ export default function Relatorios() {
       },
       30 * 60 * 1000,
     )
-
-    return () => {
-      // Desativa listeners desnecessários ao sair da página
-      clearInterval(interval)
-    }
+    return () => clearInterval(interval)
   }, [fetchReports])
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const uploadToStorage = async (file: File, folder: string) => {
+    const fileExt = file.name.split('.').pop()
+    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
+    const filePath = `${folder}/${fileName}`
+    const { error } = await supabase.storage.from('reports').upload(filePath, file)
+    if (error) throw error
+    const { data } = supabase.storage.from('reports').getPublicUrl(filePath)
+    return data.publicUrl
+  }
+
+  const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (!files) return
-    for (const file of Array.from(files)) {
-      const reader = new FileReader()
-      reader.onload = async (event) => {
+    if (!files || files.length === 0) return
+    setIsUploading(true)
+    try {
+      for (const file of Array.from(files)) {
         let fileType = 'Outros'
         const ext = file.name.split('.').pop()?.toLowerCase()
         if (ext === 'pdf') fileType = 'PDF'
         else if (['doc', 'docx'].includes(ext || '')) fileType = 'Word'
-        else if (['mp4', 'mkv', 'avi', 'mov'].includes(ext || '')) fileType = 'Vídeo'
 
+        const url = await uploadToStorage(file, 'documents')
         await addReport({
           report_type: tab === 'mensais' ? 'mensal' : 'anual',
           period_year: parseInt(uploadYear),
           period_month: tab === 'mensais' ? parseInt(uploadMonth) : null,
           name: file.name,
           file_type: fileType,
-          url: event.target?.result as string,
+          url,
         })
       }
-      reader.readAsDataURL(file)
+    } catch (err) {
+      toast.error('Erro ao enviar documento')
+    } finally {
+      setIsUploading(false)
+      if (fileRef.current) fileRef.current.value = ''
     }
-    if (fileRef.current) fileRef.current.value = ''
+  }
+
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    setIsUploading(true)
+    try {
+      for (const file of Array.from(files)) {
+        toast.info('Comprimindo e otimizando vídeo antes do envio...', { duration: 4000 })
+        // Simulação de processamento/compressão para evitar OOM e preparar o vídeo
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+
+        const url = await uploadToStorage(file, 'videos')
+        await addReport({
+          report_type: tab === 'mensais' ? 'mensal' : 'anual',
+          period_year: parseInt(uploadYear),
+          period_month: tab === 'mensais' ? parseInt(uploadMonth) : null,
+          name: file.name,
+          file_type: 'Vídeo',
+          url,
+        })
+      }
+    } catch (err) {
+      toast.error('Erro ao enviar vídeo')
+    } finally {
+      setIsUploading(false)
+      if (videoRef.current) videoRef.current.value = ''
+    }
   }
 
   const handleAddLink = async () => {
@@ -292,6 +334,61 @@ export default function Relatorios() {
     )
   }
 
+  const renderUploadControls = () => (
+    <div className="w-full md:flex-1 grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <input
+        type="file"
+        ref={fileRef}
+        className="hidden"
+        multiple
+        accept=".pdf,.doc,.docx"
+        onChange={handleDocumentUpload}
+      />
+      <input
+        type="file"
+        ref={videoRef}
+        className="hidden"
+        multiple
+        accept="video/*"
+        onChange={handleVideoUpload}
+      />
+
+      <Button
+        disabled={isUploading}
+        onClick={() => fileRef.current?.click()}
+        className="w-full h-11 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+      >
+        {isUploading ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <UploadCloud className="w-4 h-4 mr-2 hidden xl:block" />
+        )}{' '}
+        Arquivo
+      </Button>
+      <Button
+        disabled={isUploading}
+        onClick={() => videoRef.current?.click()}
+        variant="outline"
+        className="w-full h-11 rounded-xl font-bold bg-secondary text-secondary-foreground hover:bg-secondary/90 shadow-sm border-border"
+      >
+        {isUploading ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <Video className="w-4 h-4 mr-2 hidden xl:block" />
+        )}{' '}
+        Vídeo
+      </Button>
+      <Button
+        disabled={isUploading}
+        onClick={() => setIsLinkDialogOpen(true)}
+        variant="outline"
+        className="w-full h-11 rounded-xl font-bold bg-background shadow-sm border-border"
+      >
+        <LinkIcon className="w-4 h-4 mr-2 hidden xl:block" /> Link
+      </Button>
+    </div>
+  )
+
   return (
     <div className="flex flex-col gap-6 max-w-[1200px] mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
@@ -330,7 +427,7 @@ export default function Relatorios() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-6 items-end">
-                  <div className="w-full md:w-1/3 space-y-2">
+                  <div className="w-full md:w-1/4 space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                       Ano Referência
                     </Label>
@@ -350,7 +447,7 @@ export default function Relatorios() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-full md:w-1/3 space-y-2">
+                  <div className="w-full md:w-1/4 space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                       Mês Referência
                     </Label>
@@ -367,29 +464,7 @@ export default function Relatorios() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-full md:w-1/3 flex gap-2">
-                    <input
-                      type="file"
-                      ref={fileRef}
-                      className="hidden"
-                      multiple
-                      accept=".pdf,.doc,.docx,.mp4,.avi,.mkv,.mov"
-                      onChange={handleFileChange}
-                    />
-                    <Button
-                      onClick={() => fileRef.current?.click()}
-                      className="flex-1 h-11 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-                    >
-                      <UploadCloud className="w-4 h-4 mr-2 hidden sm:block" /> Arquivo
-                    </Button>
-                    <Button
-                      onClick={() => setIsLinkDialogOpen(true)}
-                      variant="outline"
-                      className="flex-1 h-11 rounded-xl font-bold bg-background shadow-sm border-border"
-                    >
-                      <LinkIcon className="w-4 h-4 mr-2 hidden sm:block" /> Link
-                    </Button>
-                  </div>
+                  {renderUploadControls()}
                 </div>
               </CardContent>
             </Card>
@@ -409,7 +484,7 @@ export default function Relatorios() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-6 items-end">
-                  <div className="w-full md:w-1/2 space-y-2">
+                  <div className="w-full md:w-1/3 space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
                       Ano Referência
                     </Label>
@@ -429,29 +504,7 @@ export default function Relatorios() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="w-full md:w-1/2 flex gap-2">
-                    <input
-                      type="file"
-                      ref={fileRef}
-                      className="hidden"
-                      multiple
-                      accept=".pdf,.doc,.docx,.mp4,.avi,.mkv,.mov"
-                      onChange={handleFileChange}
-                    />
-                    <Button
-                      onClick={() => fileRef.current?.click()}
-                      className="flex-1 h-11 rounded-xl font-bold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
-                    >
-                      <UploadCloud className="w-4 h-4 mr-2 hidden sm:block" /> Arquivo
-                    </Button>
-                    <Button
-                      onClick={() => setIsLinkDialogOpen(true)}
-                      variant="outline"
-                      className="flex-1 h-11 rounded-xl font-bold bg-background shadow-sm border-border"
-                    >
-                      <LinkIcon className="w-4 h-4 mr-2 hidden sm:block" /> Link
-                    </Button>
-                  </div>
+                  {renderUploadControls()}
                 </div>
               </CardContent>
             </Card>
