@@ -1,9 +1,14 @@
 migrate(
   (app) => {
-    const users = app.findCollectionByNameOrId('users')
+    let users
+    try {
+      users = app.findCollectionByNameOrId('_pb_users_auth_')
+    } catch (_) {
+      return // collection not found, skip
+    }
 
     try {
-      app.findAuthRecordByEmail('users', 'admin@ggim.foz.br')
+      app.findAuthRecordByEmail('_pb_users_auth_', 'admin@ggim.foz.br')
       return // already seeded
     } catch (_) {}
 
@@ -17,7 +22,7 @@ migrate(
   },
   (app) => {
     try {
-      const record = app.findAuthRecordByEmail('users', 'admin@ggim.foz.br')
+      const record = app.findAuthRecordByEmail('_pb_users_auth_', 'admin@ggim.foz.br')
       app.delete(record)
     } catch (_) {}
   },
