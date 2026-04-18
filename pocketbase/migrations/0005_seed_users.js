@@ -4,7 +4,6 @@ migrate(
 
     const seedData = [
       {
-        id: 'seedggimfoz0001',
         email: 'ggim.foz@gmail.com',
         name: 'Insp. Área Fagundes',
         role: 'viewer',
@@ -14,7 +13,6 @@ migrate(
         allowed_tabs: [],
       },
       {
-        id: 'adminggimfoz002',
         email: 'admin@ggim.foz.br',
         name: 'Gestor GGIM',
         role: 'admin',
@@ -24,7 +22,6 @@ migrate(
         allowed_tabs: [],
       },
       {
-        id: 'gustavoggim0003',
         email: 'ggim.ctfoz@gmail.com',
         name: 'L. Gustavo S. de Assis',
         role: 'user',
@@ -34,7 +31,6 @@ migrate(
         allowed_tabs: [],
       },
       {
-        id: 'stephanyggim004',
         email: 'estagiariosggimfoz@gmail.com',
         name: 'Stephany',
         role: 'user',
@@ -44,7 +40,6 @@ migrate(
         allowed_tabs: [],
       },
       {
-        id: 'karinscaggim005',
         email: 'karleedoso@gmail.com',
         name: 'Karinsca',
         role: 'viewer',
@@ -60,12 +55,7 @@ migrate(
       try {
         record = app.findFirstRecordByData('_pb_users_auth_', 'email', data.email)
       } catch (_) {
-        try {
-          record = app.findRecordById('_pb_users_auth_', data.id)
-        } catch (_) {
-          record = new Record(users)
-          record.set('id', data.id)
-        }
+        record = new Record(users)
       }
 
       record.setEmail(data.email)
