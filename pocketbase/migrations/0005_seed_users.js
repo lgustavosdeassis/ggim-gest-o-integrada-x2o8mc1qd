@@ -56,6 +56,7 @@ migrate(
         record = app.findFirstRecordByData('_pb_users_auth_', 'email', data.email)
       } catch (_) {
         record = new Record(users)
+        record.set('id', $security.randomString(15))
       }
 
       record.setEmail(data.email)

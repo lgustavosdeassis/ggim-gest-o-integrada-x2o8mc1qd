@@ -3,19 +3,19 @@ migrate(
     const users = app.findCollectionByNameOrId('_pb_users_auth_')
 
     if (!users.fields.getByName('job_title')) {
-      users.fields.add(new TextField({ name: 'job_title' }))
+      users.fields.add(new TextField({ name: 'job_title', id: 'fld_job_title' }))
     }
     if (!users.fields.getByName('avatar_url')) {
-      users.fields.add(new TextField({ name: 'avatar_url' }))
+      users.fields.add(new TextField({ name: 'avatar_url', id: 'fld_avatar' }))
     }
     if (!users.fields.getByName('can_delete_reports')) {
-      users.fields.add(new BoolField({ name: 'can_delete_reports' }))
+      users.fields.add(new BoolField({ name: 'can_delete_reports', id: 'fld_candelrep' }))
     }
     if (!users.fields.getByName('can_generate_reports')) {
-      users.fields.add(new BoolField({ name: 'can_generate_reports' }))
+      users.fields.add(new BoolField({ name: 'can_generate_reports', id: 'fld_cangenrep' }))
     }
     if (!users.fields.getByName('allowed_tabs')) {
-      users.fields.add(new JSONField({ name: 'allowed_tabs' }))
+      users.fields.add(new JSONField({ name: 'allowed_tabs', id: 'fld_allowtabs' }))
     }
 
     users.listRule = "@request.auth.id != ''"
