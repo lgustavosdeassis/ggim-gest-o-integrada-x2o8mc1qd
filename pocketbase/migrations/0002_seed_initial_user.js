@@ -21,6 +21,7 @@ migrate(
     } catch (_) {
       const profiles = app.findCollectionByNameOrId('profiles')
       const profileRecord = new Record(profiles)
+      profileRecord.set('user_id', userId)
       profileRecord.set('email', 'gmtengustavo@hotmail.com')
       profileRecord.set('name', 'Admin')
       profileRecord.set('Role', 'admin')
