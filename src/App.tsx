@@ -14,6 +14,7 @@ import NotFound from '@/pages/NotFound'
 import Profile from '@/pages/Profile'
 import Login from '@/pages/Login'
 import Usuarios from '@/pages/Usuarios'
+import UsuariosForm from '@/pages/UsuariosForm'
 import AuditLogs from '@/pages/AuditLogs'
 import { Toaster } from '@/components/ui/sonner'
 import { useAuthStore } from '@/stores/auth'
@@ -90,6 +91,8 @@ const AppContent = () => {
           <Route path="relatorios" element={<Relatorios />} />
           <Route path="profile" element={<Profile />} />
           <Route path="usuarios" element={<Usuarios />} />
+          <Route path="usuarios/novo" element={<UsuariosForm />} />
+          <Route path="usuarios/:id/editar" element={<UsuariosForm />} />
           <Route path="audit-logs" element={<AuditLogs />} />
         </Route>
         <Route path="*" element={<NotFound />} />

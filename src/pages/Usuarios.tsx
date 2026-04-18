@@ -10,8 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Loader2, Users, ShieldAlert, Trash2 } from 'lucide-react'
+import { Loader2, Users, ShieldAlert, Trash2, Plus, Edit2 } from 'lucide-react'
 
 export default function Usuarios() {
   const { user } = useAuthStore()
@@ -50,13 +51,21 @@ export default function Usuarios() {
 
   return (
     <div className="flex flex-col gap-6 max-w-[1200px] mx-auto py-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-4xl font-black tracking-tight text-foreground flex items-center gap-3 mb-2">
-          <Users className="w-10 h-10 text-primary" /> Gerenciar Usuários
-        </h1>
-        <p className="text-muted-foreground text-base font-medium">
-          Visualize e gerencie os usuários e permissões de acesso ao sistema.
-        </p>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight text-foreground flex items-center gap-3 mb-2">
+            <Users className="w-10 h-10 text-primary" /> Gerenciar Usuários
+          </h1>
+          <p className="text-muted-foreground text-base font-medium">
+            Visualize e gerencie os usuários e permissões de acesso ao sistema.
+          </p>
+        </div>
+        <Button asChild>
+          <Link to="/usuarios/novo">
+            <Plus className="w-4 h-4 mr-2" />
+            Adicionar Usuário
+          </Link>
+        </Button>
       </div>
 
       <Card className="border-border shadow-sm rounded-2xl bg-card">
@@ -95,6 +104,16 @@ export default function Usuarios() {
                     </TableCell>
                     <TableCell className="text-right pr-6">
                       <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-primary hover:bg-primary/10"
+                          asChild
+                        >
+                          <Link to={`/usuarios/${u.id}/editar`}>
+                            <Edit2 className="w-4 h-4" />
+                          </Link>
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
