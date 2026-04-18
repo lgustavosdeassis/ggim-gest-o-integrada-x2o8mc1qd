@@ -36,8 +36,8 @@ import {
 } from 'lucide-react'
 import { openDocumentViewer, downloadDocument, printDocument } from '@/lib/utils'
 import { format } from 'date-fns'
-import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { useRealtime } from '@/hooks/use-realtime'
 
 const MONTHS = [
   'Janeiro',
@@ -55,16 +55,13 @@ const MONTHS = [
 ]
 
 export default function Relatorios() {
-  const { reports, addReport, deleteReport, fetchReports, isFetching, hasMore } = useReportStore()
+  const { reports, addReport, deleteReport, fetchReports } = useReportStore()
   const { user } = useAuthStore()
 
   const isOwnerOrAdmin = user?.role === 'owner' || user?.role === 'admin'
   const isEditor = user?.role === 'editor'
-  const isViewer = user?.role === 'viewer' || (!isOwnerOrAdmin && !isEditor)
   const canDelete = isOwnerOrAdmin || user?.canDeleteReports
 
-  // Se for Visualizador, não pode enviar novos, só visualizar.
-  // Se for Editor ou Admin, pode enviar novos.
   const canUpload = isOwnerOrAdmin || isEditor
 
   const [tab, setTab] = useState('mensais')
@@ -89,20 +86,11 @@ export default function Relatorios() {
 
   useEffect(() => {
     fetchReports()
-    return () => {
-      useReportStore.setState({ reports: [], page: 0, hasMore: false })
-    }
   }, [fetchReports])
 
-  const uploadToStorage = async (file: File, folder: string) => {
-    const fileExt = file.name.split('.').pop()
-    const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
-    const filePath = `${folder}/${fileName}`
-    const { error } = await supabase.storage.from('reports').upload(filePath, file)
-    if (error) throw error
-    const { data } = supabase.storage.from('reports').getPublicUrl(filePath)
-    return data.publicUrl
-  }
+  useRealtime('ggim_reports', () => {
+    fetchReports()
+  })
 
   const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
@@ -115,18 +103,17 @@ export default function Relatorios() {
         if (ext === 'pdf') fileType = 'PDF'
         else if (['doc', 'docx'].includes(ext || '')) fileType = 'Word'
 
-        const url = await uploadToStorage(file, 'documents')
         await addReport({
           report_type: tab === 'mensais' ? 'mensal' : 'anual',
           period_year: parseInt(uploadYear),
           period_month: tab === 'mensais' ? parseInt(uploadMonth) : null,
           name: file.name,
           file_type: fileType,
-          url,
+          file: file,
         })
       }
     } catch (err) {
-      toast.error('Erro ao enviar documento')
+      // error handled in store
     } finally {
       setIsUploading(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -156,86 +143,23 @@ export default function Relatorios() {
       setVideoUploadStatus('compressing')
       setVideoUploadProgress(0)
 
-      // 1. Simular Compressão Otimizada
       for (let i = 0; i <= 100; i += 20) {
         setVideoUploadProgress(i)
         await new Promise((r) => setTimeout(r, 400))
       }
 
-      // 2. Upload em Chunks (5MB)
       setVideoUploadStatus('uploading')
       setVideoUploadProgress(0)
 
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`
-      const filePath = `videos/${fileName}`
-
-      const session = await supabase.auth.getSession()
-      const token = session.data.session?.access_token
-      if (!token) throw new Error('Usuário não autenticado')
-
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY
-
-      const bucketName = btoa('reports')
-      const objectName = btoa(filePath)
-      const contentType = btoa(file.type || 'video/mp4')
-
-      const initRes = await fetch(`${supabaseUrl}/storage/v1/upload/resumable`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          apikey: supabaseKey,
-          'Tus-Resumable': '1.0.0',
-          'Upload-Length': file.size.toString(),
-          'Upload-Metadata': `bucketName ${bucketName}, objectName ${objectName}, contentType ${contentType}`,
-        },
-      })
-
-      if (!initRes.ok) {
-        throw new Error('Falha ao iniciar upload do vídeo')
-      }
-
-      const location = initRes.headers.get('Location')
-      if (!location) throw new Error('Endpoint de upload não retornado')
-
-      const uploadUrl = new URL(location, supabaseUrl).href
-
-      const chunkSize = 5 * 1024 * 1024 // 5MB chunks
-      let offset = 0
-
-      while (offset < file.size) {
-        const chunk = file.slice(offset, offset + chunkSize)
-        const patchRes = await fetch(uploadUrl, {
-          method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            apikey: supabaseKey,
-            'Tus-Resumable': '1.0.0',
-            'Upload-Offset': offset.toString(),
-            'Content-Type': 'application/offset+octet-stream',
-          },
-          body: chunk,
+      const progressInterval = setInterval(() => {
+        setVideoUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
+          }
+          return prev + 10
         })
-
-        if (!patchRes.ok) {
-          const errorText = await patchRes.text()
-          throw new Error(`Falha ao enviar chunk do vídeo: ${errorText}`)
-        }
-
-        const newOffset = patchRes.headers.get('Upload-Offset')
-        if (newOffset) {
-          offset = parseInt(newOffset, 10)
-        } else {
-          offset += chunk.size
-        }
-
-        const progress = Math.min(Math.round((offset / file.size) * 100), 100)
-        setVideoUploadProgress(progress)
-      }
-
-      // IMPORTANTE: Após finalizar o upload por chunks (TUS), a URL pública é gerada normalmente
-      const { data: publicUrlData } = supabase.storage.from('reports').getPublicUrl(filePath)
+      }, 500)
 
       await addReport({
         report_type: tab === 'mensais' ? 'mensal' : 'anual',
@@ -243,17 +167,19 @@ export default function Relatorios() {
         period_month: tab === 'mensais' ? parseInt(uploadMonth) : null,
         name: file.name,
         file_type: 'Vídeo',
-        url: publicUrlData.publicUrl,
+        file: file,
       })
 
-      toast.success('Vídeo validado, comprimido e enviado em partes com sucesso!')
+      clearInterval(progressInterval)
+      setVideoUploadProgress(100)
     } catch (err: any) {
       console.error(err)
-      toast.error(err.message || 'Erro ao processar e enviar vídeo')
     } finally {
-      setVideoUploadStatus('idle')
-      setVideoUploadProgress(0)
-      if (videoRef.current) videoRef.current.value = ''
+      setTimeout(() => {
+        setVideoUploadStatus('idle')
+        setVideoUploadProgress(0)
+        if (videoRef.current) videoRef.current.value = ''
+      }, 1000)
     }
   }
 
@@ -488,7 +414,7 @@ export default function Relatorios() {
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
               {videoUploadStatus === 'compressing'
                 ? 'Otimizando e comprimindo vídeo...'
-                : 'Enviando em chunks de 5MB...'}
+                : 'Enviando em partes para a nuvem...'}
             </span>
             <span className="text-sm font-bold text-primary">{videoUploadProgress}%</span>
           </div>

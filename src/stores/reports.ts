@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { supabase } from '@/lib/supabase/client'
+import pb from '@/lib/pocketbase/client'
 import { toast } from 'sonner'
 
 export interface ReportRecord {
@@ -19,7 +19,7 @@ interface ReportState {
   hasMore: boolean
   page: number
   fetchReports: () => Promise<void>
-  addReport: (report: Omit<ReportRecord, 'id' | 'created_at'>) => Promise<void>
+  addReport: (report: any) => Promise<void>
   deleteReport: (id: string) => Promise<void>
 }
 
@@ -34,31 +34,25 @@ export const useReportStore = create<ReportState>()((set, get) => ({
 
     set({ isFetching: true })
     try {
-      const { data, error } = await supabase
-        .from('ggim_reports')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const records = await pb.collection('ggim_reports').getFullList({
+        sort: '-created',
+      })
 
-      if (error) throw error
+      const fetchedData = records.map((r) => ({
+        id: r.id,
+        report_type: r.report_type as 'mensal' | 'anual',
+        period_year: r.period_year,
+        period_month: r.period_month || null,
+        name: r.name,
+        file_type: r.file_type,
+        url: r.file ? pb.files.getURL(r, r.file) : r.url || null,
+        created_at: r.created,
+      }))
 
-      const fetchedData = (data || []) as ReportRecord[]
-
-      set((prev) => {
-        const isSame =
-          prev.reports.length === fetchedData.length &&
-          prev.reports.every(
-            (r, i) => r.id === fetchedData[i].id && r.created_at === fetchedData[i].created_at,
-          )
-
-        if (isSame) {
-          return { isFetching: false, hasMore: false }
-        }
-
-        return {
-          reports: fetchedData,
-          isFetching: false,
-          hasMore: false,
-        }
+      set({
+        reports: fetchedData,
+        isFetching: false,
+        hasMore: false,
       })
     } catch (e) {
       console.error(e)
@@ -67,8 +61,16 @@ export const useReportStore = create<ReportState>()((set, get) => ({
   },
   addReport: async (report) => {
     try {
-      const { error } = await supabase.from('ggim_reports').insert(report)
-      if (error) throw error
+      const formData = new FormData()
+      formData.append('report_type', report.report_type)
+      formData.append('period_year', report.period_year.toString())
+      if (report.period_month) formData.append('period_month', report.period_month.toString())
+      formData.append('name', report.name)
+      formData.append('file_type', report.file_type)
+      if (report.url) formData.append('url', report.url)
+      if (report.file) formData.append('file', report.file)
+
+      await pb.collection('ggim_reports').create(formData)
       toast.success('Relatório anexado com sucesso.')
       get().fetchReports()
     } catch (e) {
@@ -78,8 +80,7 @@ export const useReportStore = create<ReportState>()((set, get) => ({
   },
   deleteReport: async (id) => {
     try {
-      const { error } = await supabase.from('ggim_reports').delete().eq('id', id)
-      if (error) throw error
+      await pb.collection('ggim_reports').delete(id)
       toast.success('Relatório excluído.')
       get().fetchReports()
     } catch (e) {

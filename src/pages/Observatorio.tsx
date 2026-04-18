@@ -10,6 +10,7 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { useObsStore } from '@/stores/obs'
 import { ObsFormDialog } from '@/components/obs/ObsFormDialog'
 import { useAuthStore } from '@/stores/auth'
+import { useRealtime } from '@/hooks/use-realtime'
 import {
   Table,
   TableBody,
@@ -26,8 +27,12 @@ const getYYYYMM = (d: Date) => {
 }
 
 export default function Observatorio() {
-  const { records, deleteRecord } = useObsStore()
+  const { records, deleteRecord, fetchRecords } = useObsStore()
   const user = useAuthStore((state) => state.user)
+
+  useRealtime('obs_records', () => {
+    fetchRecords()
+  })
   const isViewer =
     user?.role !== 'admin' &&
     user?.role !== 'owner' &&

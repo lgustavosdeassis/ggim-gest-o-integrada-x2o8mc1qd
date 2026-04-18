@@ -1,5 +1,17 @@
+import { useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Activity, CalendarDays, CheckCircle2, Clock, Landmark, Timer, Sigma } from 'lucide-react'
+import {
+  Activity,
+  CalendarDays,
+  CheckCircle2,
+  Clock,
+  Landmark,
+  Timer,
+  Sigma,
+  FileText,
+  Video,
+  FolderKanban,
+} from 'lucide-react'
 import { Pie, PieChart, ResponsiveContainer, Tooltip, Legend, Cell } from 'recharts'
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { DashboardStats } from './StatsUtils'
@@ -12,9 +24,24 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { formatHoursToHHMM } from '@/lib/utils'
+import useReportStore from '@/stores/reports'
 
 export function DashboardOverview({ data }: { data: DashboardStats['overview'] }) {
   const consolidatedHours = data.eventHours + data.actionHours
+  const { reports, fetchReports } = useReportStore()
+
+  useEffect(() => {
+    fetchReports()
+  }, [fetchReports])
+
+  const reportCounts = reports.reduce(
+    (acc, r) => {
+      if (r.file_type === 'PDF' || r.file_type === 'Word' || r.file_type === 'Link') acc.docs++
+      if (r.file_type === 'Vídeo') acc.videos++
+      return acc
+    },
+    { docs: 0, videos: 0 },
+  )
 
   return (
     <div className="space-y-6 print-break-inside-avoid animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -74,6 +101,34 @@ export function DashboardOverview({ data }: { data: DashboardStats['overview'] }
             </CardHeader>
             <CardContent className="relative z-10">
               <div className="text-4xl font-black text-foreground">{data.actionsGenerated}</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid gap-5 grid-cols-2 lg:grid-cols-2">
+          <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group border-primary/20">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-primary/10 rounded-full blur-2xl group-hover:bg-primary/20 transition-colors" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-primary">
+                {reportCounts.docs === 1 ? 'Relatório' : 'Relatórios'} PDF/DOCX
+              </CardTitle>
+              <FolderKanban className="h-5 w-5 text-primary" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-black text-foreground">{reportCounts.docs}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border shadow-sm bg-card hover:shadow-md transition-all duration-300 rounded-2xl relative overflow-hidden group border-secondary/20">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-secondary/10 rounded-full blur-2xl group-hover:bg-secondary/20 transition-colors" />
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative z-10">
+              <CardTitle className="text-[10px] font-bold uppercase tracking-widest text-secondary-foreground">
+                {reportCounts.videos === 1 ? 'Vídeo' : 'Vídeos'} de Relatório
+              </CardTitle>
+              <Video className="h-5 w-5 text-secondary-foreground" />
+            </CardHeader>
+            <CardContent className="relative z-10">
+              <div className="text-4xl font-black text-foreground">{reportCounts.videos}</div>
             </CardContent>
           </Card>
         </div>

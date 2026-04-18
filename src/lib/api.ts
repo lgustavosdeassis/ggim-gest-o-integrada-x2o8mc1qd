@@ -1,8 +1,8 @@
-import { supabase } from '@/lib/supabase/client'
+import pb from '@/lib/pocketbase/client'
 import { ActivityRecord } from '@/lib/types'
 
 function mapFromDB(item: any): ActivityRecord {
-  if (!item) return item
+  if (!item) return item as any
   return {
     id: item.id,
     eventName: item.event_name,
@@ -23,7 +23,7 @@ function mapFromDB(item: any): ActivityRecord {
     documents: item.documents,
     deliberations: item.deliberations,
     description: item.description,
-    createdAt: item.created_at,
+    createdAt: item.created,
   }
 }
 
@@ -52,221 +52,121 @@ function mapToDB(item: any) {
   return payload
 }
 
-async function fetchPaginated(table: string, orderColumn: string, stepSize: number = 100) {
-  const allData: any[] = []
-  let from = 0
-  let hasMore = true
-  let retryCount = 0
-
-  while (hasMore) {
-    try {
-      const { data, error } = await supabase
-        .from(table)
-        .select('*')
-        .order(orderColumn, { ascending: false })
-        .range(from, from + stepSize - 1)
-
-      if (error) throw error
-
-      if (data && data.length > 0) {
-        allData.push(...data)
-        from += stepSize
-        if (data.length < stepSize) hasMore = false
-        retryCount = 0
-      } else {
-        hasMore = false
-      }
-    } catch (error) {
-      console.warn(
-        `Aviso: Erro ao buscar lote ${from}-${from + stepSize - 1} em ${table}. Retentando...`,
-        error,
-      )
-      retryCount++
-      if (retryCount > 3) {
-        console.error(
-          `Falha ao buscar ${table} após 3 tentativas. Interrompendo busca para este lote.`,
-        )
-        hasMore = false
-      } else {
-        await new Promise((r) => setTimeout(r, 2000 * retryCount))
-      }
-    }
-  }
-  return allData
-}
-
 export const api = {
   activities: {
     list: async () => {
-      // Chunk de 25 registros para evitar erros de limite de memória no payload devido aos arquivos base64
-      const data = await fetchPaginated('activities', 'created_at', 25)
+      const data = await pb.collection('activities').getFullList({ sort: '-created' })
       return data.map(mapFromDB)
     },
     create: async (activity: any) => {
-      const { data, error } = await supabase
-        .from('activities')
-        .insert([mapToDB(activity)])
-        .select()
-        .single()
-      if (error) throw error
+      const data = await pb.collection('activities').create(mapToDB(activity))
       return mapFromDB(data)
     },
     update: async (id: string, activity: any) => {
-      const { data, error } = await supabase
-        .from('activities')
-        .update(mapToDB(activity))
-        .eq('id', id)
-        .select()
-        .single()
-      if (error) throw error
+      const data = await pb.collection('activities').update(id, mapToDB(activity))
       return mapFromDB(data)
     },
     delete: async (id: string) => {
-      const { error } = await supabase.from('activities').delete().eq('id', id)
-      if (error) throw error
+      await pb.collection('activities').delete(id)
     },
     bulkDelete: async (ids: string[]) => {
-      const { error } = await supabase.from('activities').delete().in('id', ids)
-      if (error) throw error
+      await Promise.all(ids.map((id) => pb.collection('activities').delete(id)))
     },
   },
   users: {
     list: async () => {
-      const { data, error } = await supabase.from('profiles').select('*')
-      if (error) throw error
-      return (data || []).map((p) => ({
+      const data = await pb.collection('profiles').getFullList()
+      return data.map((p: any) => ({
         id: p.id,
         email: p.email,
         name: p.name,
-        role: p.role,
+        role: p.Role,
         jobTitle: p.job_title,
         avatarUrl: p.avatar_url,
       }))
     },
     update: async (id: string, updates: any) => {
       const payload: any = {}
-      if (updates.name) payload.name = updates.name
-      if (updates.role) payload.role = updates.role
-      if (updates.jobTitle) payload.job_title = updates.jobTitle
-      if (updates.avatarUrl) payload.avatar_url = updates.avatarUrl
+      if (updates.name !== undefined) payload.name = updates.name
+      if (updates.role !== undefined) payload.Role = updates.role
+      if (updates.jobTitle !== undefined) payload.job_title = updates.jobTitle
+      if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl
 
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(payload)
-        .eq('id', id)
-        .select()
-        .single()
-      if (error) throw error
+      const data = await pb.collection('profiles').update(id, payload)
       return data
     },
     create: async (payload: any) => {
-      const { data, error } = await supabase.functions.invoke('manage-user', {
-        body: { action: 'create', payload },
+      const data = await pb.collection('profiles').create({
+        email: payload.email,
+        name: payload.name,
+        Role: payload.role || 'viewer',
+        job_title: payload.jobTitle,
       })
-      if (error) throw error
-      if (data.error) throw new Error(data.error)
       return data
     },
     delete: async (id: string) => {
-      const { data, error } = await supabase.functions.invoke('manage-user', {
-        body: { action: 'delete', payload: { id } },
-      })
-      if (error) throw error
-      if (data.error) throw new Error(data.error)
-      return data
+      await pb.collection('profiles').delete(id)
     },
   },
   video: {
     list: async () => {
-      const data = await fetchPaginated('video_records', 'date', 200)
+      const data = await pb.collection('video_records').getFullList({ sort: '-date' })
       return data
     },
     save: async (record: any) => {
-      const { data: existing } = await supabase
-        .from('video_records')
-        .select('id')
-        .eq('date', record.date)
-        .maybeSingle()
-      if (existing) {
-        const { data, error } = await supabase
-          .from('video_records')
-          .update(record)
-          .eq('id', existing.id)
-          .select()
-          .single()
-        if (error) throw error
-        return data
-      } else {
-        const { data, error } = await supabase
-          .from('video_records')
-          .insert([record])
-          .select()
-          .single()
-        if (error) throw error
-        return data
+      try {
+        const existing = await pb
+          .collection('video_records')
+          .getFirstListItem(`date="${record.date}"`)
+        return await pb.collection('video_records').update(existing.id, record)
+      } catch {
+        return await pb.collection('video_records').create(record)
       }
     },
     delete: async (id: string) => {
-      const { error } = await supabase.from('video_records').delete().eq('id', id)
-      if (error) throw error
+      await pb.collection('video_records').delete(id)
     },
   },
   obs: {
     list: async () => {
-      const data = await fetchPaginated('obs_records', 'date', 200)
+      const data = await pb.collection('obs_records').getFullList({ sort: '-date' })
       return data.map((r: any) => ({
         id: r.id,
         date: r.date,
-        sinistrosVitimas: r.sinistros_vitimas,
-        sinistrosTotal: r.sinistros_total,
-        autosInfracao: r.autos_infracao,
+        sinistrosVitimas: r.sinistrosVitimas,
+        sinistrosTotal: r.sinistrosTotal,
+        autosInfracao: r.autosInfracao,
         homicidios: r.homicidios,
-        violenciaDomestica: r.violencia_domestica,
+        violenciaDomestica: r.violenciaDomestica,
         roubos: r.roubos,
       }))
     },
     save: async (record: any) => {
       const payload = {
         date: record.date,
-        sinistros_vitimas: record.sinistrosVitimas,
-        sinistros_total: record.sinistrosTotal,
-        autos_infracao: record.autosInfracao,
+        sinistrosVitimas: record.sinistrosVitimas,
+        sinistrosTotal: record.sinistrosTotal,
+        autosInfracao: record.autosInfracao,
         homicidios: record.homicidios,
-        violencia_domestica: record.violenciaDomestica,
+        violenciaDomestica: record.violenciaDomestica,
         roubos: record.roubos,
       }
-      const { data: existing } = await supabase
-        .from('obs_records')
-        .select('id')
-        .eq('date', record.date)
-        .maybeSingle()
-      if (existing) {
-        const { data, error } = await supabase
-          .from('obs_records')
-          .update(payload)
-          .eq('id', existing.id)
-          .select()
-          .single()
-        if (error) throw error
-        return data
-      } else {
-        const { data, error } = await supabase
-          .from('obs_records')
-          .insert([payload])
-          .select()
-          .single()
-        if (error) throw error
-        return data
+      try {
+        const existing = await pb
+          .collection('obs_records')
+          .getFirstListItem(`date="${record.date}"`)
+        return await pb.collection('obs_records').update(existing.id, payload)
+      } catch {
+        return await pb.collection('obs_records').create(payload)
       }
     },
     delete: async (id: string) => {
-      const { error } = await supabase.from('obs_records').delete().eq('id', id)
-      if (error) throw error
+      await pb.collection('obs_records').delete(id)
     },
   },
   audit: {
     list: async () => {
-      const data = await fetchPaginated('audit_logs', 'timestamp', 500)
+      const data = await pb.collection('audit_logs').getFullList({ sort: '-timestamp' })
       return data.map((l: any) => ({
         id: l.id,
         userName: l.user_name,
@@ -276,21 +176,16 @@ export const api = {
       }))
     },
     add: async (log: any) => {
-      const { error } = await supabase.from('audit_logs').insert([
-        {
-          user_name: log.userName,
-          user_email: log.userEmail,
-          action: log.action,
-        },
-      ])
-      if (error) throw error
+      await pb.collection('audit_logs').create({
+        user_name: log.userName,
+        user_email: log.userEmail,
+        action: log.action,
+        timestamp: new Date().toISOString(),
+      })
     },
     clear: async () => {
-      const { error } = await supabase
-        .from('audit_logs')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000')
-      if (error) throw error
+      const data = await pb.collection('audit_logs').getFullList({ fields: 'id' })
+      await Promise.all(data.map((d) => pb.collection('audit_logs').delete(d.id)))
     },
   },
 }

@@ -64,16 +64,11 @@ export default function Login() {
           'E-mail ou senha incorretos. Verifique as credenciais digitadas e tente novamente.'
 
         if (
-          error.status === 504 ||
-          error.status === 503 ||
-          error.status === 502 ||
-          error.name === 'AuthRetryableFetchError' ||
-          error.name === 'TimeoutError' ||
+          error.status === 0 ||
+          error.status >= 500 ||
           error.message?.toLowerCase().includes('fetch') ||
           error.message?.toLowerCase().includes('network') ||
-          error.message?.toLowerCase().includes('timeout') ||
-          error.message?.toLowerCase().includes('upstream') ||
-          error.message?.toLowerCase().includes('504')
+          error.message?.toLowerCase().includes('timeout')
         ) {
           msg =
             'O servidor está iniciando ou demorou para responder. Aguarde alguns instantes e tente novamente.'

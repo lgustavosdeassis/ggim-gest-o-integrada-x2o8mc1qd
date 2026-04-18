@@ -1,7 +1,6 @@
 import { create } from 'zustand'
-import { supabase } from '@/lib/supabase/client'
+import pb from '@/lib/pocketbase/client'
 import { Profile } from '@/lib/types'
-import { User as SupabaseUser, Session } from '@supabase/supabase-js'
 
 export interface AppUser {
   id: string
@@ -17,15 +16,11 @@ export interface AppUser {
 
 interface AuthState {
   user: AppUser | null
-  supabaseUser: SupabaseUser | null
-  session: Session | null
   profile: Profile | null
   loading: boolean
   initialized: boolean
   isAuthenticated: boolean
-  setAuth: (session: Session | null, user: SupabaseUser | null) => void
-  fetchProfile: (userId: string) => Promise<void>
-  signOut: () => Promise<void>
+  fetchProfile: (email: string) => Promise<void>
   login: (user: AppUser) => void
   logout: () => void
   updateAvatar: (url: string) => void
@@ -34,88 +29,52 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
-  supabaseUser: null,
-  session: null,
   profile: null,
   loading: true,
   initialized: false,
   isAuthenticated: false,
 
-  setAuth: async (session, supabaseUser) => {
-    set({ session, supabaseUser, loading: false, initialized: true })
-    if (supabaseUser) {
-      await get().fetchProfile(supabaseUser.id)
-    } else {
-      set({ profile: null, user: null, isAuthenticated: false })
-    }
-  },
-
-  fetchProfile: async (userId) => {
+  fetchProfile: async (email: string) => {
     try {
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single()
+      const pbUser = pb.authStore.record
+      if (!pbUser) return
 
-      if (error) {
-        console.error('Error fetching profile:', error)
-        return
+      let profile: any = null
+      try {
+        profile = await pb.collection('profiles').getFirstListItem(`email="${email}"`)
+      } catch (err) {
+        console.warn('Profile not found for this user.')
       }
-
-      const profile = data as any
-      const supabaseUser = get().supabaseUser
 
       let parsedTabs: string[] = []
       try {
-        const rawTabs = profile.allowed_tabs ?? supabaseUser?.user_metadata?.allowed_tabs
+        const rawTabs = profile?.allowed_tabs || []
         if (Array.isArray(rawTabs)) {
           parsedTabs = rawTabs
-        } else if (typeof rawTabs === 'string') {
-          if (rawTabs.startsWith('{') && rawTabs.endsWith('}')) {
-            const inner = rawTabs.slice(1, -1).trim()
-            if (inner) {
-              parsedTabs = inner.split(',').map((s) => s.trim().replace(/(^"|"$)/g, ''))
-            }
-          } else {
-            try {
-              parsedTabs = JSON.parse(rawTabs)
-            } catch (e) {
-              // Ignore parse error if not valid JSON
-            }
-          }
         }
       } catch (e) {
         console.error('Error parsing allowedTabs', e)
       }
 
+      const appUser: AppUser = {
+        id: profile?.id || pbUser.id,
+        email: email,
+        name: profile?.name || pbUser.name || 'Usuário',
+        role: (profile?.Role?.toLowerCase() || 'viewer') as any,
+        jobTitle: profile?.job_title,
+        avatarUrl: profile?.avatar_url,
+        canGenerateReports: profile?.can_generate_reports ?? false,
+        canDeleteReports: profile?.can_delete_reports ?? false,
+        allowedTabs: parsedTabs,
+      }
+
       set({
-        profile,
-        user: {
-          id: profile.id,
-          email: profile.email,
-          name: profile.name,
-          role: profile.role || supabaseUser?.user_metadata?.role || 'viewer',
-          jobTitle: profile.job_title,
-          avatarUrl: profile.avatar_url,
-          canGenerateReports:
-            profile.can_generate_reports ??
-            supabaseUser?.user_metadata?.can_generate_reports ??
-            false,
-          canDeleteReports:
-            profile.can_delete_reports ?? supabaseUser?.user_metadata?.can_delete_reports ?? false,
-          allowedTabs: parsedTabs,
-        },
+        profile: profile as any,
+        user: appUser,
         isAuthenticated: true,
       })
     } catch (error) {
       console.error('Failed to fetch profile', error)
-    }
-  },
-
-  signOut: async () => {
-    try {
-      await supabase.auth.signOut()
-    } catch (e) {
-      console.warn('Error on sign out', e)
-    } finally {
-      set({ user: null, supabaseUser: null, session: null, profile: null, isAuthenticated: false })
     }
   },
 
@@ -124,7 +83,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
-    set({ user: null, isAuthenticated: false })
+    set({ user: null, profile: null, isAuthenticated: false })
   },
 
   updateAvatar: (url) => {
@@ -132,9 +91,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       user: state.user ? { ...state.user, avatarUrl: url } : null,
       profile: state.profile ? { ...state.profile, avatar_url: url } : null,
     }))
-    const userId = get().user?.id
-    if (userId) {
-      supabase.from('profiles').update({ avatar_url: url }).eq('id', userId).then()
+    const profileId = get().profile?.id
+    if (profileId) {
+      pb.collection('profiles').update(profileId, { avatar_url: url }).catch(console.error)
     }
   },
 
@@ -145,14 +104,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         ? { ...state.profile, ...data, job_title: data.jobTitle || state.profile.job_title }
         : null,
     }))
-    const userId = get().user?.id
-    if (userId) {
+    const profileId = get().profile?.id
+    if (profileId) {
       const updateData: any = {}
       if (data.name !== undefined) updateData.name = data.name
       if (data.jobTitle !== undefined) updateData.job_title = data.jobTitle
 
       if (Object.keys(updateData).length > 0) {
-        supabase.from('profiles').update(updateData).eq('id', userId).then()
+        pb.collection('profiles').update(profileId, updateData).catch(console.error)
       }
     }
   },

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { ActivityRecord } from '@/lib/types'
 import { api } from '@/lib/api'
-import { supabase } from '@/lib/supabase/client'
+import pb from '@/lib/pocketbase/client'
 import { toast } from 'sonner'
 
 interface AppState {
@@ -21,41 +21,19 @@ export const useAppStore = create<AppState>()((set, get) => ({
   activities: [],
   isFetching: false,
   hasMore: true,
-  page: 0,
+  page: 1,
   fetchActivities: async (loadMore = false) => {
     const state = get()
     if (state.isFetching) return
 
     set({ isFetching: true })
     try {
-      let from = 0
-      let to = 49
-      let isAppending = false
+      const pageToFetch = loadMore ? state.page + 1 : 1
+      const result = await pb.collection('activities').getList(pageToFetch, 50, {
+        sort: '-meeting_start',
+      })
 
-      if (loadMore) {
-        if (!state.hasMore) {
-          set({ isFetching: false })
-          return
-        }
-        from = state.page * 50
-        to = from + 49
-        isAppending = true
-      } else {
-        const currentLoadedCount = Math.max(50, state.page * 50)
-        from = 0
-        to = currentLoadedCount - 1
-        isAppending = false
-      }
-
-      const { data, error } = await supabase
-        .from('activities')
-        .select('*')
-        .order('meeting_start', { ascending: false })
-        .range(from, to)
-
-      if (error) throw error
-
-      const formattedData = (data || []).map((d: any) => ({
+      const formattedData = result.items.map((d: any) => ({
         id: d.id,
         eventName: d.event_name,
         instance: d.instance,
@@ -75,46 +53,24 @@ export const useAppStore = create<AppState>()((set, get) => ({
         documents: d.documents,
         deliberations: d.deliberations,
         description: d.description,
-        createdAt: d.created_at,
+        createdAt: d.created,
       })) as ActivityRecord[]
 
       set((prev) => {
         let newActivities = []
-        let newPage = prev.page
-        let newHasMore = prev.hasMore
-
-        if (isAppending) {
+        if (loadMore) {
           newActivities = [...prev.activities, ...formattedData]
-          newPage = prev.page + 1
-          newHasMore = formattedData.length === 50
         } else {
           newActivities = formattedData
-          if (prev.page === 0) newPage = 1
-          if (formattedData.length < to - from + 1) {
-            newHasMore = false
-          } else if (formattedData.length === to - from + 1) {
-            newHasMore = true
-          }
         }
 
         const unique = Array.from(new Map(newActivities.map((item) => [item.id, item])).values())
 
-        // Evita retenção desnecessária: verifica por ID/Timestamp em vez de stringify completo
-        const isSame =
-          prev.activities.length === unique.length &&
-          prev.activities.every(
-            (a, i) => a.id === unique[i].id && a.createdAt === unique[i].createdAt,
-          )
-
-        if (isSame) {
-          return { isFetching: false, page: newPage, hasMore: newHasMore }
-        }
-
         return {
           activities: unique,
           isFetching: false,
-          page: newPage,
-          hasMore: newHasMore,
+          page: pageToFetch,
+          hasMore: pageToFetch < result.totalPages,
         }
       })
     } catch (e) {
