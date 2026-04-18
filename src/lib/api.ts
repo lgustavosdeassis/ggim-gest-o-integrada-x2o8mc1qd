@@ -75,37 +75,39 @@ export const api = {
   },
   users: {
     list: async () => {
-      const data = await pb.collection('profiles').getFullList()
-      return data.map((p: any) => ({
-        id: p.id,
-        email: p.email,
-        name: p.name,
-        role: p.Role,
-        jobTitle: p.job_title,
-        avatarUrl: p.avatar_url,
+      const data = await pb.collection('users').getFullList()
+      return data.map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        role: u.role,
+        jobTitle: u.job_title,
+        avatarUrl: u.avatar_url,
       }))
     },
     update: async (id: string, updates: any) => {
       const payload: any = {}
       if (updates.name !== undefined) payload.name = updates.name
-      if (updates.role !== undefined) payload.Role = updates.role
+      if (updates.role !== undefined) payload.role = updates.role
       if (updates.jobTitle !== undefined) payload.job_title = updates.jobTitle
       if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl
 
-      const data = await pb.collection('profiles').update(id, payload)
+      const data = await pb.collection('users').update(id, payload)
       return data
     },
     create: async (payload: any) => {
-      const data = await pb.collection('profiles').create({
+      const data = await pb.collection('users').create({
         email: payload.email,
+        password: payload.password || 'Skip@Pass',
+        passwordConfirm: payload.password || 'Skip@Pass',
         name: payload.name,
-        Role: payload.role || 'viewer',
+        role: payload.role || 'viewer',
         job_title: payload.jobTitle,
       })
       return data
     },
     delete: async (id: string) => {
-      await pb.collection('profiles').delete(id)
+      await pb.collection('users').delete(id)
     },
   },
   video: {
