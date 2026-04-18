@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-18T21:48:21.252Z",
+  "generatedAt": "2026-04-18T23:06:54.213Z",
   "collections": [
     {
       "name": "ggim_reports",
@@ -59,14 +59,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": []
@@ -135,14 +140,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": []
@@ -193,76 +203,19 @@
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate"]
+          "autodateTriggers": [
+            "onCreate"
+          ]
         },
         {
           "name": "updated",
           "type": "autodate",
           "required": false,
           "system": false,
-          "autodateTriggers": ["onCreate", "onUpdate"]
-        }
-      ],
-      "indexes": []
-    },
-    {
-      "name": "profiles",
-      "type": "base",
-      "apiRules": {
-        "list": null,
-        "view": null,
-        "create": null,
-        "update": null,
-        "delete": null
-      },
-      "fields": [
-        {
-          "name": "email",
-          "type": "text",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "name",
-          "type": "text",
-          "required": true,
-          "system": false
-        },
-        {
-          "name": "Role",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "job_title",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "avatar_url",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "can_delete_reports",
-          "type": "bool",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "can_generate_reports",
-          "type": "bool",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "allowed_tabs",
-          "type": "json",
-          "required": false,
-          "system": false
+          "autodateTriggers": [
+            "onCreate",
+            "onUpdate"
+          ]
         }
       ],
       "indexes": []
@@ -334,13 +287,6 @@
           "type": "text",
           "required": false,
           "system": false
-        },
-        {
-          "name": "role",
-          "type": "select",
-          "required": false,
-          "system": false,
-          "selectValues": ["admin", "owner", "editor", "viewer", "user"]
         }
       ],
       "indexes": [
