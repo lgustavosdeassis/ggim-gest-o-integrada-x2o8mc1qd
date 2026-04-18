@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <path d="M50 5L90 25V75L50 95L10 75V25L50 5Z" fill="#eab308" />
+  <text x="50" y="55" text-anchor="middle" fill="#0f172a" font-size="24" font-weight="900">GGIM</text>
+</svg>
