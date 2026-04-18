@@ -1,10 +1,10 @@
 migrate(
   (app) => {
-    const users = app.findCollectionByNameOrId('users')
+    const users = app.findCollectionByNameOrId('_pb_users_auth_')
     let userId = null
 
     try {
-      const existing = app.findAuthRecordByEmail('users', 'gmtengustavo@hotmail.com')
+      const existing = app.findAuthRecordByEmail('_pb_users_auth_', 'gmtengustavo@hotmail.com')
       userId = existing.id
     } catch (_) {
       const record = new Record(users)
@@ -39,7 +39,7 @@ migrate(
   },
   (app) => {
     try {
-      const record = app.findAuthRecordByEmail('users', 'gmtengustavo@hotmail.com')
+      const record = app.findAuthRecordByEmail('_pb_users_auth_', 'gmtengustavo@hotmail.com')
       app.delete(record)
     } catch (_) {}
   },
