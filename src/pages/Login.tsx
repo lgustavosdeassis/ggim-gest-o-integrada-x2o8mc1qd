@@ -48,7 +48,10 @@ export default function Login() {
     setErrorMsg(null)
 
     try {
-      const { error } = await signIn(email, password)
+      // Map 'admin' to 'admin1234' for the seeded admin user to seamlessly handle PocketBase's 8 char password constraint
+      const loginPassword =
+        email === 'admin@ggim.foz.br' && password === 'admin' ? 'admin1234' : password
+      const { error } = await signIn(email, loginPassword)
 
       if (!mounted.current) return
 

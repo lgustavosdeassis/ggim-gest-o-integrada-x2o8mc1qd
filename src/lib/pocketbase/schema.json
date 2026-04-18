@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-18T20:21:06.002Z",
+  "generatedAt": "2026-04-18T21:01:55.897Z",
   "collections": [
     {
       "name": "ggim_reports",
@@ -317,6 +317,36 @@
       },
       "fields": [],
       "indexes": []
+    },
+    {
+      "name": "users",
+      "type": "auth",
+      "apiRules": {
+        "list": "id = @request.auth.id",
+        "view": "id = @request.auth.id",
+        "create": "",
+        "update": "id = @request.auth.id",
+        "delete": "id = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "role",
+          "type": "select",
+          "required": false,
+          "system": false,
+          "selectValues": ["admin", "owner", "editor", "viewer", "user"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX `idx_tokenKey__pb_users_auth_` ON `users` (`tokenKey`)",
+        "CREATE UNIQUE INDEX `idx_email__pb_users_auth_` ON `users` (`email`) WHERE `email` != ''"
+      ]
     }
   ]
 }
