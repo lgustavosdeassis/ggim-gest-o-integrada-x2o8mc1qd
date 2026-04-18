@@ -80,6 +80,7 @@ export default function Relatorios() {
   const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false)
   const [linkUrl, setLinkUrl] = useState('')
   const [linkName, setLinkName] = useState('')
+  const [isLinkSubmitting, setIsLinkSubmitting] = useState(false)
 
   const [pageMensal, setPageMensal] = useState(0)
   const [pageAnual, setPageAnual] = useState(0)
@@ -112,8 +113,14 @@ export default function Relatorios() {
           file: file,
         })
       }
-    } catch (err) {
-      // error handled in store
+      toast.success('Registro salvo com sucesso!')
+    } catch (err: any) {
+      console.error(err)
+      if (err?.status === 403) {
+        toast.error('Você não tem permissão para realizar esta ação.')
+      } else {
+        toast.error('Erro ao salvar o registro. Por favor, tente novamente.')
+      }
     } finally {
       setIsUploading(false)
       if (fileRef.current) fileRef.current.value = ''
@@ -172,8 +179,14 @@ export default function Relatorios() {
 
       clearInterval(progressInterval)
       setVideoUploadProgress(100)
+      toast.success('Registro salvo com sucesso!')
     } catch (err: any) {
       console.error(err)
+      if (err?.status === 403) {
+        toast.error('Você não tem permissão para realizar esta ação.')
+      } else {
+        toast.error('Erro ao salvar o registro. Por favor, tente novamente.')
+      }
     } finally {
       setTimeout(() => {
         setVideoUploadStatus('idle')
@@ -185,17 +198,30 @@ export default function Relatorios() {
 
   const handleAddLink = async () => {
     if (!linkUrl || !linkName) return
-    await addReport({
-      report_type: tab === 'mensais' ? 'mensal' : 'anual',
-      period_year: parseInt(uploadYear),
-      period_month: tab === 'mensais' ? parseInt(uploadMonth) : null,
-      name: linkName,
-      file_type: 'Link',
-      url: linkUrl,
-    })
-    setIsLinkDialogOpen(false)
-    setLinkUrl('')
-    setLinkName('')
+    setIsLinkSubmitting(true)
+    try {
+      await addReport({
+        report_type: tab === 'mensais' ? 'mensal' : 'anual',
+        period_year: parseInt(uploadYear),
+        period_month: tab === 'mensais' ? parseInt(uploadMonth) : null,
+        name: linkName,
+        file_type: 'Link',
+        url: linkUrl,
+      })
+      toast.success('Registro salvo com sucesso!')
+      setIsLinkDialogOpen(false)
+      setLinkUrl('')
+      setLinkName('')
+    } catch (err: any) {
+      console.error(err)
+      if (err?.status === 403) {
+        toast.error('Você não tem permissão para realizar esta ação.')
+      } else {
+        toast.error('Erro ao salvar o registro. Por favor, tente novamente.')
+      }
+    } finally {
+      setIsLinkSubmitting(false)
+    }
   }
 
   const renderTable = (type: 'mensal' | 'anual') => {
@@ -576,7 +602,12 @@ export default function Relatorios() {
                 placeholder="https://..."
               />
             </div>
-            <Button onClick={handleAddLink} className="w-full" disabled={!linkName || !linkUrl}>
+            <Button
+              onClick={handleAddLink}
+              className="w-full"
+              disabled={!linkName || !linkUrl || isLinkSubmitting}
+            >
+              {isLinkSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Adicionar Link
             </Button>
           </div>

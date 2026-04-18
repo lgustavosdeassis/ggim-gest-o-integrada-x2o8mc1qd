@@ -6,6 +6,7 @@ import { useAppStore } from '@/stores/main'
 import { useAuthStore } from '@/stores/auth'
 import { useAuditStore } from '@/stores/audit'
 import { Button } from '@/components/ui/button'
+import { Loader2 } from 'lucide-react'
 import { Form } from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
 import { formSchema, FormValues } from '@/components/registrar/schema'
@@ -207,8 +208,28 @@ export default function Registrar() {
         })
         form.reset(initialValues)
       }
-    } catch (e) {
-      console.error(e)
+      toast({
+        title: 'Sucesso',
+        description: 'Registro salvo com sucesso!',
+      })
+      setTimeout(() => {
+        navigate('/historico')
+      }, 500)
+    } catch (err: any) {
+      console.error(err)
+      if (err?.status === 403) {
+        toast({
+          title: 'Erro de Permissão',
+          description: 'Você não tem permissão para realizar esta ação.',
+          variant: 'destructive',
+        })
+      } else {
+        toast({
+          title: 'Erro',
+          description: 'Erro ao salvar o registro. Por favor, tente novamente.',
+          variant: 'destructive',
+        })
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -266,11 +287,16 @@ export default function Registrar() {
                 disabled={isSubmitting}
                 className="w-full sm:w-64 h-12 font-black text-base bg-[#eab308] text-[#0f172a] hover:bg-[#ca8a04] shadow-md transition-all rounded-xl disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {isSubmitting
-                  ? 'SALVANDO...'
-                  : editId
-                    ? 'ATUALIZAR REGISTRO'
-                    : 'SALVAR NOVO REGISTRO'}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    SALVANDO...
+                  </>
+                ) : editId ? (
+                  'ATUALIZAR REGISTRO'
+                ) : (
+                  'SALVAR NOVO REGISTRO'
+                )}
               </Button>
             )}
           </div>

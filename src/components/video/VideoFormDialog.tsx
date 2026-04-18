@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -61,8 +62,16 @@ export function VideoFormDialog({
         imprensa: Number(imp) || 0,
         operadores: Number(op) || 0,
       })
+      toast.success('Registro salvo com sucesso!')
       setIsModified(false)
       onOpenChange(false)
+    } catch (err: any) {
+      console.error(err)
+      if (err?.status === 403) {
+        toast.error('Você não tem permissão para realizar esta ação.')
+      } else {
+        toast.error('Erro ao salvar o registro. Por favor, tente novamente.')
+      }
     } finally {
       setIsSubmitting(false)
     }
