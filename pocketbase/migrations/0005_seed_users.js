@@ -4,7 +4,7 @@ migrate(
 
     const seedData = [
       {
-        id: '84a93454-2557-4c3a-b49e-81f0eeec9260',
+        id: 'seedggimfoz0001',
         email: 'ggim.foz@gmail.com',
         name: 'Insp. Área Fagundes',
         role: 'viewer',
@@ -14,7 +14,7 @@ migrate(
         allowed_tabs: [],
       },
       {
-        id: 'b04e67fc-3449-442f-8bb5-bfdf687b3d57',
+        id: 'adminggimfoz002',
         email: 'admin@ggim.foz.br',
         name: 'Gestor GGIM',
         role: 'admin',
@@ -24,7 +24,7 @@ migrate(
         allowed_tabs: [],
       },
       {
-        id: 'd044c1ce-7754-4455-b99b-471915877eb3',
+        id: 'gustavoggim0003',
         email: 'ggim.ctfoz@gmail.com',
         name: 'L. Gustavo S. de Assis',
         role: 'user',
@@ -34,7 +34,7 @@ migrate(
         allowed_tabs: [],
       },
       {
-        id: 'db4178aa-9de7-4b52-9575-dc13f6b570c0',
+        id: 'stephanyggim004',
         email: 'estagiariosggimfoz@gmail.com',
         name: 'Stephany',
         role: 'user',
@@ -44,7 +44,7 @@ migrate(
         allowed_tabs: [],
       },
       {
-        id: 'f084022e-301e-4c1a-bbde-284cb5b91043',
+        id: 'karinscaggim005',
         email: 'karleedoso@gmail.com',
         name: 'Karinsca',
         role: 'viewer',
