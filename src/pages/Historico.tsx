@@ -111,6 +111,7 @@ export default function Historico() {
         })
         setSelectedIds(new Set())
       } catch (e) {
+        console.error(e)
       } finally {
         setIsDeletingBulk(false)
       }
@@ -131,6 +132,7 @@ export default function Historico() {
         newSelected.delete(id)
         setSelectedIds(newSelected)
       } catch (e) {
+        console.error(e)
       } finally {
         setDeletingId(null)
       }
