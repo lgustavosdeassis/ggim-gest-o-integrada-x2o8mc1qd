@@ -60,7 +60,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         id: profile?.id || pbUser.id,
         email: email,
         name: profile?.name || pbUser.name || 'Usuário',
-        role: (profile?.Role?.toLowerCase() || 'viewer') as any,
+        role: (profile?.Role?.toLowerCase() || pbUser.role?.toLowerCase() || 'user') as any,
         jobTitle: profile?.job_title,
         avatarUrl: profile?.avatar_url,
         canGenerateReports: profile?.can_generate_reports ?? false,
