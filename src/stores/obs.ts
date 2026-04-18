@@ -36,9 +36,15 @@ export const useObsStore = create<ObsState>()((set, get) => ({
   addRecord: async (record) => {
     try {
       await api.obs.save(record)
-      toast.success('Sucesso', { description: 'Registro do observatório sincronizado na nuvem.' })
-    } catch (e) {
-      toast.error('Erro', { description: 'A comunicação com a nuvem falhou.' })
+      toast.success('Sucesso', { description: 'Registro salvo com sucesso!' })
+    } catch (e: any) {
+      if (e?.status === 403) {
+        toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
+      } else {
+        toast.error('Erro', {
+          description: 'Erro ao salvar o registro. Por favor, tente novamente.',
+        })
+      }
     } finally {
       get().fetchRecords()
     }
@@ -46,9 +52,15 @@ export const useObsStore = create<ObsState>()((set, get) => ({
   deleteRecord: async (id) => {
     try {
       await api.obs.delete(id)
-      toast.success('Sucesso', { description: 'Registro do observatório excluído.' })
-    } catch (e) {
-      toast.error('Erro', { description: 'Falha ao excluir registro.' })
+      toast.success('Sucesso', { description: 'Registro excluído com sucesso!' })
+    } catch (e: any) {
+      if (e?.status === 403) {
+        toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
+      } else {
+        toast.error('Erro', {
+          description: 'Erro ao excluir o registro. Por favor, tente novamente.',
+        })
+      }
     } finally {
       get().fetchRecords()
     }

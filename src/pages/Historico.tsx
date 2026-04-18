@@ -47,6 +47,8 @@ export default function Historico() {
   const [endDate, setEndDate] = useState<Date | undefined>(undefined)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [viewActivity, setViewActivity] = useState<ActivityRecord | null>(null)
+  const [isDeletingBulk, setIsDeletingBulk] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (startDate && endDate && endDate < startDate) {
@@ -93,33 +95,45 @@ export default function Historico() {
     setSelectedIds(newSelected)
   }
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (
       window.confirm(
         'Tem certeza que deseja excluir os registros selecionados de forma definitiva?',
       )
     ) {
-      bulkDeleteActivities(Array.from(selectedIds))
-      addLog({
-        userName: user?.name || 'Sistema',
-        userEmail: user?.email || '',
-        action: `Excluiu ${selectedIds.size} atividades em lote do histórico`,
-      })
-      setSelectedIds(new Set())
+      setIsDeletingBulk(true)
+      try {
+        await bulkDeleteActivities(Array.from(selectedIds))
+        addLog({
+          userName: user?.name || 'Sistema',
+          userEmail: user?.email || '',
+          action: `Excluiu ${selectedIds.size} atividades em lote do histórico`,
+        })
+        setSelectedIds(new Set())
+      } catch (e) {
+      } finally {
+        setIsDeletingBulk(false)
+      }
     }
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir este registro de forma definitiva?')) {
-      deleteActivity(id)
-      addLog({
-        userName: user?.name || 'Sistema',
-        userEmail: user?.email || '',
-        action: `Excluiu permanentemente uma atividade do histórico (ID: ${id})`,
-      })
-      const newSelected = new Set(selectedIds)
-      newSelected.delete(id)
-      setSelectedIds(newSelected)
+      setDeletingId(id)
+      try {
+        await deleteActivity(id)
+        addLog({
+          userName: user?.name || 'Sistema',
+          userEmail: user?.email || '',
+          action: `Excluiu permanentemente uma atividade do histórico (ID: ${id})`,
+        })
+        const newSelected = new Set(selectedIds)
+        newSelected.delete(id)
+        setSelectedIds(newSelected)
+      } catch (e) {
+      } finally {
+        setDeletingId(null)
+      }
     }
   }
 
@@ -139,9 +153,15 @@ export default function Historico() {
             <Button
               variant="destructive"
               onClick={handleBulkDelete}
+              disabled={isDeletingBulk}
               className="h-12 px-5 rounded-xl font-bold shadow-sm"
             >
-              <Trash className="h-4 w-4 mr-2" /> Excluir ({selectedIds.size})
+              {isDeletingBulk ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Trash className="h-4 w-4 mr-2" />
+              )}
+              Excluir ({selectedIds.size})
             </Button>
           )}{' '}
         </div>
@@ -306,9 +326,18 @@ export default function Historico() {
                           {canDelete && (
                             <DropdownMenuItem
                               className="cursor-pointer py-2.5 font-bold text-destructive focus:bg-destructive/10 focus:text-destructive mt-1"
-                              onClick={() => handleDelete(act.id)}
+                              disabled={deletingId === act.id}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                handleDelete(act.id)
+                              }}
                             >
-                              <Trash className="mr-3 h-4 w-4" /> Apagar do Banco
+                              {deletingId === act.id ? (
+                                <Loader2 className="mr-3 h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash className="mr-3 h-4 w-4" />
+                              )}
+                              Apagar do Banco
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>

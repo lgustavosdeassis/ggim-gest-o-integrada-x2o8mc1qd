@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Calendar as CalendarIcon, Printer, Edit, Trash2 } from 'lucide-react'
+import { Plus, Calendar as CalendarIcon, Printer, Edit, Trash2, Loader2 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -46,6 +46,7 @@ export default function Observatorio() {
   const [customEnd, setCustomEnd] = useState<Date | undefined>(new Date(2026, 11, 31))
   const [isFormOpen, setIsFormOpen] = useState(false)
   const [editDate, setEditDate] = useState<string>('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const filteredRecords = records.filter((r) => {
     if (customStart && customEnd) {
@@ -365,13 +366,20 @@ export default function Observatorio() {
                               variant="ghost"
                               size="icon"
                               className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => {
+                              disabled={deletingId === r.id}
+                              onClick={async () => {
                                 if (confirm('Tem certeza que deseja excluir este registro?')) {
-                                  deleteRecord(r.id)
+                                  setDeletingId(r.id)
+                                  await deleteRecord(r.id)
+                                  setDeletingId(null)
                                 }
                               }}
                             >
-                              <Trash2 className="w-4 h-4" />
+                              {deletingId === r.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
                             </Button>
                           </div>
                         </TableCell>

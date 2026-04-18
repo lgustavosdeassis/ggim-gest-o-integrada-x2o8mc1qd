@@ -82,10 +82,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
     try {
       const newAct = await api.activities.create(activity)
       set((state) => ({ activities: [newAct as ActivityRecord, ...state.activities] }))
-      toast.success('Sucesso', { description: 'Atividade salva e sincronizada na nuvem.' })
+      toast.success('Sucesso', { description: 'Registro salvo com sucesso!' })
     } catch (e: any) {
       console.error(e)
-      toast.error('Erro', { description: 'Falha ao salvar atividade na nuvem.' })
+      if (e?.status === 403) {
+        toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
+      } else {
+        toast.error('Erro', {
+          description: 'Erro ao salvar o registro. Por favor, tente novamente.',
+        })
+      }
       throw e
     }
   },
@@ -95,10 +101,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set((state) => ({
         activities: state.activities.map((a) => (a.id === id ? { ...a, ...newAct } : a)),
       }))
-      toast.success('Sucesso', { description: 'Atividade atualizada na nuvem.' })
+      toast.success('Sucesso', { description: 'Registro salvo com sucesso!' })
     } catch (e: any) {
       console.error(e)
-      toast.error('Erro', { description: 'Falha ao atualizar atividade na nuvem.' })
+      if (e?.status === 403) {
+        toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
+      } else {
+        toast.error('Erro', {
+          description: 'Erro ao salvar o registro. Por favor, tente novamente.',
+        })
+      }
       throw e
     }
   },
@@ -108,10 +120,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set((state) => ({
         activities: state.activities.filter((a) => a.id !== id),
       }))
-      toast.success('Sucesso', { description: 'Atividade excluída da nuvem.' })
+      toast.success('Sucesso', { description: 'Registro excluído com sucesso!' })
     } catch (e: any) {
       console.error(e)
-      toast.error('Erro', { description: 'Falha ao excluir a atividade.' })
+      if (e?.status === 403) {
+        toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
+      } else {
+        toast.error('Erro', {
+          description: 'Erro ao excluir o registro. Por favor, tente novamente.',
+        })
+      }
       throw e
     }
   },
@@ -121,10 +139,16 @@ export const useAppStore = create<AppState>()((set, get) => ({
       set((state) => ({
         activities: state.activities.filter((a) => !ids.includes(a.id)),
       }))
-      toast.success('Sucesso', { description: 'Atividades excluídas em lote.' })
+      toast.success('Sucesso', { description: 'Registros excluídos com sucesso!' })
     } catch (e: any) {
       console.error(e)
-      toast.error('Erro', { description: 'Falha na exclusão em lote.' })
+      if (e?.status === 403) {
+        toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
+      } else {
+        toast.error('Erro', {
+          description: 'Erro ao excluir o registro. Por favor, tente novamente.',
+        })
+      }
       throw e
     }
   },

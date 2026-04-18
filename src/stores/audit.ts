@@ -46,9 +46,15 @@ export const useAuditStore = create<AuditState>()((set, get) => ({
   clearLogs: async () => {
     try {
       await api.audit.clear()
-      toast.success('Sucesso', { description: 'Histórico de auditoria limpo.' })
-    } catch (e) {
-      toast.error('Erro', { description: 'Falha ao limpar histórico de auditoria.' })
+      toast.success('Sucesso', { description: 'Registros excluídos com sucesso!' })
+    } catch (e: any) {
+      if (e?.status === 403) {
+        toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
+      } else {
+        toast.error('Erro', {
+          description: 'Erro ao excluir o registro. Por favor, tente novamente.',
+        })
+      }
       throw e
     } finally {
       get().fetchLogs()

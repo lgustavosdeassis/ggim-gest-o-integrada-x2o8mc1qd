@@ -71,20 +71,32 @@ export const useReportStore = create<ReportState>()((set, get) => ({
       if (report.file) formData.append('file', report.file)
 
       await pb.collection('ggim_reports').create(formData)
-      toast.success('Relatório anexado com sucesso.')
+      toast.success('Sucesso', { description: 'Registro salvo com sucesso!' })
       get().fetchReports()
-    } catch (e) {
-      toast.error('Erro ao anexar relatório.')
+    } catch (e: any) {
+      if (e?.status === 403) {
+        toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
+      } else {
+        toast.error('Erro', {
+          description: 'Erro ao salvar o registro. Por favor, tente novamente.',
+        })
+      }
       throw e
     }
   },
   deleteReport: async (id) => {
     try {
       await pb.collection('ggim_reports').delete(id)
-      toast.success('Relatório excluído.')
+      toast.success('Sucesso', { description: 'Registro excluído com sucesso!' })
       get().fetchReports()
-    } catch (e) {
-      toast.error('Erro ao excluir relatório.')
+    } catch (e: any) {
+      if (e?.status === 403) {
+        toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
+      } else {
+        toast.error('Erro', {
+          description: 'Erro ao excluir o registro. Por favor, tente novamente.',
+        })
+      }
       throw e
     }
   },

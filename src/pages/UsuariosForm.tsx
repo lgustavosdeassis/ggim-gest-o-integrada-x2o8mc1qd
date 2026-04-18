@@ -96,16 +96,18 @@ export default function UsuariosForm() {
         await pb.collection('users').create(dataToSave)
       }
 
-      toast.success('Usuário salvo com sucesso!')
+      toast.success('Registro salvo com sucesso!')
       navigate('/usuarios')
-    } catch (error) {
+    } catch (error: any) {
       console.error(error)
       const errors = extractFieldErrors(error)
-      if (Object.keys(errors).length > 0) {
+      if (error?.status === 403) {
+        toast.error('Você não tem permissão para realizar esta ação.')
+      } else if (Object.keys(errors).length > 0) {
         setFieldErrors(errors)
-        toast.error('Erro ao salvar usuário. Verifique os campos.')
+        toast.error('Erro ao salvar o registro. Por favor, verifique os campos.')
       } else {
-        toast.error('Erro ao salvar usuário. Por favor, tente novamente.')
+        toast.error('Erro ao salvar o registro. Por favor, tente novamente.')
       }
     } finally {
       setLoading(false)

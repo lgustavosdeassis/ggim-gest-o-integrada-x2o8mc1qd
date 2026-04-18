@@ -13,11 +13,13 @@ import {
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Loader2, Users, ShieldAlert, Trash2, Plus, Edit2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function Usuarios() {
   const { user } = useAuthStore()
   const [usersList, setUsersList] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const loadUsers = async () => {
     setLoading(true)
@@ -118,18 +120,34 @@ export default function Usuarios() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                          disabled={deletingId === u.id}
                           onClick={async () => {
                             if (window.confirm('Tem certeza que deseja remover este usuário?')) {
+                              setDeletingId(u.id)
                               try {
                                 await api.users.delete(u.id)
+                                toast.success('Registro excluído com sucesso!')
                                 loadUsers()
-                              } catch (e) {
+                              } catch (e: any) {
                                 console.error(e)
+                                if (e?.status === 403) {
+                                  toast.error('Você não tem permissão para realizar esta ação.')
+                                } else {
+                                  toast.error(
+                                    'Erro ao excluir o registro. Por favor, tente novamente.',
+                                  )
+                                }
+                              } finally {
+                                setDeletingId(null)
                               }
                             }
                           }}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {deletingId === u.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
                         </Button>
                       </div>
                     </TableCell>

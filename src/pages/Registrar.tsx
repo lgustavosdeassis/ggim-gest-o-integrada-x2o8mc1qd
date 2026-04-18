@@ -198,7 +198,6 @@ export default function Registrar() {
           userEmail: user?.email || '',
           action: `Editou os dados do evento: ${payload.eventName ? payload.eventName + ' - ' : ''}${payload.eventType} (${payload.instance})`,
         })
-        toast({ title: 'Atividade atualizada com sucesso.' })
       } else {
         await addActivity(payload)
         addLog({
@@ -206,9 +205,8 @@ export default function Registrar() {
           userEmail: user?.email || '',
           action: `Registrou uma nova atividade: ${payload.eventName ? payload.eventName + ' - ' : ''}${payload.eventType} (${payload.instance})`,
         })
-        toast({ title: 'Atividade registrada com sucesso.' })
+        form.reset(initialValues)
       }
-      navigate('/historico')
     } catch (e) {
       console.error(e)
     } finally {
