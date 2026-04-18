@@ -1,6 +1,7 @@
 migrate(
   (app) => {
     const collection = new Collection({
+      id: '_pb_users_auth_',
       name: 'users',
       type: 'auth',
       listRule: "@request.auth.id != ''",
