@@ -3,8 +3,8 @@ migrate(
     const users = app.findCollectionByNameOrId('_pb_users_auth_')
 
     const seedUsers = [
-      { email: 'admin_seed2@ggim.foz.br', name: 'Administrador 2 (Seed)', role: 'admin' },
-      { email: 'user_seed2@ggim.foz.br', name: 'Usuário 2 (Seed)', role: 'user' },
+      { email: 'admin_seed@ggim.foz.br', name: 'Administrador (Seed)', role: 'admin' },
+      { email: 'user_seed@ggim.foz.br', name: 'Usuário (Seed)', role: 'user' },
     ]
 
     for (const u of seedUsers) {
@@ -25,7 +25,7 @@ migrate(
     }
   },
   (app) => {
-    const emails = ['admin_seed2@ggim.foz.br', 'user_seed2@ggim.foz.br']
+    const emails = ['admin_seed@ggim.foz.br', 'user_seed@ggim.foz.br']
     for (const email of emails) {
       try {
         const record = app.findAuthRecordByEmail('_pb_users_auth_', email)
