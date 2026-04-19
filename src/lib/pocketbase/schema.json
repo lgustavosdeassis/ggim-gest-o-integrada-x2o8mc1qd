@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-19T00:26:18.894Z",
+  "generatedAt": "2026-04-19T19:58:42.774Z",
   "collections": [
     {
       "name": "ggim_reports",
@@ -253,7 +253,122 @@
         "update": null,
         "delete": null
       },
-      "fields": [],
+      "fields": [
+        {
+          "name": "event_name",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "instance",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "event_type",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "modality",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "location",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "meeting_start",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "meeting_end",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "has_additional_days",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "additional_days",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "has_action_boolean",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "action_start",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "action_end",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "actions",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "participants_pj",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "documents",
+          "type": "json",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "deliberations",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "participants_pf",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        }
+      ],
       "indexes": []
     },
     {

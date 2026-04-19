@@ -1,4 +1,4 @@
-import pb from '@/lib/pocketbase/client'
+import { db } from '@/lib/db/database-service'
 import { ActivityRecord } from '@/lib/types'
 
 function mapFromDB(item: any): ActivityRecord {
@@ -55,27 +55,27 @@ function mapToDB(item: any) {
 export const api = {
   activities: {
     list: async () => {
-      const data = await pb.collection('activities').getFullList({ sort: '-created' })
+      const data = await db.collection('activities').getFullList({ sort: '-created' })
       return data.map(mapFromDB)
     },
     create: async (activity: any) => {
-      const data = await pb.collection('activities').create(mapToDB(activity))
+      const data = await db.collection('activities').create(mapToDB(activity))
       return mapFromDB(data)
     },
     update: async (id: string, activity: any) => {
-      const data = await pb.collection('activities').update(id, mapToDB(activity))
+      const data = await db.collection('activities').update(id, mapToDB(activity))
       return mapFromDB(data)
     },
     delete: async (id: string) => {
-      await pb.collection('activities').delete(id)
+      await db.collection('activities').delete(id)
     },
     bulkDelete: async (ids: string[]) => {
-      await Promise.all(ids.map((id) => pb.collection('activities').delete(id)))
+      await Promise.all(ids.map((id) => db.collection('activities').delete(id)))
     },
   },
   users: {
     list: async () => {
-      const data = await pb.collection('users').getFullList()
+      const data = await db.collection('users').getFullList()
       return data.map((u: any) => ({
         id: u.id,
         email: u.email,
@@ -92,11 +92,11 @@ export const api = {
       if (updates.jobTitle !== undefined) payload.job_title = updates.jobTitle
       if (updates.avatarUrl !== undefined) payload.avatar_url = updates.avatarUrl
 
-      const data = await pb.collection('users').update(id, payload)
+      const data = await db.collection('users').update(id, payload)
       return data
     },
     create: async (payload: any) => {
-      const data = await pb.collection('users').create({
+      const data = await db.collection('users').create({
         email: payload.email,
         password: payload.password || 'Skip@Pass',
         passwordConfirm: payload.password || 'Skip@Pass',
@@ -107,31 +107,34 @@ export const api = {
       return data
     },
     delete: async (id: string) => {
-      await pb.collection('users').delete(id)
+      await db.collection('users').delete(id)
     },
   },
   video: {
     list: async () => {
-      const data = await pb.collection('video_records').getFullList({ sort: '-date' })
+      const data = await db.collection('video_records').getFullList({ sort: '-date' })
       return data
     },
     save: async (record: any) => {
       try {
-        const existing = await pb
+        const res = await db
           .collection('video_records')
-          .getFirstListItem(`date="${record.date}"`)
-        return await pb.collection('video_records').update(existing.id, record)
+          .getList(1, 1, { filter: `date="${record.date}"` })
+        if (res.items && res.items.length > 0) {
+          return await db.collection('video_records').update(res.items[0].id, record)
+        }
+        return await db.collection('video_records').create(record)
       } catch {
-        return await pb.collection('video_records').create(record)
+        return await db.collection('video_records').create(record)
       }
     },
     delete: async (id: string) => {
-      await pb.collection('video_records').delete(id)
+      await db.collection('video_records').delete(id)
     },
   },
   obs: {
     list: async () => {
-      const data = await pb.collection('obs_records').getFullList({ sort: '-date' })
+      const data = await db.collection('obs_records').getFullList({ sort: '-date' })
       return data.map((r: any) => ({
         id: r.id,
         date: r.date,
@@ -154,21 +157,24 @@ export const api = {
         roubos: record.roubos,
       }
       try {
-        const existing = await pb
+        const res = await db
           .collection('obs_records')
-          .getFirstListItem(`date="${record.date}"`)
-        return await pb.collection('obs_records').update(existing.id, payload)
+          .getList(1, 1, { filter: `date="${record.date}"` })
+        if (res.items && res.items.length > 0) {
+          return await db.collection('obs_records').update(res.items[0].id, payload)
+        }
+        return await db.collection('obs_records').create(payload)
       } catch {
-        return await pb.collection('obs_records').create(payload)
+        return await db.collection('obs_records').create(payload)
       }
     },
     delete: async (id: string) => {
-      await pb.collection('obs_records').delete(id)
+      await db.collection('obs_records').delete(id)
     },
   },
   audit: {
     list: async () => {
-      const data = await pb.collection('audit_logs').getFullList({ sort: '-timestamp' })
+      const data = await db.collection('audit_logs').getFullList({ sort: '-timestamp' })
       return data.map((l: any) => ({
         id: l.id,
         userName: l.user_name,
@@ -178,7 +184,7 @@ export const api = {
       }))
     },
     add: async (log: any) => {
-      await pb.collection('audit_logs').create({
+      await db.collection('audit_logs').create({
         user_name: log.userName,
         user_email: log.userEmail,
         action: log.action,
@@ -186,8 +192,8 @@ export const api = {
       })
     },
     clear: async () => {
-      const data = await pb.collection('audit_logs').getFullList({ fields: 'id' })
-      await Promise.all(data.map((d) => pb.collection('audit_logs').delete(d.id)))
+      const data = await db.collection('audit_logs').getFullList({ fields: 'id' })
+      await Promise.all(data.map((d) => db.collection('audit_logs').delete(d.id)))
     },
   },
 }

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import pb from '@/lib/pocketbase/client'
+import { db } from '@/lib/db/database-service'
 import { toast } from 'sonner'
 
 export interface ReportRecord {
@@ -34,7 +34,7 @@ export const useReportStore = create<ReportState>()((set, get) => ({
 
     set({ isFetching: true })
     try {
-      const records = await pb.collection('ggim_reports').getFullList({
+      const records = await db.collection('ggim_reports').getFullList({
         sort: '-created',
       })
 
@@ -45,7 +45,7 @@ export const useReportStore = create<ReportState>()((set, get) => ({
         period_month: r.period_month || null,
         name: r.name,
         file_type: r.file_type,
-        url: r.file ? pb.files.getURL(r, r.file) : r.url || null,
+        url: r.file ? db.getFileUrl(r, r.file) : r.url || null,
         created_at: r.created,
       }))
 
@@ -70,11 +70,11 @@ export const useReportStore = create<ReportState>()((set, get) => ({
       if (report.url) formData.append('url', report.url)
       if (report.file) formData.append('file', report.file)
 
-      await pb.collection('ggim_reports').create(formData)
+      await db.collection('ggim_reports').create(formData)
       toast.success('Sucesso', { description: 'Registro salvo com sucesso!' })
       get().fetchReports()
     } catch (e: any) {
-      if (e?.status === 403) {
+      if (e?.status === 403 || e?.message?.includes('403')) {
         toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
       } else {
         toast.error('Erro', {
@@ -86,11 +86,11 @@ export const useReportStore = create<ReportState>()((set, get) => ({
   },
   deleteReport: async (id) => {
     try {
-      await pb.collection('ggim_reports').delete(id)
+      await db.collection('ggim_reports').delete(id)
       toast.success('Sucesso', { description: 'Registro excluído com sucesso!' })
       get().fetchReports()
     } catch (e: any) {
-      if (e?.status === 403) {
+      if (e?.status === 403 || e?.message?.includes('403')) {
         toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
       } else {
         toast.error('Erro', {

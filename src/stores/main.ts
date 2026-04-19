@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { ActivityRecord } from '@/lib/types'
 import { api } from '@/lib/api'
-import pb from '@/lib/pocketbase/client'
+import { db } from '@/lib/db/database-service'
 import { toast } from 'sonner'
 
 interface AppState {
@@ -29,7 +29,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
     set({ isFetching: true })
     try {
       const pageToFetch = loadMore ? state.page + 1 : 1
-      const result = await pb.collection('activities').getList(pageToFetch, 50, {
+      const result = await db.collection('activities').getList(pageToFetch, 50, {
         sort: '-meeting_start',
       })
 
@@ -85,7 +85,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       toast.success('Sucesso', { description: 'Registro salvo com sucesso!' })
     } catch (e: any) {
       console.error(e)
-      if (e?.status === 403) {
+      if (e?.status === 403 || e?.message?.includes('403')) {
         toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
       } else {
         toast.error('Erro', {
@@ -104,7 +104,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       toast.success('Sucesso', { description: 'Registro salvo com sucesso!' })
     } catch (e: any) {
       console.error(e)
-      if (e?.status === 403) {
+      if (e?.status === 403 || e?.message?.includes('403')) {
         toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
       } else {
         toast.error('Erro', {
@@ -123,7 +123,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       toast.success('Sucesso', { description: 'Registro excluído com sucesso!' })
     } catch (e: any) {
       console.error(e)
-      if (e?.status === 403) {
+      if (e?.status === 403 || e?.message?.includes('403')) {
         toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
       } else {
         toast.error('Erro', {
@@ -142,7 +142,7 @@ export const useAppStore = create<AppState>()((set, get) => ({
       toast.success('Sucesso', { description: 'Registros excluídos com sucesso!' })
     } catch (e: any) {
       console.error(e)
-      if (e?.status === 403) {
+      if (e?.status === 403 || e?.message?.includes('403')) {
         toast.error('Erro', { description: 'Você não tem permissão para realizar esta ação.' })
       } else {
         toast.error('Erro', {

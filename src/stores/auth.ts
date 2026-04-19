@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import pb from '@/lib/pocketbase/client'
+import { db } from '@/lib/db/database-service'
 
 export interface AppUser {
   id: string
@@ -81,7 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }))
     const userId = get().user?.id
     if (userId) {
-      pb.collection('users').update(userId, { avatar_url: url }).catch(console.error)
+      db.collection('users').update(userId, { avatar_url: url }).catch(console.error)
     }
   },
 
@@ -96,7 +97,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (data.jobTitle !== undefined) updateData.job_title = data.jobTitle
 
       if (Object.keys(updateData).length > 0) {
-        pb.collection('users').update(userId, updateData).catch(console.error)
+        db.collection('users').update(userId, updateData).catch(console.error)
       }
     }
   },

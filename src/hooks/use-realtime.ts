@@ -1,16 +1,13 @@
 import { useEffect, useRef } from 'react'
-import pb from '@/lib/pocketbase/client'
-import type { RecordSubscription } from 'pocketbase'
+import { db } from '@/lib/db/database-service'
 
 /**
- * Hook for real-time subscriptions to a PocketBase collection.
- * ALWAYS use this hook instead of subscribing inline.
- * Uses the per-listener UnsubscribeFunc so multiple components
- * can safely subscribe to the same collection without conflicts.
+ * Hook for real-time subscriptions to a Unified Database collection.
+ * Uses the per-listener pattern so multiple components safely subscribe.
  */
 export function useRealtime(
   collectionName: string,
-  callback: (data: RecordSubscription<any>) => void,
+  callback: (data: any) => void,
   enabled: boolean = true,
 ) {
   const callbackRef = useRef(callback)
@@ -19,16 +16,16 @@ export function useRealtime(
   useEffect(() => {
     if (!enabled) return
 
-    let unsubscribeFn: (() => Promise<void>) | undefined
+    let unsubscribeFn: (() => void) | undefined
     let cancelled = false
 
-    pb.collection(collectionName)
-      .subscribe('*', (e) => {
+    db.collection(collectionName)
+      .subscribe((e: any) => {
         callbackRef.current(e)
       })
       .then((fn) => {
         if (cancelled) {
-          fn().catch(() => {})
+          if (fn) fn()
         } else {
           unsubscribeFn = fn
         }
@@ -37,7 +34,7 @@ export function useRealtime(
     return () => {
       cancelled = true
       if (unsubscribeFn) {
-        unsubscribeFn().catch(() => {})
+        unsubscribeFn()
       }
     }
   }, [collectionName, enabled])
