@@ -205,6 +205,7 @@ export default function Registrar() {
         participants_pf: data.participantsPF || '',
         participants_pj: data.participantsPJ || '',
         deliberations: data.deliberations || '',
+        description: '',
         documents: (data.documents || []).map((doc) => ({
           ...doc,
           id: doc.id || Math.random().toString(36).substring(2, 9),
@@ -234,9 +235,31 @@ export default function Registrar() {
         className: 'bg-green-500 text-white border-none',
       })
 
-      setTimeout(() => {
-        navigate('/historico')
-      }, 2000)
+      if (editId) {
+        setTimeout(() => {
+          navigate('/historico')
+        }, 2000)
+      } else {
+        form.reset({
+          eventName: '',
+          instance: '',
+          eventType: '',
+          modality: '',
+          location: '',
+          meetingStart: '',
+          meetingEnd: '',
+          hasAdditionalDays: false,
+          additionalDays: [],
+          hasAction: false,
+          actionStart: '',
+          actionEnd: '',
+          actions: [],
+          participantsPF: '',
+          participantsPJ: '',
+          deliberations: '',
+          documents: [],
+        })
+      }
     } catch (err: any) {
       console.error(err)
       const isPermission = err?.status === 403
@@ -265,8 +288,7 @@ export default function Registrar() {
     console.error('Erros de validação do formulário:', errors)
     toast({
       title: 'Atenção: Campos Incompletos',
-      description:
-        'Por favor, preencha corretamente os campos obrigatórios destacados em vermelho antes de salvar.',
+      description: 'Por favor, preencha todos os campos obrigatórios',
       variant: 'destructive',
     })
   }
