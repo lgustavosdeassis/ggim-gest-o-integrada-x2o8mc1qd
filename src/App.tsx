@@ -1,4 +1,11 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  Outlet,
+} from 'react-router-dom'
 import { useEffect } from 'react'
 import { Layout } from '@/components/Layout'
 import { GlobalDataSync } from '@/components/GlobalDataSync'
@@ -76,24 +83,30 @@ const AppContent = () => {
           path="/"
           element={
             <ProtectedRoute>
-              <GlobalDataSync>
-                <Layout />
-              </GlobalDataSync>
+              <Layout />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Index />} />
-          <Route path="registrar" element={<Registrar />} />
-          <Route path="importar" element={<Importar />} />
-          <Route path="historico" element={<Historico />} />
-          <Route path="videomonitoramento" element={<Videomonitoramento />} />
-          <Route path="observatorio" element={<Observatorio />} />
-          <Route path="relatorios" element={<Relatorios />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="usuarios" element={<Usuarios />} />
-          <Route path="usuarios/novo" element={<UsuariosForm />} />
-          <Route path="usuarios/:id/editar" element={<UsuariosForm />} />
-          <Route path="audit-logs" element={<AuditLogs />} />
+          <Route
+            element={
+              <GlobalDataSync>
+                <Outlet />
+              </GlobalDataSync>
+            }
+          >
+            <Route index element={<Index />} />
+            <Route path="registrar" element={<Registrar />} />
+            <Route path="importar" element={<Importar />} />
+            <Route path="historico" element={<Historico />} />
+            <Route path="videomonitoramento" element={<Videomonitoramento />} />
+            <Route path="observatorio" element={<Observatorio />} />
+            <Route path="relatorios" element={<Relatorios />} />
+            <Route path="profile" element={<Profile />} />
+            <Route path="usuarios" element={<Usuarios />} />
+            <Route path="usuarios/novo" element={<UsuariosForm />} />
+            <Route path="usuarios/:id/editar" element={<UsuariosForm />} />
+            <Route path="audit-logs" element={<AuditLogs />} />
+          </Route>
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
