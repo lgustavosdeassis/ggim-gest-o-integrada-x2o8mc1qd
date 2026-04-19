@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-19T22:35:09.082Z",
+  "generatedAt": "2026-04-19T23:45:04.340Z",
   "collections": [
     {
       "name": "ggim_reports",
@@ -247,11 +247,11 @@
       "name": "activities",
       "type": "base",
       "apiRules": {
-        "list": null,
-        "view": null,
-        "create": null,
-        "update": null,
-        "delete": null
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != ''",
+        "delete": "@request.auth.id != ''"
       },
       "fields": [
         {

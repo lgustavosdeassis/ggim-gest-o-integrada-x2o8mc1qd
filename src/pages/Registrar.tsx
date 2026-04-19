@@ -7,7 +7,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useAuditStore } from '@/stores/audit'
 import { Button } from '@/components/ui/button'
 import { ToastAction } from '@/components/ui/toast'
-import { db } from '@/lib/db/database-service'
+import { createActivity, updateActivity } from '@/services/activities'
 import { Loader2 } from 'lucide-react'
 import { Form } from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
@@ -180,8 +180,8 @@ export default function Registrar() {
         event_type: data.eventType || '',
         modality: data.modality || '',
         location: data.location || '',
-        meeting_start: data.meetingStart ? new Date(data.meetingStart).toISOString() : null,
-        meeting_end: data.meetingEnd ? new Date(data.meetingEnd).toISOString() : null,
+        meeting_start: data.meetingStart ? new Date(data.meetingStart).toISOString() : '',
+        meeting_end: data.meetingEnd ? new Date(data.meetingEnd).toISOString() : '',
         has_additional_days: data.hasAdditionalDays,
         additional_days: data.hasAdditionalDays
           ? (data.additionalDays || []).map((ad) => ({
@@ -190,8 +190,8 @@ export default function Registrar() {
             }))
           : [],
         has_action_boolean: data.hasAction,
-        action_start: data.actionStart ? new Date(data.actionStart).toISOString() : null,
-        action_end: data.actionEnd ? new Date(data.actionEnd).toISOString() : null,
+        action_start: data.actionStart ? new Date(data.actionStart).toISOString() : '',
+        action_end: data.actionEnd ? new Date(data.actionEnd).toISOString() : '',
         actions: data.hasAction
           ? (data.actions || []).map((act) => ({
               ...act,
@@ -213,7 +213,7 @@ export default function Registrar() {
       }
 
       if (editId) {
-        await db.collection('activities').update(editId, payload)
+        await updateActivity(editId, payload)
         addLog({
           userName: user?.name || 'Sistema',
           userEmail: user?.email || '',
@@ -221,7 +221,7 @@ export default function Registrar() {
         })
       } else {
         payload.created_at = new Date().toISOString()
-        await db.collection('activities').create(payload)
+        await createActivity(payload)
         addLog({
           userName: user?.name || 'Sistema',
           userEmail: user?.email || '',

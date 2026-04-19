@@ -1,31 +1,20 @@
 migrate(
   (app) => {
-    const col = app.findCollectionByNameOrId('activities')
-    col.listRule = "@request.auth.id != ''"
-    col.viewRule = "@request.auth.id != ''"
-    col.createRule = "@request.auth.id != ''"
-    col.updateRule = "@request.auth.id != ''"
-    col.deleteRule = "@request.auth.id != ''"
-
-    if (!col.fields.getByName('meeting_start')) {
-      col.fields.add(new DateField({ name: 'meeting_start' }))
-    }
-    if (!col.fields.getByName('created')) {
-      col.fields.add(new AutodateField({ name: 'created', onCreate: true, onUpdate: false }))
-    }
-    if (!col.fields.getByName('updated')) {
-      col.fields.add(new AutodateField({ name: 'updated', onCreate: true, onUpdate: true }))
-    }
-
-    app.save(col)
+    const collection = app.findCollectionByNameOrId('activities')
+    collection.listRule = "@request.auth.id != ''"
+    collection.viewRule = "@request.auth.id != ''"
+    collection.createRule = "@request.auth.id != ''"
+    collection.updateRule = "@request.auth.id != ''"
+    collection.deleteRule = "@request.auth.id != ''"
+    app.save(collection)
   },
   (app) => {
-    const col = app.findCollectionByNameOrId('activities')
-    col.listRule = null
-    col.viewRule = null
-    col.createRule = null
-    col.updateRule = null
-    col.deleteRule = null
-    app.save(col)
+    const collection = app.findCollectionByNameOrId('activities')
+    collection.listRule = null
+    collection.viewRule = null
+    collection.createRule = null
+    collection.updateRule = null
+    collection.deleteRule = null
+    app.save(collection)
   },
 )
