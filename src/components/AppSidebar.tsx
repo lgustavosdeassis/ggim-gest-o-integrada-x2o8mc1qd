@@ -20,17 +20,13 @@ import {
   UploadCloud,
   FolderKanban,
 } from 'lucide-react'
-import { useAuthStore } from '@/stores/auth'
 import { cn } from '@/lib/utils'
 import sealLogo from '@/assets/logo-cmtecs-5a7a8.jpg'
 
 export function AppSidebar() {
   const { pathname } = useLocation()
-  const { user } = useAuthStore()
-  const isOwner = user?.role === 'owner' || user?.role === 'admin'
-  const allowedTabs = user?.allowedTabs || []
 
-  const allMenuItems = [
+  const menuItems = [
     { title: 'Dashboard BI', path: '/', icon: LayoutDashboard },
     { title: 'Registrar Atividade', path: '/registrar', icon: FilePlus2 },
     { title: 'Importar Arquivo', path: '/importar', icon: UploadCloud },
@@ -39,8 +35,6 @@ export function AppSidebar() {
     { title: 'Observatório', path: '/observatorio', icon: BarChart3 },
     { title: 'Relatórios GGIM', path: '/relatorios', icon: FolderKanban },
   ]
-
-  const menuItems = allMenuItems.filter((item) => isOwner || allowedTabs.includes(item.title))
 
   const adminItems = [
     { title: 'Usuários', path: '/usuarios', icon: Users },
@@ -94,31 +88,27 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {isOwner && (
-                <>
-                  <div className="mt-8 mb-2 px-4 text-[10px] font-black uppercase tracking-widest text-sidebar-foreground/40">
-                    Administração Geral
-                  </div>
-                  {adminItems.map((item) => (
-                    <SidebarMenuItem key={item.path}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={pathname === item.path}
-                        className={cn(
-                          'h-11 rounded-xl px-4 transition-all font-bold text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent',
-                          pathname === item.path &&
-                            'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm',
-                        )}
-                      >
-                        <Link to={item.path}>
-                          <item.icon className="w-5 h-5 mr-3" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </>
-              )}
+              <div className="mt-8 mb-2 px-4 text-[10px] font-black uppercase tracking-widest text-sidebar-foreground/40">
+                Administração Geral
+              </div>
+              {adminItems.map((item) => (
+                <SidebarMenuItem key={item.path}>
+                  <SidebarMenuButton
+                    asChild
+                    isActive={pathname === item.path}
+                    className={cn(
+                      'h-11 rounded-xl px-4 transition-all font-bold text-sm text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent',
+                      pathname === item.path &&
+                        'bg-sidebar-accent text-sidebar-accent-foreground shadow-sm',
+                    )}
+                  >
+                    <Link to={item.path}>
+                      <item.icon className="w-5 h-5 mr-3" />
+                      <span>{item.title}</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
