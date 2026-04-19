@@ -1,4 +1,4 @@
-import React, { Component, ReactNode } from 'react'
+import { Component, ErrorInfo, ReactNode } from 'react'
 
 interface Props {
   children?: ReactNode
@@ -6,7 +6,6 @@ interface Props {
 
 interface State {
   hasError: boolean
-  error?: Error
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -14,33 +13,27 @@ export class ErrorBoundary extends Component<Props, State> {
     hasError: false,
   }
 
-  public static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
+  public static getDerivedStateFromError(_: Error): State {
+    return { hasError: true }
   }
 
-  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo)
-    // Sentry.init() and Sentry.captureException() removed here to resolve
-    // "[Sentry] You cannot use Sentry.init() in a browser extension" error.
+    // Sentry.init() and captureException have been removed to fix browser extension issues
   }
 
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="flex min-h-screen items-center justify-center bg-[#020617] p-4 text-center">
-          <div className="rounded-lg border border-slate-800 bg-slate-900 text-slate-100 shadow-sm p-6 max-w-md w-full">
-            <h2 className="text-xl font-semibold mb-2 text-[#eab308]">Algo deu errado</h2>
-            <p className="text-sm text-slate-400 mb-6 max-w-md">
-              O aplicativo encontrou um erro inesperado. Por favor, tente recarregar a página.
-            </p>
+        <div className="flex min-h-screen items-center justify-center p-4 text-center bg-background">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Algo deu errado.</h1>
+            <p className="mt-2 text-muted-foreground">Por favor, recarregue a página.</p>
             <button
-              className="px-4 py-2 bg-[#eab308] text-slate-900 font-medium rounded-md hover:bg-[#ca8a04] transition-colors"
-              onClick={() => {
-                this.setState({ hasError: false, error: undefined })
-                window.location.reload()
-              }}
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium transition-colors hover:bg-primary/90"
             >
-              Recarregar Página
+              Recarregar página
             </button>
           </div>
         </div>

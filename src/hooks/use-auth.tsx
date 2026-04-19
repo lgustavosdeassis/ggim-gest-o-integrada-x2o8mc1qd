@@ -63,7 +63,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   const signOut = () => {
+    console.log('Logging out: clearing auth store and session data')
     pb.authStore.clear()
+    localStorage.clear()
+    sessionStorage.clear()
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login'
+    }
   }
 
   return (

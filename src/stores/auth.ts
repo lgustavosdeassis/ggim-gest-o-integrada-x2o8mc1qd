@@ -73,7 +73,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
+    console.log('Logging out from store: clearing session data')
     set({ user: null, isAuthenticated: false })
+    pb.authStore.clear()
+    localStorage.clear()
+    sessionStorage.clear()
+    if (window.location.pathname !== '/login') {
+      window.location.href = '/login'
+    }
   },
 
   updateAvatar: (url) => {
