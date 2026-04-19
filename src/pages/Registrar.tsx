@@ -6,6 +6,8 @@ import { useAppStore } from '@/stores/main'
 import { useAuthStore } from '@/stores/auth'
 import { useAuditStore } from '@/stores/audit'
 import { Button } from '@/components/ui/button'
+import { ToastAction } from '@/components/ui/toast'
+import { db } from '@/lib/db/database-service'
 import { Loader2 } from 'lucide-react'
 import { Form } from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
@@ -32,7 +34,7 @@ export default function Registrar() {
   const navigate = useNavigate()
   const { toast } = useToast()
 
-  const { activities, addActivity, updateActivity } = useAppStore()
+  const { activities } = useAppStore()
   const { user } = useAuthStore()
 
   const canEdit = user?.role === 'admin' || user?.role === 'owner' || user?.role === 'editor'
@@ -48,22 +50,22 @@ export default function Registrar() {
 
   const initialValues = useMemo(() => {
     if (defaultActivity) {
-      let initialActions = defaultActivity.actions || []
-      let initialHasAction = defaultActivity.hasAction || false
-      if (
-        initialActions.length === 0 &&
-        defaultActivity.hasAction &&
-        defaultActivity.actionStart &&
-        defaultActivity.actionEnd
-      ) {
+      const d = defaultActivity as any
+      let initialActions = d.actions || []
+      let initialHasAction = d.hasAction ?? d.has_action_boolean ?? false
+
+      const actStart = d.actionStart || d.action_start
+      const actEnd = d.actionEnd || d.action_end
+
+      if (initialActions.length === 0 && initialHasAction && actStart && actEnd) {
         initialActions = [
           {
             id: Math.random().toString(),
             periods: [
               {
                 id: Math.random().toString(),
-                start: defaultActivity.actionStart,
-                end: defaultActivity.actionEnd,
+                start: actStart,
+                end: actEnd,
               },
             ],
           },
@@ -95,29 +97,33 @@ export default function Registrar() {
         }
       })
       return {
-        ...defaultActivity,
-        eventName: defaultActivity.eventName || '',
-        actionStart: formatForDatetimeLocal(defaultActivity.actionStart) || '',
-        actionEnd: formatForDatetimeLocal(defaultActivity.actionEnd) || '',
-        participantsPF: defaultActivity.participantsPF || '',
-        participantsPJ: defaultActivity.participantsPJ || '',
-        deliberations: defaultActivity.deliberations || '',
-        meetingStart: formatForDatetimeLocal(defaultActivity.meetingStart),
-        meetingEnd: formatForDatetimeLocal(defaultActivity.meetingEnd),
-        hasAdditionalDays: defaultActivity.hasAdditionalDays || false,
-        additionalDays: (defaultActivity.additionalDays || []).map((ad) => ({
+        ...d,
+        eventName: d.eventName || d.event_name || '',
+        instance: d.instance || '',
+        eventType: d.eventType || d.event_type || '',
+        modality: d.modality || '',
+        location: d.location || '',
+        actionStart: formatForDatetimeLocal(actStart) || '',
+        actionEnd: formatForDatetimeLocal(actEnd) || '',
+        participantsPF: d.participantsPF || d.participants_pf || '',
+        participantsPJ: d.participantsPJ || d.participants_pj || '',
+        deliberations: d.deliberations || '',
+        meetingStart: formatForDatetimeLocal(d.meetingStart || d.meeting_start),
+        meetingEnd: formatForDatetimeLocal(d.meetingEnd || d.meeting_end),
+        hasAdditionalDays: d.hasAdditionalDays ?? d.has_additional_days ?? false,
+        additionalDays: (d.additionalDays || d.additional_days || []).map((ad: any) => ({
           ...ad,
           start: formatForDatetimeLocal(ad.start),
           end: formatForDatetimeLocal(ad.end),
         })),
         hasAction: initialHasAction,
-        actions: initialActions.map((a) => ({
+        actions: initialActions.map((a: any) => ({
           ...a,
           start: formatForDatetimeLocal(a.start) || '',
           end: formatForDatetimeLocal(a.end) || '',
           periods:
             a.periods && a.periods.length > 0
-              ? a.periods.map((p) => ({
+              ? a.periods.map((p: any) => ({
                   ...p,
                   start: formatForDatetimeLocal(p.start),
                   end: formatForDatetimeLocal(p.end),
@@ -168,68 +174,88 @@ export default function Registrar() {
     setIsSubmitting(true)
 
     try {
-      const payload = {
-        ...data,
-        additionalDays: data.hasAdditionalDays
+      const payload: any = {
+        event_name: data.eventName || '',
+        instance: data.instance || '',
+        event_type: data.eventType || '',
+        modality: data.modality || '',
+        location: data.location || '',
+        meeting_start: data.meetingStart ? new Date(data.meetingStart).toISOString() : null,
+        meeting_end: data.meetingEnd ? new Date(data.meetingEnd).toISOString() : null,
+        has_additional_days: data.hasAdditionalDays,
+        additional_days: data.hasAdditionalDays
           ? (data.additionalDays || []).map((ad) => ({
               ...ad,
-              id: ad.id || Math.random().toString(36).substr(2, 9),
+              id: ad.id || Math.random().toString(36).substring(2, 9),
             }))
           : [],
+        has_action_boolean: data.hasAction,
+        action_start: data.actionStart ? new Date(data.actionStart).toISOString() : null,
+        action_end: data.actionEnd ? new Date(data.actionEnd).toISOString() : null,
         actions: data.hasAction
           ? (data.actions || []).map((act) => ({
               ...act,
-              id: act.id || Math.random().toString(36).substr(2, 9),
+              id: act.id || Math.random().toString(36).substring(2, 9),
               periods: (act.periods || []).map((p) => ({
                 ...p,
-                id: p.id || Math.random().toString(36).substr(2, 9),
+                id: p.id || Math.random().toString(36).substring(2, 9),
               })),
             }))
           : [],
+        participants_pf: data.participantsPF || '',
+        participants_pj: data.participantsPJ || '',
+        deliberations: data.deliberations || '',
         documents: (data.documents || []).map((doc) => ({
           ...doc,
-          id: doc.id || Math.random().toString(36).substr(2, 9),
+          id: doc.id || Math.random().toString(36).substring(2, 9),
         })),
-      } as any
+      }
 
       if (editId) {
-        await updateActivity(editId, payload)
+        await db.collection('activities').update(editId, payload)
         addLog({
           userName: user?.name || 'Sistema',
           userEmail: user?.email || '',
-          action: `Editou os dados do evento: ${payload.eventName ? payload.eventName + ' - ' : ''}${payload.eventType} (${payload.instance})`,
+          action: `Editou os dados do evento: ${payload.event_name ? payload.event_name + ' - ' : ''}${payload.event_type} (${payload.instance})`,
         })
       } else {
-        await addActivity(payload)
+        payload.created_at = new Date().toISOString()
+        await db.collection('activities').create(payload)
         addLog({
           userName: user?.name || 'Sistema',
           userEmail: user?.email || '',
-          action: `Registrou uma nova atividade: ${payload.eventName ? payload.eventName + ' - ' : ''}${payload.eventType} (${payload.instance})`,
+          action: `Registrou uma nova atividade: ${payload.event_name ? payload.event_name + ' - ' : ''}${payload.event_type} (${payload.instance})`,
         })
-        form.reset(initialValues)
       }
+
       toast({
         title: 'Sucesso',
-        description: 'Registro salvo com sucesso!',
+        description: 'Atividade registrada com sucesso!',
+        className: 'bg-green-500 text-white border-none',
       })
+
       setTimeout(() => {
         navigate('/historico')
-      }, 500)
+      }, 2000)
     } catch (err: any) {
       console.error(err)
-      if (err?.status === 403) {
-        toast({
-          title: 'Erro de Permissão',
-          description: 'Você não tem permissão para realizar esta ação.',
-          variant: 'destructive',
-        })
-      } else {
-        toast({
-          title: 'Erro',
-          description: 'Erro ao salvar o registro. Por favor, tente novamente.',
-          variant: 'destructive',
-        })
-      }
+      const isPermission = err?.status === 403
+
+      toast({
+        title: isPermission ? 'Erro de Permissão' : 'Erro ao salvar',
+        description: isPermission
+          ? 'Você não tem permissão para realizar esta ação.'
+          : 'Ocorreu um erro inesperado ao tentar salvar a atividade. Verifique sua conexão e tente novamente.',
+        variant: 'destructive',
+        action: !isPermission ? (
+          <ToastAction
+            altText="Tentar Novamente"
+            onClick={() => form.handleSubmit(onSubmit, onError)()}
+          >
+            Tentar Novamente
+          </ToastAction>
+        ) : undefined,
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -295,7 +321,7 @@ export default function Registrar() {
                 ) : editId ? (
                   'ATUALIZAR REGISTRO'
                 ) : (
-                  'SALVAR NOVO REGISTRO'
+                  'Registrar Atividade'
                 )}
               </Button>
             )}

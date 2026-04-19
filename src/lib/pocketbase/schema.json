@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-19T19:58:42.774Z",
+  "generatedAt": "2026-04-19T22:01:52.799Z",
   "collections": [
     {
       "name": "ggim_reports",
@@ -333,6 +333,12 @@
           "system": false
         },
         {
+          "name": "participants_pf",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
           "name": "participants_pj",
           "type": "text",
           "required": false,
@@ -346,12 +352,6 @@
         },
         {
           "name": "deliberations",
-          "type": "text",
-          "required": false,
-          "system": false
-        },
-        {
-          "name": "participants_pf",
           "type": "text",
           "required": false,
           "system": false
