@@ -12,10 +12,6 @@ migrate(
         app.findAuthRecordByEmail('_pb_users_auth_', u.email)
       } catch (_) {
         const record = new Record(users)
-        record.set(
-          'id',
-          $security.randomStringWithAlphabet(15, 'abcdefghijklmnopqrstuvwxyz0123456789'),
-        )
         record.setEmail(u.email)
         record.setPassword('Skip@Pass')
         record.setVerified(true)
