@@ -327,7 +327,7 @@ export default function Registrar() {
                   : 'sm:w-32 text-[#0f172a]/60 hover:text-[#0f172a] hover:bg-slate-100'
               }`}
             >
-              {isViewer ? 'Voltar para Histórico' : 'Cancelar'}
+              {isViewer ? 'Registrar Atividade' : 'Cancelar'}
             </Button>
             {!isViewer && (
               <Button
