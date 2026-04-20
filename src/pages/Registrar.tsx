@@ -9,7 +9,16 @@ import { Button } from '@/components/ui/button'
 import { ToastAction } from '@/components/ui/toast'
 import { DatabaseService } from '@/services/databaseService'
 import { Loader2 } from 'lucide-react'
-import { Form } from '@/components/ui/form'
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { getErrorMessage } from '@/lib/pocketbase/errors'
 import { formSchema, FormValues } from '@/components/registrar/schema'
@@ -158,6 +167,7 @@ export default function Registrar() {
       participantsPJ: '',
       deliberations: '',
       documents: [],
+      description: '',
     }
   }, [defaultActivity])
 
@@ -206,7 +216,7 @@ export default function Registrar() {
         participants_pf: data.participantsPF || '',
         participants_pj: data.participantsPJ || '',
         deliberations: data.deliberations || '',
-        description: '',
+        description: data.description || '',
         documents: (data.documents || []).map((doc) => ({
           ...doc,
           id: doc.id || Math.random().toString(36).substring(2, 9),
@@ -254,12 +264,9 @@ export default function Registrar() {
         participantsPJ: '',
         deliberations: '',
         documents: [],
+        description: '',
       })
       window.scrollTo({ top: 0, behavior: 'smooth' })
-
-      if (editId) {
-        navigate('/registrar', { replace: true })
-      }
     } catch (err: any) {
       console.error(err)
       const isPermission = err?.status === 403
@@ -287,7 +294,6 @@ export default function Registrar() {
   const onError = (errors: any) => {
     console.error('Erros de validação do formulário:', errors)
     toast({
-      title: 'Atenção: Campos Incompletos',
       description: 'Por favor, preencha todos os campos obrigatórios',
       variant: 'destructive',
     })
@@ -315,6 +321,33 @@ export default function Registrar() {
           <DuracaoCard />
           <EngajamentoCard />
           <ProdutividadeCard />
+          <Card className="shadow-sm border-0 bg-white/50 backdrop-blur-sm mt-8">
+            <CardHeader>
+              <CardTitle className="text-xl font-bold text-slate-800">
+                Descrição da Atividade
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        placeholder="Descreva a atividade..."
+                        className="min-h-[100px] resize-none"
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
           <div className="flex flex-col sm:flex-row justify-end gap-5 sticky bottom-6 bg-white/95 backdrop-blur-xl p-5 border-2 border-[#0f172a]/10 rounded-3xl shadow-xl z-10 mt-10 w-full sm:w-fit sm:ml-auto">
             <Button
               variant={isViewer ? 'default' : 'ghost'}
@@ -340,10 +373,8 @@ export default function Registrar() {
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                     SALVANDO...
                   </>
-                ) : editId ? (
-                  'ATUALIZAR REGISTRO'
                 ) : (
-                  'Registrar Atividade'
+                  'Nova Atividade'
                 )}
               </Button>
             )}

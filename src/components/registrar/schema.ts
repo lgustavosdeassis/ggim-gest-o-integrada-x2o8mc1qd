@@ -44,7 +44,7 @@ export const DOC_TYPES = [
 ] as const
 
 export const formSchema = z.object({
-  eventName: z.string().nullish(),
+  eventName: z.string().min(1, 'Obrigatório'),
   instance: z.string().min(1, 'Instância é obrigatória.'),
   eventType: z.string().min(1, 'Tipo de evento é obrigatório.'),
   modality: z.string().min(1, 'Modalidade é obrigatória.'),
@@ -60,10 +60,10 @@ export const formSchema = z.object({
         end: z.string().min(1, 'Término é obrigatório.'),
       }),
     )
-    .optional(),
+    .min(1, 'Obrigatório'),
   hasAction: z.boolean().default(false),
-  actionStart: z.any().optional(),
-  actionEnd: z.any().optional(),
+  actionStart: z.string().min(1, 'Obrigatório'),
+  actionEnd: z.string().min(1, 'Obrigatório'),
   actions: z
     .array(
       z.object({
@@ -81,10 +81,11 @@ export const formSchema = z.object({
           .optional(),
       }),
     )
-    .optional(),
-  participantsPF: z.string().nullish(),
-  participantsPJ: z.string().nullish(),
-  deliberations: z.string().nullish(),
+    .min(1, 'Obrigatório'),
+  participantsPF: z.string().min(1, 'Obrigatório'),
+  participantsPJ: z.string().min(1, 'Obrigatório'),
+  deliberations: z.string().min(1, 'Obrigatório'),
+  description: z.string().min(1, 'Obrigatório'),
   documents: z
     .array(
       z.object({
@@ -94,7 +95,7 @@ export const formSchema = z.object({
         url: z.string().nullish(),
       }),
     )
-    .optional(),
+    .min(1, 'Obrigatório'),
 })
 
 export type FormValues = z.infer<typeof formSchema>
