@@ -259,6 +259,7 @@ export default function Registrar() {
           deliberations: '',
           documents: [],
         })
+        window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     } catch (err: any) {
       console.error(err)
@@ -319,7 +320,7 @@ export default function Registrar() {
             <Button
               variant={isViewer ? 'default' : 'ghost'}
               type="button"
-              onClick={() => navigate('/historico')}
+              onClick={() => navigate(isViewer ? '/registrar' : '/historico')}
               disabled={isSubmitting}
               className={`w-full h-12 rounded-xl font-bold transition-all ${
                 isViewer
@@ -327,7 +328,7 @@ export default function Registrar() {
                   : 'sm:w-32 text-[#0f172a]/60 hover:text-[#0f172a] hover:bg-slate-100'
               }`}
             >
-              {isViewer ? 'Registrar Atividade' : 'Cancelar'}
+              {isViewer ? 'Nova Atividade' : 'Cancelar'}
             </Button>
             {!isViewer && (
               <Button
