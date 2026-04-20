@@ -7,10 +7,11 @@ import { useAuthStore } from '@/stores/auth'
 import { useAuditStore } from '@/stores/audit'
 import { Button } from '@/components/ui/button'
 import { ToastAction } from '@/components/ui/toast'
-import { createActivity, updateActivity } from '@/services/activities'
+import { DatabaseService } from '@/services/databaseService'
 import { Loader2 } from 'lucide-react'
 import { Form } from '@/components/ui/form'
 import { useToast } from '@/hooks/use-toast'
+import { getErrorMessage } from '@/lib/pocketbase/errors'
 import { formSchema, FormValues } from '@/components/registrar/schema'
 import { IdentificacaoCard } from '@/components/registrar/IdentificacaoCard'
 import { DuracaoCard } from '@/components/registrar/DuracaoCard'
@@ -213,7 +214,7 @@ export default function Registrar() {
       }
 
       if (editId) {
-        await updateActivity(editId, payload)
+        await DatabaseService.salvarAtividade(payload, editId)
         addLog({
           userName: user?.name || 'Sistema',
           userEmail: user?.email || '',
@@ -221,7 +222,7 @@ export default function Registrar() {
         })
       } else {
         payload.created_at = new Date().toISOString()
-        await createActivity(payload)
+        await DatabaseService.salvarAtividade(payload)
         addLog({
           userName: user?.name || 'Sistema',
           userEmail: user?.email || '',
@@ -267,7 +268,7 @@ export default function Registrar() {
         title: isPermission ? 'Erro de Permissão' : 'Erro ao salvar',
         description: isPermission
           ? 'Você não tem permissão para realizar esta ação.'
-          : 'Ocorreu um erro inesperado ao tentar salvar a atividade. Verifique sua conexão e tente novamente.',
+          : getErrorMessage(err),
         variant: 'destructive',
         action: !isPermission ? (
           <ToastAction
