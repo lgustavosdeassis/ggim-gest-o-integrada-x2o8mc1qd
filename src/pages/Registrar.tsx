@@ -182,6 +182,7 @@ export default function Registrar() {
 
   const onSubmit = async (data: FormValues) => {
     if (isViewer) return
+    console.log('Botão clicado, iniciando salvamento...')
     setIsSubmitting(true)
 
     try {
@@ -223,6 +224,8 @@ export default function Registrar() {
         })),
       }
 
+      console.log('Chamando salvarAtividade com dados:', payload)
+
       if (editId) {
         await DatabaseService.salvarAtividade(payload, editId)
         addLog({
@@ -239,6 +242,8 @@ export default function Registrar() {
           action: `Registrou uma nova atividade: ${payload.event_name ? payload.event_name + ' - ' : ''}${payload.event_type} (${payload.instance})`,
         })
       }
+
+      console.log('Dados salvos com sucesso!')
 
       toast({
         title: 'Sucesso',
@@ -268,7 +273,7 @@ export default function Registrar() {
       })
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (err: any) {
-      console.error(err)
+      console.error('Erro ao salvar:', err)
       const isPermission = err?.status === 403
 
       toast({
