@@ -235,31 +235,29 @@ export default function Registrar() {
         className: 'bg-green-500 text-white border-none',
       })
 
+      form.reset({
+        eventName: '',
+        instance: '',
+        eventType: '',
+        modality: '',
+        location: '',
+        meetingStart: '',
+        meetingEnd: '',
+        hasAdditionalDays: false,
+        additionalDays: [],
+        hasAction: false,
+        actionStart: '',
+        actionEnd: '',
+        actions: [],
+        participantsPF: '',
+        participantsPJ: '',
+        deliberations: '',
+        documents: [],
+      })
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+
       if (editId) {
-        setTimeout(() => {
-          navigate('/historico')
-        }, 2000)
-      } else {
-        form.reset({
-          eventName: '',
-          instance: '',
-          eventType: '',
-          modality: '',
-          location: '',
-          meetingStart: '',
-          meetingEnd: '',
-          hasAdditionalDays: false,
-          additionalDays: [],
-          hasAction: false,
-          actionStart: '',
-          actionEnd: '',
-          actions: [],
-          participantsPF: '',
-          participantsPJ: '',
-          deliberations: '',
-          documents: [],
-        })
-        window.scrollTo({ top: 0, behavior: 'smooth' })
+        navigate('/registrar', { replace: true })
       }
     } catch (err: any) {
       console.error(err)
